@@ -3,11 +3,12 @@ package timeseriesweka.measures;
 import utilities.SaveParameterInfo;
 import weka.core.Instance;
 import weka.core.NormalizableDistance;
+import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 
-import static utilities.Utilities.extractTimeSeries;
-import static utilities.Utilities.notNullCheck;
-import static utilities.Utilities.positiveCheck;
+import java.io.Serializable;
+
+import static utilities.Utilities.*;
 
 // todo summary for each measure / relate to paper
 // auth
@@ -15,7 +16,9 @@ import static utilities.Utilities.positiveCheck;
 
 
 
-public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, TechnicalInformationHandler {
+public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, Serializable {
+
+    public static final double MAX = Double.POSITIVE_INFINITY;
 
     public DistanceMeasure() {
         setDontNormalize(true); // disable WEKA's normalisation - shouldn't use it anyway but just in case!

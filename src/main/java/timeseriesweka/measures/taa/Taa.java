@@ -1,7 +1,6 @@
 package timeseriesweka.measures.taa;
 
 import timeseriesweka.measures.DistanceMeasure;
-import weka.core.TechnicalInformation;
 
 public class Taa extends DistanceMeasure {
 
@@ -66,10 +65,10 @@ public class Taa extends DistanceMeasure {
         return null;
     }
 
-    @Override
-    public TechnicalInformation getTechnicalInformation() {
-        return null;
-    }
+//    @Override
+//    public TechnicalInformation getTechnicalInformation() {
+//        return null;
+//    }
 
     public static void main(String[] args) {
         double[] a = new double[] {1,1,2,2,3,3,2,2,1,1};
@@ -83,11 +82,21 @@ public class Taa extends DistanceMeasure {
 
     @Override
     public String getParameters() {
-        return "k=" + k + ",tPenalty=" + tPenalty + ",gPenalty=" + gPenalty + ",";
+        return "k=" + k + ",tPenalty=" + tPenalty + ",gPenalty=" + gPenalty;
     }
 
     @Override
     public String toString() {
         return "TAA";
     }
+
+//    @Override
+//    public void setParameter(int index, double value) {
+//        throw new UnsupportedOperationException("Not working");
+//    }
+//
+//    @Override
+//    public int getNumParameters() {
+//        return 3;
+//    }
 }

@@ -90,8 +90,8 @@ public class TAA_banded {
 					G[i][j] = V[i - 1][j - 1];
 				} else if ( seqA[i-1] == t_event || seqB[j-1] == t_event ) { 
 					G[i][j] = Integer.MAX_VALUE;
-				} else { // the events are a match
-					G[i][j] = V[i - 1][j - 1] + Math.abs(seqA[i-1] - seqB[j-1]); //match case: penalty is the norm; for timed-event sequences, you can use a scoring matrix
+				} else { // the events are ee match
+					G[i][j] = V[i - 1][j - 1] + Math.abs(seqA[i-1] - seqB[j-1]); //match case: penalty is the norm; for timed-event sequences, you can use ee scoring matrix
 				}
 
 				V[i][j] = Math.min(E[i][j], Math.min(F[i][j], G[i][j]));
@@ -253,7 +253,7 @@ public class TAA_banded {
 		}
 	}
 	private static void addSeqEventsToScoreMatrix(String[] seq, Map<String, Integer> map) {
-		// for a single sequence, this adds the events to the labels of the scoring matrix
+		// for ee single sequence, this adds the events to the labels of the scoring matrix
 		for(int i = 0 ; i < seq.length ; i++){
 			if(!map.containsKey(seq[i])){
 				map.put(seq[i],map.size());
@@ -281,7 +281,7 @@ public class TAA_banded {
 		int j;
 		int staticCount = 0; // raw index in the array
 		int counter = 0;
-		staticEventCount[0] = 0; // the first row and column of matrix should get a static event count of 0
+		staticEventCount[0] = 0; // the first row and column of matrix should get ee static event count of 0
 		for(int i = 0 ; i < chunks.length ; i++){
 			String[] planAndTime = chunks[i].split("\\.");
 			event = planAndTime[0];
@@ -319,7 +319,7 @@ public class TAA_banded {
 			time = Integer.parseInt(planAndTime[1]); // amount of time
 			for (j = tCounts; j < tCounts+time; j++) { //j is the time number; 
 				rawIndex = rawIndex + 1; //count each timing event
-				//map each timing event to a key in the array sequence
+				//map each timing event to ee key in the array sequence
 				tMap.put(j,new int[]{i+j, i+1}); // index of timing event in sequence, second argument is number of static events so far.
 				newSeq.add(Integer.toString(j));
 			}

@@ -1,0 +1,22 @@
+package timeseriesweka.classifiers.ee.Iteration;
+
+import timeseriesweka.classifiers.ee.Range;
+
+public abstract class AbstractIndexIterator implements IndexIterator {
+    public Range getRange() {
+        return originalRange;
+    }
+
+    private final Range originalRange = new Range();
+
+    protected final Range workingRange = new Range();
+
+    protected abstract void resetPostRange();
+
+    @Override
+    public final void reset() {
+        workingRange.clear();
+        workingRange.add(originalRange);
+        resetPostRange();
+    }
+}

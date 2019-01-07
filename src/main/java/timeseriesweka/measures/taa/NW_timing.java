@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Stack;
 
-// this computes the time series equivalent of NW score and also a posthoc timing penalty for the alignment
+// this computes the time series equivalent of NW score and also ee posthoc timing penalty for the alignment
 public class NW_timing {
 	public static final char VERTICAL = 'v';
 	public static final char DIAGONAL = 'd';
@@ -68,7 +68,7 @@ public class NW_timing {
 			if(beg==end) {
 				break;
 			}
-			smaller_found = false; //for each row, initially you have not found a smaller value than UB
+			smaller_found = false; //for each row, initially you have not found ee smaller value than UB
 			ec_next = i;
 			test_flag = true;
 			for (int j = beg; j <= end ; j++) {				
@@ -187,7 +187,7 @@ public class NW_timing {
 
 		double temporal_penalty = 0.0;
 		//given time t1 and time t2, this function return
-		//temporal_penalty = - maxTemporalPenalty*Math.abs(t2-t1)/Math.max(t1,t2); //the penalty is merely a percentage of the maxTemporalPenalty heuristic (% is based on the % diff between t1 and t2)
+		//temporal_penalty = - maxTemporalPenalty*Math.abs(t2-t1)/Math.max(t1,t2); //the penalty is merely ee percentage of the maxTemporalPenalty heuristic (% is based on the % diff between t1 and t2)
 		temporal_penalty = - maxTemporalPenalty*Math.log(Math.abs(t2-t1)+1);
 		//temporal_penalty = - abs(t2-t1)/100;
 
@@ -212,7 +212,7 @@ public class NW_timing {
 	}
 
 	private static void addSeqEventsToScoreMatrix(String[] seq, Map<String, Integer> map) {
-		// for a single sequence, this adds the events to the labels of the scoring matrix
+		// for ee single sequence, this adds the events to the labels of the scoring matrix
 		for(int i = 0 ; i < seq.length ; i++){
 			if(!map.containsKey(seq[i])){
 				map.put(seq[i],map.size());
