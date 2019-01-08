@@ -490,7 +490,7 @@ public abstract class Optimization
 	if(alam > 1.0)
 	    alam = 1.0;
 	
-	// Iteration of one newton step, if necessary, backtracking is done
+	// iteration of one newton step, if necessary, backtracking is done
 	double initF=fold, // Initial function value
 	    hi=alam, lo=alam, newSlope=0, fhi=m_f, flo=m_f;// Variables used for beta condition
 	double[] newGrad;  // Gradient on the new variable values
@@ -862,7 +862,7 @@ public abstract class Optimization
 	iterates:
 	for(int step=0; step < m_MAXITS; step++){
 	    if (m_Debug)
-		System.err.println("\nIteration # " + step + ":");	    
+		System.err.println("\niteration # " + step + ":");
 	    
 	    // Try at most one feasible newton step, i.e. 0<lamda<=alpha
 	    oldX = x;

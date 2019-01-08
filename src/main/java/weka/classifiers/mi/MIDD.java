@@ -520,7 +520,7 @@ public class MIDD
 
 
     if (m_Debug) {
-      System.out.println("\nIteration History..." );
+      System.out.println("\niteration History..." );
     }
 
     double[] x = new double[nR*2], tmp = new double[x.length];

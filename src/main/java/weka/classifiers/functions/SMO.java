@@ -384,7 +384,7 @@ public class SMO
 	for (int i = 0; i < numFolds; i++) {
 	  Instances train = insts.trainCV(numFolds, i, random);
           /*	  SerializedObject so = new SerializedObject(this);
-                  BinarySMO smo = (BinarySMO)so.getObject(); */
+                  BinarySMO smo = (BinarySMO)so.getSubject(); */
           BinarySMO smo = new BinarySMO();
           smo.setKernel(Kernel.makeCopy(SMO.this.m_kernel));
           smo.buildClassifier(train, cl1, cl2, false, -1, -1);

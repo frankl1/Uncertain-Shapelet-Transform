@@ -251,7 +251,7 @@ public abstract class ParallelIteratedSingleClassifierEnhancer extends
     if (!success) {
       m_failed++;
       if (m_Debug) {
-        System.err.println("Iteration " + iteration + " failed!");
+        System.err.println("iteration " + iteration + " failed!");
       }
     } else {
       m_completed++;

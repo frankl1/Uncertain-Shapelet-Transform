@@ -502,7 +502,7 @@ public class MIBoost
 iterations:
     for(int m=0; m < m_MaxIterations; m++){
       if(m_Debug)
-        System.err.println("\nIteration "+m); 
+        System.err.println("\niteration "+m);
 
 
       // Build a model

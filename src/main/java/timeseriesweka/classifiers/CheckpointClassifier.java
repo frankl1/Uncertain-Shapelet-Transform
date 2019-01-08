@@ -13,12 +13,7 @@ number
 */
 package timeseriesweka.classifiers;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 
 /**
  *
@@ -33,6 +28,8 @@ public interface CheckpointClassifier extends Serializable{
 
     //Override both if not using Java serialisation    
     public default void saveToFile(String filename) throws IOException{
+        File file = new File(filename);
+        file.mkdirs();
         FileOutputStream fos =
         new FileOutputStream(filename);
         try (ObjectOutputStream out = new ObjectOutputStream(fos)) {

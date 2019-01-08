@@ -135,7 +135,7 @@ public class FastWWSByPercent extends WindowSearcher {
         //
         // --- ALGORITHM
         //
-        // Iteration for all TS, starting with the second one (first is a reference)
+        // iteration for all TS, starting with the second one (first is a reference)
         for (int current = 1; current < train.length; ++current) {
             // --- --- Get the data --- ---
             SymbolicSequence sCurrent = train[current];

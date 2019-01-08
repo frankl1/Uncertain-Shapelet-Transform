@@ -1136,7 +1136,7 @@ public class LogitBoost
     } else {
       text.append("LogitBoost: Base classifiers and their weights: \n");
       for (int i = 0; i < m_NumGenerated; i++) {
-	text.append("\nIteration "+(i+1));
+	text.append("\niteration "+(i+1));
 	for (int j = 0; j < m_NumClasses; j++) {
 	  text.append("\n\tClass " + (j + 1) 
 		      + " (" + m_ClassAttribute.name() 

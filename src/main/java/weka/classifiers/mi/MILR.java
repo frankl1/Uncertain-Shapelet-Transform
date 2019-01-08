@@ -652,7 +652,7 @@ public class MILR
     }
 
     if (m_Debug) {
-      System.out.println("\nIteration History..." );
+      System.out.println("\niteration History..." );
     }
 
     double x[] = new double[nR + 1];

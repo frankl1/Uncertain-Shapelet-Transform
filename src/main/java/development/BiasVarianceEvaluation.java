@@ -43,7 +43,7 @@ for (int j = 0; j < numClasses; j++) {
 //1. COUNT HOW MANY PREDICTED FOR EACH CLASS
     for (int i = 0; i < m_TrainIterations; i++) {
       if (m_Debug) {
-        System.err.println("Iteration " + (i + 1));
+        System.err.println("iteration " + (i + 1));
       }
       trainPool.randomize(random);
       Instances train = new Instances(trainPool, 0, m_TrainPoolSize / 2);

@@ -496,7 +496,7 @@ public class MIEMDD
     }
 
     if (m_Debug) {
-      System.out.println("\n\nIteration History..." );
+      System.out.println("\n\niteration History..." );
     }
 
     m_emData =new double[nC][nR];

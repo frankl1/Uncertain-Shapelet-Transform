@@ -533,7 +533,7 @@ public class Decorate
 	    if(currError <= eComm){//adding the new member did not increase the error
 		i++;
 		eComm = currError;
-		if(m_Debug) System.out.println("Iteration: "+(1+numTrials)+"\tClassifier "+i+" added to ensemble. Ensemble error = "+eComm);
+		if(m_Debug) System.out.println("iteration: "+(1+numTrials)+"\tClassifier "+i+" added to ensemble. Ensemble error = "+eComm);
 	    }else{//reject the current classifier because it increased the ensemble error 
 		m_Committee.removeElementAt(m_Committee.size()-1);//pop the last member
 	    }

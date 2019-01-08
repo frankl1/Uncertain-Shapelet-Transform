@@ -124,7 +124,7 @@ public class LAGDHillClimber
                }
             }
             while (legalSequence && sequenceDeltaScore > 0) {
-               System.out.println("Next Iteration..........................");
+               System.out.println("Next iteration..........................");
                for (int i = 0; i < nrOfLookAheadSteps; i++) {
                   performOperation(bayesNet, instances,bestOperation [i]);
                }

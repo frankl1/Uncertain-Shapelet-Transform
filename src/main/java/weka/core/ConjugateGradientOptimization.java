@@ -134,7 +134,7 @@ public abstract class ConjugateGradientOptimization extends Optimization
     for (int step = 0; step < m_MAXITS; step++){
       
       if (m_Debug) {
-        System.err.println("\nIteration # " + step + ":");	    
+        System.err.println("\niteration # " + step + ":");
       }
       
       oldX = x;

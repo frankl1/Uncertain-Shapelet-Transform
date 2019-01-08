@@ -6,6 +6,8 @@ known classifiers: ShapeletTransformClassifier, RISE (not tested) HiveCote (part
  */
 package timeseriesweka.classifiers;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  *
  * @author raj09hxu
@@ -42,6 +44,16 @@ public interface ContractClassifier {
     void setTimeLimit(long time);
 
     //pass in an enum of hour, minut, day, and the amount of them.
-    void setTimeLimit(TimeLimit time, int amount);
-    
+    default void setTimeLimit(TimeLimit time, int amount) {
+        if(time.equals(TimeLimit.MINUTE)) {
+            setTimeLimit(TimeUnit.NANOSECONDS.convert(amount, TimeUnit.MINUTES));
+        } else if(time.equals(TimeLimit.HOUR)) {
+            setTimeLimit(TimeUnit.NANOSECONDS.convert(amount, TimeUnit.HOURS));
+        } else if(time.equals(TimeLimit.DAY)) {
+            setTimeLimit(TimeUnit.NANOSECONDS.convert(amount, TimeUnit.DAYS));
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
 }

@@ -55,7 +55,7 @@ public class BoxTidwell {
 		//While not termination condition
 		while(!finished)
 		{
-//			System.out.println(" Iteration = "+(count+1)+" alpha = "+alpha);
+//			System.out.println(" iteration = "+(count+1)+" alpha = "+alpha);
 			//Create new attributes
 			//1. Calculate x^alpha
 			for(int j=0;j<originalData.length;j++)

@@ -142,7 +142,7 @@ public class BayesianLogisticRegression extends AbstractClassifier implements  O
   /** Maximum number of iterations */
   public int maxIterations = 100;
 
-  /**Iteration counter */
+  /**iteration counter */
   public int iterationCounter = 0;
 
   /** Array for storing coefficients of Bayesian regression model. */

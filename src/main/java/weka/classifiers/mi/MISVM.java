@@ -648,7 +648,7 @@ public class MISVM
     }	
 
     if (m_Debug) {
-      System.out.println("\nIteration History..." );
+      System.out.println("\niteration History..." );
     }
 
     if (getDebug())

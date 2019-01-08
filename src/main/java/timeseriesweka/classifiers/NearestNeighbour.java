@@ -2,19 +2,19 @@ package timeseriesweka.classifiers;
 
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.euclidean.Euclidean;
 import utilities.ClassifierTools;
 import utilities.CrossValidator;
+import utilities.Reproducible;
 import utilities.Utilities;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.lazy.IBk;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
-public class NearestNeighbour extends AbstractClassifier implements Reproducible {
+public class NearestNeighbour implements Classifier, Contracted {
 
     public NearestNeighbour() {}
 
@@ -117,6 +117,11 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         return cachedDistance;
     }
 
+    @Override
+    public String toString() {
+        return distanceMeasure.toString() + "NN";
+    }
+
     public boolean isUsingCutOff() {
         return useCutOff;
     }
@@ -206,6 +211,11 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         return distribution;
     }
 
+    @Override
+    public Capabilities getCapabilities() {
+        return null;
+    }
+
     public int getK() {
         return k;
     }
@@ -231,5 +241,43 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         Instances instances = ClassifierTools.loadData("TSCProblems2018/Coffee");
         CrossValidator crossValidator = new CrossValidator();
 //        crossValidator.crossValidateWithStats(nearestNeighbour, )
+    }
+
+    private long trainContract = -1;
+    private long testContract = -1;
+
+    @Override
+    public void setTrainContract(final long nanoseconds) {
+        trainContract = nanoseconds;
+    }
+
+    @Override
+    public long getTrainContract() {
+        return trainContract;
+    }
+
+    @Override
+    public void setTestContract(final long nanoseconds) {
+        testContract = nanoseconds;
+    }
+
+    @Override
+    public long getTestContract() {
+        return testContract;
+    }
+
+
+
+    @Override
+    public double[][] distributionForInstances(final Instances testInstances) throws Exception {
+        double[][] distributions = new double[testInstances.numInstances()][];
+        for(int i = 0; i < distributions.length; i++) {
+            distributions[i] = new double[testInstances.numClasses()];
+        }
+        for(int i = 0; i < distributions.length; i++) {
+            Instance testInstance = testInstances.get(i);
+            distributions[i] = distributionForInstance(testInstance);
+        }
+        return distributions;
     }
 }

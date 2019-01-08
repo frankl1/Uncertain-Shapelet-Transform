@@ -1,45 +1,83 @@
 package timeseriesweka.classifiers.ee;
 
-import timeseriesweka.classifiers.Reproducible;
-import timeseriesweka.classifiers.ee.Constituents.*;
-import timeseriesweka.classifiers.ee.Iteration.AbstractIndexIterator;
-import timeseriesweka.classifiers.ee.Iteration.ElementIterator;
-import timeseriesweka.classifiers.ee.Iteration.RoundRobinIndexIterator;
+import timeseriesweka.classifiers.CheckpointClassifier;
+import timeseriesweka.classifiers.Classifier;
+import timeseriesweka.classifiers.ContractClassifier;
+import utilities.Reproducible;
+import timeseriesweka.classifiers.ee.constituents.*;
+import timeseriesweka.classifiers.ee.iteration.AbstractIndexIterator;
+import timeseriesweka.classifiers.ee.iteration.ElementIterator;
+import timeseriesweka.classifiers.ee.iteration.RoundRobinIndexIterator;
+import timeseriesweka.classifiers.ee.index.ElementObtainer;
+import timeseriesweka.classifiers.ee.index.LinearInterpolater;
+import timeseriesweka.classifiers.ee.range.ValueRange;
+import timeseriesweka.classifiers.ee.selection.BestPerTypeSelector;
+import timeseriesweka.classifiers.ee.selection.Selector;
+import timeseriesweka.classifiers.ee.selection.Weighted;
+import utilities.ArrayUtilities;
 import utilities.ClassifierResults;
-import utilities.CrossValidator;
-import utilities.StatisticalUtilities;
+import utilities.Utilities;
 import utilities.instances.Experimenter;
 import utilities.instances.Folds;
-import utilities.instances.TrainTestSplit;
-import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class Ee extends AbstractClassifier implements Reproducible {
+public class Ee implements Classifier, Reproducible, CheckpointClassifier, ContractClassifier {
+
+    @Override
+    public void copyFromSerObject(final Object obj) throws Exception {
+        Ee other = (Ee) obj;
+        constituentBuilders.addAll(other.constituentBuilders);
+        constituentIndexIterator = other.constituentIndexIterator;
+        evaluationMetric = other.evaluationMetric;
+        selector = other.selector;
+        selectedClassifiers = other.selectedClassifiers;
+        seed = other.seed;
+        // todo distributed / contract time
+    }
 
     private final List<Function<Instances, Iterator<Classifier>>> constituentBuilders = new LinkedList<>();
     private AbstractIndexIterator constituentIndexIterator = new RoundRobinIndexIterator();
+    private Function<ClassifierResults, Double> evaluationMetric = classifierResults -> {
+        classifierResults.findAllStatsOnce();
+        return classifierResults.acc;
+    };
+    private Selector<Classifier> selector = new BestPerTypeSelector<>();
+    private List<Weighted<Classifier>> selectedClassifiers = new ArrayList<>();
+    private Folds folds = null;
+    private ElementIterator<Iterator<Classifier>> constituentIterator = null;
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        // fold train instances
-        Folds folds = new Folds.Builder(trainInstances, 30).build(); // todo num folds? loocv from Jay's
-        // build constituents
-        List<Iterator<Classifier>> constituents = new LinkedList<>();
-        for(Function<Instances, Iterator<Classifier>> constituentBuilder : constituentBuilders) {
-            Iterator<Classifier> constituent = constituentBuilder.apply(trainInstances);
-            constituents.add(constituent);
+        startContract();
+        if(isCheckpointing()) {
+            loadFromFile(checkpointPath + CHECKPOINT_FILE_NAME);
+        } else {
+            selector.reset();
+            selector.setSeed(seed);
+            // fold train instances
+            folds = new Folds.Builder(trainInstances).setSeed(seed).build(); // todo num folds? loocv from Jay's
+            // build constituents
+            List<Iterator<Classifier>> constituents = new LinkedList<>();
+            for(Function<Instances, Iterator<Classifier>> constituentBuilder : constituentBuilders) {
+                Iterator<Classifier> constituent = constituentBuilder.apply(trainInstances);
+                constituents.add(constituent);
+            }
+            // setup constituent iterator
+            constituentIterator = new ElementIterator<>();
+            constituentIterator.setIndexIterator(constituentIndexIterator);
+            constituentIterator.setList(constituents);
+            constituentIterator.setSeed(seed);
+            // iterate through constituent iterators
         }
-        // setup constituent iterator
-        ElementIterator<Iterator<Classifier>> constituentIterator = new ElementIterator<>();
-        constituentIterator.setIndexIterator(constituentIndexIterator);
-        constituentIterator.setList(constituents);
-        // iterate through constituent iterators
-        while (constituentIterator.hasNext()) {
+        while (constituentIterator.hasNext() && (distributed || !contractExceeded())) {
             Iterator<Classifier> classifierIterator = constituentIterator.next();
             // if constituent has no classifiers left
             if(!classifierIterator.hasNext()) {
@@ -48,28 +86,87 @@ public class Ee extends AbstractClassifier implements Reproducible {
             } else {
                 // get next classifier
                 Classifier classifier = classifierIterator.next();
+                System.out.println(classifier.toString());
+                // seed classifier
+                classifier.setSeed(seed);
+                // set to remaining contract to avoid overrunning
+                classifier.setTimeLimit(remainingContract());
+                // set checkpointing
+                if(isCheckpointing()) {
+                    classifier.setSavePath(checkpointPath + classifier.toString() + "/" + classifier.getParameters() + "/");
+                }
                 // run classifier
-                ClassifierResults classifierResults = Experimenter.experiment(classifier, folds);
-                // check if classifier makes the cut // todo
+                if(isDistributed()) {
+                    File dir = new File("abc"); // todo change
+                    
+                    // todo serialise classifier
+                    // serialise fold
+                    // record job
+                } else {
+                    ClassifierResults trainResults = Experimenter.experiment(classifier, folds); // todo distribute
+                    // check if classifier makes the cut
+                    double stat = evaluationMetric.apply(trainResults);
+                    selector.consider(classifier, stat);
+                    checkpoint();
+                }
             }
         }
+        selectedClassifiers.addAll(selector.getSelected());
+        folds = null;
+        constituentIterator = null;
+        checkpoint();
     }
 
     public static void main(String[] args) {
         Ee ee = new Ee();
-
+        ee.loadClassicConfig();
     }
+
+    private Long seed = null;
 
     @Override
     public void setSeed(final long seed) {
+        this.seed = seed;
+    }
 
+    private boolean distributed = false;
+
+    public boolean isDistributed() {
+        return distributed;
+    }
+
+    public void distribute(boolean distributed) {
+        this.distributed = distributed;
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance testInstance) throws Exception {
+        double[] overallDistribution = new double[testInstance.numClasses()];
+        for(Weighted<Classifier> weightedClassifier : selectedClassifiers) {
+            double[] distribution = weightedClassifier.getSubject().distributionForInstance(testInstance);
+            ArrayUtilities.normalise(distribution);
+            ArrayUtilities.multiply(distribution, weightedClassifier.getWeight());
+            ArrayUtilities.add(overallDistribution, distribution);
+        }
+        ArrayUtilities.normalise(overallDistribution);
+        return overallDistribution;
+    }
+
+    @Override
+    public Capabilities getCapabilities() {
+        return null;
+    }
+
+    @Override
+    public double classifyInstance(final Instance testInstance) throws Exception {
+        return ArrayUtilities.maxIndex(distributionForInstance(testInstance));
     }
 
     public List<Function<Instances, Iterator<Classifier>>> getConstituentBuilders() {
         return constituentBuilders;
     }
 
-    public Function<Instances, Iterator<Classifier>> getDtwConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getDtwConstituentBuilder() {
         return instances -> {
             DtwConstituent dtwConstituent = new DtwConstituent();
             dtwConstituent.getWarpingWindowValueRange().getRange().add(0, 99);
@@ -77,9 +174,17 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public Function<Instances, Iterator<Classifier>> getErpConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getDdtwConstituentBuilder() {
         return instances -> {
-            double stdDev = /* todo */ ;
+            DdtwConstituent ddtwConstituent = new DdtwConstituent();
+            ddtwConstituent.getWarpingWindowValueRange().getRange().add(0, 99);
+            return ddtwConstituent;
+        };
+    }
+
+    public static Function<Instances, Iterator<Classifier>> getErpConstituentBuilder() {
+        return instances -> {
+            double stdDev = ArrayUtilities.populationStandardDeviation(instances);
             ErpConstituent erpConstituent = new ErpConstituent();
             ValueRange<Double> warpingWindowValueRange = erpConstituent.getWarpingWindowValueRange();
             warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 0.25));
@@ -91,9 +196,9 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public Function<Instances, Iterator<Classifier>> getLcssConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getLcssConstituentBuilder() {
         return instances -> {
-            double stdDev = /* todo */ ;
+            double stdDev = ArrayUtilities.populationStandardDeviation(instances);
             LcssConstituent lcssConstituent = new LcssConstituent();
             ValueRange<Double> warpingWindowValueRange = lcssConstituent.getWarpingWindowValueRange();
             warpingWindowValueRange.setIndexed(new LinearInterpolater(0, (double) (instances.numAttributes() - 1) / 4));
@@ -105,7 +210,7 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public Function<Instances, Iterator<Classifier>> getMsmConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getMsmConstituentBuilder() {
         return instances -> {
             MsmConstituent msmConstituent = new MsmConstituent();
             ValueRange<Double> toleranceValueRange = msmConstituent.getCostValueRange();
@@ -218,7 +323,7 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public Function<Instances, Iterator<Classifier>> getTweConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getTweConstituentBuilder() {
         return instances -> {
             TweConstituent tweConstitent = new TweConstituent();
             ValueRange<Double> warpingWindowValueRange = tweConstitent.getNuValueRange();
@@ -231,7 +336,7 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public Function<Instances, Iterator<Classifier>> getWdtwConstituentBuilder() {
+    public static Function<Instances, Iterator<Classifier>> getWdtwConstituentBuilder() {
         return instances -> {
             WdtwConstituent wdtwConstitent = new WdtwConstituent();
             ValueRange<Double> warpingWindowValueRange = wdtwConstitent.getWeightValueRange();
@@ -241,7 +346,91 @@ public class Ee extends AbstractClassifier implements Reproducible {
         };
     }
 
-    public void loadClassicConfig() {
+    public static Function<Instances, Iterator<Classifier>> getWddtwConstituentBuilder() {
+        return instances -> {
+            WddtwConstituent wddtwConstitent = new WddtwConstituent();
+            ValueRange<Double> warpingWindowValueRange = wddtwConstitent.getWeightValueRange();
+            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 99));
+            warpingWindowValueRange.getRange().add(0, 99);
+            return wddtwConstitent;
+        };
+    }
 
+    public void loadClassicConfig() {
+        constituentBuilders.add(getDdtwConstituentBuilder());
+        constituentBuilders.add(getDtwConstituentBuilder());
+        constituentBuilders.add(getWddtwConstituentBuilder());
+        constituentBuilders.add(getWdtwConstituentBuilder());
+        constituentBuilders.add(getErpConstituentBuilder());
+        constituentBuilders.add(getMsmConstituentBuilder());
+        constituentBuilders.add(getLcssConstituentBuilder());
+        constituentBuilders.add(getTweConstituentBuilder());
+    }
+
+    private String checkpointPath = null;
+    private long contractTime = -1;
+    private final static String CHECKPOINT_FILE_NAME = "ee.ser";
+    private long contractStartTimestamp;
+    private long elapsedContractTime;
+    private boolean contractPaused = false;
+    private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(1, TimeUnit.HOURS);
+    private final static String DISTRIBUTED_DIR_NAME = "parallel";
+
+    private long remainingContract() {
+        return contractTime - elapsedContractTime;
+    }
+
+    private void resumeContract() {
+        contractStartTimestamp = System.nanoTime();
+        contractPaused = false;
+    }
+
+    private void startContract() {
+        elapsedContractTime = 0;
+        resumeContract();
+    }
+
+    private void lapContract() {
+        if(!contractPaused) {
+            elapsedContractTime += System.nanoTime() - contractStartTimestamp;
+        }
+    }
+
+    private void pauseContract() {
+        lapContract();
+        contractPaused = true;
+    }
+
+    private boolean contractExceeded() {
+        lapContract();
+        return elapsedContractTime < contractTime;
+    }
+
+    private boolean isCheckpointing() {
+        return checkpointPath != null;
+    }
+
+    @Override
+    public void setSavePath(final String path) {
+        checkpointPath = Utilities.sanitiseFolderPath(path);
+    }
+
+    private Long lastCheckpointTimestamp = null;
+
+    private void checkpoint() throws IOException {
+        if(lastCheckpointTimestamp == null || System.nanoTime() - lastCheckpointTimestamp > minCheckpointInterval) {
+            saveToFile(CHECKPOINT_FILE_NAME);
+            lastCheckpointTimestamp = System.nanoTime();
+        }
+    }
+
+    @Override
+    public void setTimeLimit(final long nanoseconds) {
+        contractTime = nanoseconds;
+    }
+
+    @Override
+    public String getParameters() {
+        return null;
     }
 }
