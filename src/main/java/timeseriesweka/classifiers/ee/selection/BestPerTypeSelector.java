@@ -27,4 +27,9 @@ public class BestPerTypeSelector<A> implements Selector<A> {
     public void reset() {
         selected.clear();
     }
+
+    @Override
+    public void setSeed(final long seed) {
+
+    }
 }

@@ -1,12 +1,13 @@
 package timeseriesweka.measures;
 
+import timeseriesweka.measures.msm.Msm;
 import utilities.SaveParameterInfo;
-import weka.core.Instance;
-import weka.core.NormalizableDistance;
-import weka.core.TechnicalInformation;
-import weka.core.TechnicalInformationHandler;
+import weka.core.*;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import static utilities.Utilities.*;
 
@@ -89,4 +90,21 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
     public final double distance(Instance instanceA, Instance instanceB, double cutOff) {
         return measureDistance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
     }
+
+    private static final Map<String, Supplier<? extends DistanceMeasure>> DISTANCE_MEASURE_MAP = new HashMap<>();
+
+    protected static <E extends DistanceMeasure> void register(Supplier<E> distanceMeasure) {
+        DISTANCE_MEASURE_MAP.put(distanceMeasure.get().toString().toLowerCase(), distanceMeasure);
+    }
+
+    public static DistanceMeasure produce(String name) {
+        name = name.toLowerCase();
+        if(name.equals("msm")) {
+            return new Msm();
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    // todo parseParams
 }

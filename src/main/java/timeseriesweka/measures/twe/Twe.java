@@ -165,6 +165,8 @@ public class Twe extends DistanceMeasure {
 
     @Override
     public String toString() {
-        return "TWE";
+        return "twe";
     }
+
+
 }

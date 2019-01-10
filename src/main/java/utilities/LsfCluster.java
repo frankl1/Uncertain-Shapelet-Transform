@@ -3,9 +3,6 @@ package utilities;
 import java.io.*;
 import java.util.function.Consumer;
 
-import static utilities.Utilities.deserialise;
-import static utilities.Utilities.serialize;
-
 public class LsfCluster {
 
     private LsfCluster() {}

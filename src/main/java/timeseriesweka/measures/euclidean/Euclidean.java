@@ -29,6 +29,7 @@ public class Euclidean extends DistanceMeasure {
 
     @Override
     public String toString() {
-        return "Euclidean";
+        return "euclidean";
     }
+
 }

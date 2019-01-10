@@ -11,6 +11,4 @@ public interface Selector<A> extends Reproducible {
     void consider(A a, double stat);
     Collection<Weighted<A>> getSelected();
     void reset();
-
-    void setSeed(Long seed);
 }

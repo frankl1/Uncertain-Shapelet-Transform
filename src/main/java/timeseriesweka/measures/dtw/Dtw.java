@@ -45,13 +45,6 @@ public class Dtw extends DistanceMeasure {
         return Math.pow(timeSeriesA[indexA] - timeSeriesB[indexB], 2);
     }
 
-    public static void main(String[] args) {
-        double[] a = new double[]{1,2,3,4,7,7};
-        double[] b = new double[]{1,4,3,7,4,4};
-        Dtw dtw = new Dtw(1);
-        System.out.println(dtw.distance(a,b,10));
-    }
-
     @Override
     protected double measureDistance(double[] a,
                                      double[] b,
@@ -145,14 +138,9 @@ public class Dtw extends DistanceMeasure {
         return "1";
     }
 
-//    @Override
-//    public TechnicalInformation getTechnicalInformation() {
-//        throw new UnsupportedOperationException("Need to add tech info"); // todo
-//    }
-
     @Override
     public String toString() {
-        return "DTW";
+        return "dtw";
     }
 
     @Override
@@ -219,4 +207,5 @@ public class Dtw extends DistanceMeasure {
 //        windowOneEnd = windowTwoEnd;
 //    }
 //        return windowOne[windowOne.length - 1];
+
 }

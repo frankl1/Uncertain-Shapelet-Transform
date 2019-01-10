@@ -84,11 +84,6 @@ public class Lcss extends DistanceMeasure {
         return null;
     }
 
-//    @Override
-//    public TechnicalInformation getTechnicalInformation() {
-//        return null;
-//    }
-//
     @Override
     public String getParameters() {
         return "tolerance=" + tolerance + ",warpingWindow=" + warpingWindow;
@@ -96,16 +91,8 @@ public class Lcss extends DistanceMeasure {
 
     @Override
     public String toString() {
-        return "LCSS";
+        return "lcss";
     }
 
-//    @Override
-//    public void setParameter(int index, double value) {
-//
-//    }
-//
-//    @Override
-//    public int getNumParameters() {
-//        return 2;
-//    }
+
 }

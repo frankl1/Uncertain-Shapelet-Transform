@@ -54,6 +54,16 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
     private Folds folds = null;
     private ElementIterator<Iterator<Classifier>> constituentIterator = null;
 
+    private List<Iterator<Classifier>> buildConstituents(Instances trainInstances) {
+        // build constituents
+        List<Iterator<Classifier>> constituents = new LinkedList<>();
+        for(Function<Instances, Iterator<Classifier>> constituentBuilder : constituentBuilders) {
+            Iterator<Classifier> constituent = constituentBuilder.apply(trainInstances);
+            constituents.add(constituent);
+        }
+        return constituents;
+    }
+
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
         startContract();
@@ -64,14 +74,10 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
             selector.setSeed(seed);
             // fold train instances
             folds = new Folds.Builder(trainInstances).setSeed(seed).build(); // todo num folds? loocv from Jay's
-            // build constituents
-            List<Iterator<Classifier>> constituents = new LinkedList<>();
-            for(Function<Instances, Iterator<Classifier>> constituentBuilder : constituentBuilders) {
-                Iterator<Classifier> constituent = constituentBuilder.apply(trainInstances);
-                constituents.add(constituent);
-            }
             // setup constituent iterator
             constituentIterator = new ElementIterator<>();
+            // build constituents
+            List<Iterator<Classifier>> constituents = new LinkedList<>();
             constituentIterator.setIndexIterator(constituentIndexIterator);
             constituentIterator.setList(constituents);
             constituentIterator.setSeed(seed);
@@ -98,7 +104,7 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
                 // run classifier
                 if(isDistributed()) {
                     File dir = new File("abc"); // todo change
-                    
+
                     // todo serialise classifier
                     // serialise fold
                     // record job

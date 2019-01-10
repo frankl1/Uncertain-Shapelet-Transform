@@ -149,14 +149,6 @@ public class Msm extends DistanceMeasure {
 //        return cost[timeSeriesA.length - 1][timeSeriesB.length - 1];
     }
 
-    public static void main(String[] args) {
-        double[] a = new double[]{1,2,3,4,5,6,7,8,9,10};
-        double[] b = new double[]{1,2,3,5,5,5,6,7,8,9};
-        Msm msm = new Msm();
-        msm.setWarpingWindow(0.5);
-        System.out.println(msm.distance(a,b));
-    }
-
     @Override
     public String getRevision() {
         return "1";
@@ -169,7 +161,6 @@ public class Msm extends DistanceMeasure {
 
     @Override
     public String toString() {
-        return "MSM";
+        return "msm";
     }
-
 }

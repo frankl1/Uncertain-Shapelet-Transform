@@ -41,6 +41,7 @@ public class Wdtw extends Dtw {
 
     @Override
     public String toString() {
-        return "WDTW";
+        return "wdtw";
     }
+
 }

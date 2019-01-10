@@ -280,4 +280,24 @@ public class NearestNeighbour implements Classifier, Contracted {
         }
         return distributions;
     }
+
+    @Override
+    public void setSavePath(final String path) {
+
+    }
+
+    @Override
+    public void copyFromSerObject(final Object obj) throws Exception {
+
+    }
+
+    @Override
+    public void setTimeLimit(final long time) {
+
+    }
+
+    @Override
+    public String getParameters() {
+        return null;
+    }
 }

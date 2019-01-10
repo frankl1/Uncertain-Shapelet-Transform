@@ -8,4 +8,10 @@ public class Wddtw extends Wdtw {
     protected double measureDistance(final double[] a, final double[] b, final double cutOff) {
         return super.measureDistance(ArrayUtilities.derivative(a), ArrayUtilities.derivative(b), cutOff);
     }
+
+    @Override
+    public String toString() {
+        return "wddtw";
+    }
+
 }

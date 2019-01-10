@@ -5,8 +5,6 @@ import utilities.instances.TrainTestSplit;
 
 import java.io.IOException;
 
-import static utilities.Utilities.loadTscDataset;
-
 public class Erp extends DistanceMeasure {
 
     public double getWarpingWindow() {
@@ -129,15 +127,7 @@ public class Erp extends DistanceMeasure {
 
     @Override
     public String toString() {
-        return "ERP";
-    }
-
-    public static void main(String[] args) throws IOException {
-        Erp erp = new Erp();
-        erp.setWarpingWindow(0.5);
-        double[] timeSeriesA = new double[]{1,2,3,4,5,6,7,8,9,10};
-        double[] timeSeriesB = new double[]{1,23,3,24,5,6,6,6,6,10};
-        System.out.println(erp.distance(timeSeriesA, timeSeriesB));
+        return "erp";
     }
 
 }

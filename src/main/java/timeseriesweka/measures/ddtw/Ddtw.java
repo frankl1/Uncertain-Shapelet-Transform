@@ -12,4 +12,9 @@ public class Ddtw extends Dtw {
         return super.measureDistance(ArrayUtilities.derivative(timeSeriesA), ArrayUtilities.derivative(timeSeriesB), cutOff);
     }
 
+    @Override
+    public String toString() {
+        return "ddtw";
+    }
+
 }
