@@ -72,14 +72,16 @@ public class Experiment implements Runnable {
             nearestNeighbour.setSeed(foldIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
             Instances instances = loadDataset(dataset);
-            TrainTestSplit trainTestSplit = new Folds.Builder(instances, 30)
-                .stratify(true)
-                .build()
-                .getTrainTestSplit(foldIndex);
-            Instances sampledTrain = sampleInstances(trainTestSplit.getTrain());
+            int numFolds = 30;
+            instances.stratify(numFolds);
+            Random random = new Random();
+            random.setSeed(numFolds); // todo is this correct?
+            Instances train = instances.trainCV(numFolds, foldIndex, random); // todo should we randomize first? or after? currently does it inside
+            Instances sampledTrain = sampleInstances(train);
             nearestNeighbour.buildClassifier(sampledTrain);
             ClassifierResults results = new ClassifierResults();
-            for(Instance testInstance : trainTestSplit.getTest()) {
+            Instances test = instances.testCV(numFolds, foldIndex); // todo why the heck is this so small? Damn weka
+            for(Instance testInstance : test) {
                 results.storeSingleResult(testInstance.classValue(), nearestNeighbour.distributionForInstance(testInstance));
             }
             BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
@@ -107,7 +109,9 @@ public class Experiment implements Runnable {
     }
 
     private static Instances instancesFromFile(File file) throws IOException {
-        return new Instances(new BufferedReader(new FileReader(file)));
+        Instances instances = new Instances(new BufferedReader(new FileReader(file)));
+        instances.setClassIndex(instances.numAttributes() - 1);
+        return instances;
     }
 
     private static Instances instancesFromFile(String path) throws IOException {

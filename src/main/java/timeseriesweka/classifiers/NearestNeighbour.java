@@ -101,20 +101,21 @@ public class NearestNeighbour implements Classifier, Contracted {
     }
 
     private Double findDistance(Instance a, Instance b, Double cutOff) {
-        // find the distance between the train case and test case
-        // check if cached
-        Double cachedDistance = getCachedDistance(a, b); // todo
-        // if distance not in cache then compute and cache
-        if(cachedDistance == null) {
-            cachedDistance = Double.POSITIVE_INFINITY;
-        }
-        if(cachedDistance > cutOff) {
-            double distance = distanceMeasure.distance(a, b, cutOff);
-            if(distance < cachedDistance) {
-                cacheDistance(a, b, cachedDistance);
-            }
-        }
-        return cachedDistance;
+//        // find the distance between the train case and test case
+//        // check if cached
+//        Double cachedDistance = getCachedDistance(a, b); // todo
+//        // if distance not in cache then compute and cache
+//        if(cachedDistance == null) {
+//            cachedDistance = Double.POSITIVE_INFINITY;
+//        }
+//        if(cachedDistance > cutOff) {
+//            double distance = distanceMeasure.distance(a, b, cutOff);
+//            if(distance < cachedDistance) {
+//                cacheDistance(a, b, cachedDistance);
+//            }
+//        }
+//        return cachedDistance; // todo THIS DOENS'T WORK!
+        return distanceMeasure.distance(a, b, cutOff);
     }
 
     @Override

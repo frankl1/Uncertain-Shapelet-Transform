@@ -1371,17 +1371,17 @@ public class Instances extends AbstractList<Instance>
       // sort by class
       int index = 1;
       while (index < numInstances()) {
-	Instance instance1 = instance(index - 1);
-	for (int j = index; j < numInstances(); j++) {
-	  Instance instance2 = instance(j);
-	  if ((instance1.classValue() == instance2.classValue()) ||
-	      (instance1.classIsMissing() && 
-	       instance2.classIsMissing())) {
-	    swap(index,j);
-	    index++;
-	  }
-	}
-	index++;
+        Instance instance1 = instance(index - 1);
+        for (int j = index; j < numInstances(); j++) {
+          Instance instance2 = instance(j);
+          if ((instance1.classValue() == instance2.classValue()) ||
+              (instance1.classIsMissing() &&
+               instance2.classIsMissing())) {
+            swap(index,j);
+            index++;
+          }
+        }
+        index++;
       }
       stratStep(numFolds);
     }
