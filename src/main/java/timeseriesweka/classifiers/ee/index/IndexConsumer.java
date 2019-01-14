@@ -1,6 +1,6 @@
 package timeseriesweka.classifiers.ee.index;
 
-import timeseriesweka.classifiers.ee.range.ValueRange;
+import utilities.range.ValueRange;
 
 import java.util.function.Consumer;
 

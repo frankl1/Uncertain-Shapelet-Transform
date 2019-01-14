@@ -165,4 +165,35 @@ public class Utilities {
 
     // todo cleanup
 
+    public static int[] fromCombination(int combination, int... bins) {
+        int size = 1;
+        for(int bin : bins) {
+            size *= bin;
+            if(bin <= 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+        if(size <= 0) {
+            throw new IllegalArgumentException();
+        }
+        int[] result = new int[bins.length];
+        for(int index = 0; index < bins.length; index++) {
+            int bin = bins[index];
+            result[index] = combination % bin;
+            combination /= bin;
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        for(int i = 0; i < 48; i++) {
+            int[] result = fromCombination(i, 4, 3, 4);
+            for(int j : result) {
+                System.out.print(j);
+                System.out.print(", ");
+            }
+            System.out.println();
+        }
+    }
+
 }

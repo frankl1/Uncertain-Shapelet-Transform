@@ -1,5 +1,6 @@
 package timeseriesweka.measures;
 
+import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.msm.Msm;
 import utilities.SaveParameterInfo;
 import weka.core.*;
@@ -101,6 +102,8 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
         name = name.toLowerCase();
         if(name.equals("msm")) {
             return new Msm();
+        } else if(name.equals("dtw")) {
+            return new Dtw();
         } else {
             throw new IllegalArgumentException();
         }

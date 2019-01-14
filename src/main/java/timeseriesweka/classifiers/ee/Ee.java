@@ -10,7 +10,7 @@ import timeseriesweka.classifiers.ee.iteration.ElementIterator;
 import timeseriesweka.classifiers.ee.iteration.RoundRobinIndexIterator;
 import timeseriesweka.classifiers.ee.index.ElementObtainer;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
-import timeseriesweka.classifiers.ee.range.ValueRange;
+import utilities.range.ValueRange;
 import timeseriesweka.classifiers.ee.selection.BestPerTypeSelector;
 import timeseriesweka.classifiers.ee.selection.Selector;
 import timeseriesweka.classifiers.ee.selection.Weighted;

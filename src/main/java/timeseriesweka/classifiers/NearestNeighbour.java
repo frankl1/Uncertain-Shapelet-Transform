@@ -2,10 +2,7 @@ package timeseriesweka.classifiers;
 
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
-import utilities.ClassifierTools;
-import utilities.CrossValidator;
-import utilities.Reproducible;
-import utilities.Utilities;
+import utilities.*;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -120,7 +117,7 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public String toString() {
-        return distanceMeasure.toString() + "NN";
+        return distanceMeasure.toString() + "-nn";
     }
 
     public boolean isUsingCutOff() {
@@ -137,7 +134,6 @@ public class NearestNeighbour implements Classifier, Contracted {
     private TreeMap<Double, Map<Integer, Integer>> findNeighbours(Instance testInstance) {
         // list of distances to neighbours (multiple neighbours *could* have same distance, hence list)
         TreeMap<Double, Map<Integer, Integer>> neighbours = new TreeMap<>();
-        // todo no train instances
         // for each instance in the train set
         double cutOff = DistanceMeasure.MAX;
         int numNeighbours = 0;
@@ -148,7 +144,7 @@ public class NearestNeighbour implements Classifier, Contracted {
             // map of classValue to number of neighbours with said class
             Map<Integer, Integer> neighbourMap = neighbours.computeIfAbsent(distance, key -> new HashMap<>());
             Integer classValue = (int) trainInstance.classValue();
-            Integer classValueCount = neighbourMap.get(classValue);
+            Integer classValueCount = neighbourMap.get(classValue); // todo make class vals doubles
             if(classValueCount == null) {
                 classValueCount = 1;
             } else {
@@ -156,7 +152,7 @@ public class NearestNeighbour implements Classifier, Contracted {
             }
             neighbourMap.put(classValue, classValueCount);
             numNeighbours++;
-            if(numNeighbours > k && neighbours.size() > 1 && distance < neighbours.lastKey()) {
+            if(numNeighbours > k && neighbours.size() > 1) {
                 // too many neighbours and neighbours with different distances exist
                 // if distance is less than the furthest neighbour's distance then current train instance must displace neighbour
                 // check if number of neighbours can be trimmed
@@ -200,16 +196,35 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public double[] distributionForInstance(Instance testInstance) throws Exception {
-        // todo no train insts
         // majority vote // todo k voting scheme
-        TreeMap<Double, Map<Integer, Integer>> neighbours = findNeighbours(testInstance);
         double[] distribution = new double[testInstance.numClasses()];
-        for(Map<Integer, Integer> neighbourMap : neighbours.values()) {
-            for(Integer classValue : neighbourMap.keySet()) {
-                distribution[classValue] += neighbourMap.get(classValue);
+        if(trainInstances.size() == 0) {
+            distribution[random.nextInt(distribution.length)]++;
+        } else {
+            TreeMap<Double, Map<Integer, Integer>> neighbours = findNeighbours(testInstance);
+            for(Map<Integer, Integer> neighbourMap : neighbours.values()) {
+                for(Integer classValue : neighbourMap.keySet()) {
+                    distribution[classValue] += neighbourMap.get(classValue);
+                }
             }
         }
+        ArrayUtilities.normalise(distribution);
         return distribution;
+    }
+
+    public ClassifierResults predict(Instances testInstances) throws Exception {
+        ClassifierResults results = new ClassifierResults();
+        results.setNumClasses(testInstances.numClasses());
+        results.setNumInstances(testInstances.numInstances());
+        long startTime = System.nanoTime();
+        for(Instance testInstance : testInstances) {
+            results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
+        }
+        long stopTime = System.nanoTime();
+        results.setName(toString());
+        results.setParas(getParameters() + ",testTime=" + (stopTime - startTime));
+        results.findAllStatsOnce();
+        return results;
     }
 
     @Override

@@ -289,7 +289,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
            return "No Instance Prediction Information";
    }
    
-   public String writeResultsFileToString() throws IOException {                
+   public String writeResultsFileToString() {
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
         st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
@@ -298,8 +298,13 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         st.append(writeInstancePredictions());
         return st.toString();
     }
-   
-   public void loadFromFile(String path) throws FileNotFoundException{
+
+    @Override
+    public String toString() {
+        return writeResultsFileToString();
+    }
+
+    public void loadFromFile(String path) throws FileNotFoundException{
         File f=new File(path);
         if(f.exists() && f.length()>0){
             Scanner inf = new Scanner(new File(path));

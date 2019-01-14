@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.ee.range;
+package utilities.range;
 
 import timeseriesweka.classifiers.ee.index.Indexed;
 
@@ -180,6 +180,7 @@ public class Range implements Indexed<Integer> {
         FixedRange rangeToAdd = new FixedRange(from, to);
         if(ranges.size() == 0) {
             ranges.add(rangeToAdd);
+            return;
         }
         int index = binarySearch(ranges, rangeToAdd);
         FixedRange range = ranges.get(index);

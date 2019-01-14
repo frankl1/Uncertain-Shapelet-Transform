@@ -1,47 +1,53 @@
 package utilities.instances;
 
+import jdk.nashorn.internal.runtime.OptimisticBuiltins;
 import utilities.ClassifierResults;
+import utilities.range.Range;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 
 import static utilities.instances.Distribution.binClasses;
 
 public class Folds implements Iterable<TrainTestSplit>, Serializable {
-    private Folds(Instances[] folds, int numInstances, int numClasses) {
-        this.folds = folds;
-        this.numInstances = numInstances;
-        this.numClasses = numClasses;
+    private Folds(Instances instances, Range[] ranges) {
+        this.instances = instances;
+        this.ranges = ranges;
     }
 
-    private final Instances[] folds;
-    private final int numInstances;
-    private final int numClasses;
+    private final Range[] ranges;
+    private final Instances instances;
 
     public Instances getTrain(int index) {
-        Instances train = new Instances(folds[0], 0);
-        for(int i = 0; i < folds.length; i++) {
-            if(i != index) {
-                train.addAll(folds[i]);
-            }
+        Instances train = new Instances(instances);
+        Range range = ranges[index];
+        for(int i = range.size() - 1; i >= 0; i--) {
+            train.remove((int) range.get(i));
         }
         return train;
     }
 
     public int getNumInstances() {
-        return numInstances;
+        return instances.numInstances();
     }
 
     public int getNumClasses() {
-        return numClasses;
+        return instances.numClasses();
     }
 
     public Instances getTest(int index) {
-        return folds[index];
+        Instances test = new Instances(instances, 0);
+        Range range = ranges[index];
+        for(int i = 0; i < range.size(); i++) {
+            test.add(instances.get(range.get(i)));
+        }
+        return test;
     }
 
     public TrainTestSplit getTrainTestSplit(int index) {
@@ -49,7 +55,7 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
     }
 
     public int getNumFolds() {
-        return folds.length;
+        return ranges.length;
     }
 
     @Override
@@ -70,8 +76,6 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
         };
     }
 
-    // todo some way to put instances back in the right order
-
     public static class Builder implements Serializable {
 
         public Builder(Instances instances, int numFolds) {
@@ -85,63 +89,42 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
                 throw new IllegalArgumentException("number of folds too large");
             }
             this.numFolds = numFolds;
-            this.instances = instances;
+            this.instances = new Instances(instances);
         }
 
         public Builder(Instances instances) {
             this(instances, instances.numInstances());
         }
 
-        private Folds fold() {
-            int numInstancesPerFold = instances.numInstances() / numFolds;
-            int overflow = instances.numInstances() % numFolds;
-            Instances[] folds = new Instances[numFolds];
-            for(int i = 0; i < folds.length; i++) {
-                int numInstancesForThisFold = numInstancesPerFold;
-                if(i < overflow) {
-                    numInstancesForThisFold++;
-                }
-                folds[i] = new Instances(instances, 0);
-                for(int j = 0; j < numInstancesForThisFold; j++) {
-                    folds[i].add(instances.instance(random.nextInt(instances.numInstances())));
-                }
-            }
-            return new Folds(folds, instances.numInstances(), instances.numClasses());
-        }
-
-        private Folds stratifiedFold() {
-            throw new UnsupportedOperationException("Issue with stratified folding, needs to be fixed"); // todo what happens when num folds is same or close to num insts??
-//            Instances[] folds = new Instances[numFolds];
-//            for(int foldIndex = 0; foldIndex < folds.length; foldIndex++) {
-//                folds[foldIndex] = new Instances(instances,0);
-//            }
-//            Instances[] classBins = binClasses(instances);
-//            for(Instances classBin : classBins) {
-//                int foldIndex = 0;
-//                while (classBin.numInstances() > 0) {
-//                    int instanceIndex = random.nextInt(classBin.numInstances());
-//                    Instance removedInstance = classBin.remove(instanceIndex);
-//                    folds[foldIndex].add(removedInstance);
-//                    foldIndex = (foldIndex + 1) % numFolds;
-//                }
-//            }
-//            return new Folds(folds, instances.numInstances(), instances.numClasses());
-        }
-
         public Folds build() {
             if(stratify) {
-                return stratifiedFold();
+                instances.sort((instanceA, instanceB) -> {
+                    double result = instanceB.classValue() - instanceA.classValue();
+                    if (result < 0) {
+                        return -1;
+                    } else if (result > 0) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
             } else {
-                return fold();
+                Collections.shuffle(instances, random);
             }
+            Range[] ranges = new Range[numFolds];
+            for(int i = 0; i < ranges.length; i++) {
+                ranges[i] = new Range();
+            }
+            int index = 0;
+            while (index < instances.numInstances()) {
+                ranges[index % ranges.length].add(index);
+                index++;
+            }
+            return new Folds(instances, ranges);
         }
 
         private boolean stratify = false;
         private final Random random = new Random();
-
-        public boolean stratify() {
-            return stratify;
-        }
 
         public Builder stratify(boolean stratify) {
             this.stratify = stratify;

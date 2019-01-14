@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.ee.range;
+package utilities.range;
 
 import timeseriesweka.classifiers.ee.index.Indexed;
 

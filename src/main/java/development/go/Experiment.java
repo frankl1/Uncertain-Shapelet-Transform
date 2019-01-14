@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.dtw.Dtw;
 import utilities.ClassifierResults;
 import utilities.instances.Folds;
 import utilities.instances.TrainTestSplit;
@@ -25,10 +26,8 @@ public class Experiment implements Runnable {
     private File dataset;
     @Parameter(names={"--foldIndex", "-f"}, description="foldIndex for reproducibility", required=true)
     private int foldIndex;
-    @Parameter(names={"--distanceMeasure", "-m"}, description="foldIndex for reproducibility", required=true)
-    private String distanceMeasureName;
-    @Parameter(names={"--percentageTrain", "-p"}, description = "percentage of train set to use", required = true)
-    private double percentageTrain;
+    @Parameter(names={"--combination", "-c"}, description="combination of parameters", required=true)
+    private int combination;
     @Parameter(names={"--results", "-r"}, description="path to dataset arff", converter= FileConverter.class, required=true)
     private File resultsDir;
 
@@ -43,9 +42,9 @@ public class Experiment implements Runnable {
         return dataset + "," + foldIndex;
     }
 
-    private Instances sampleInstances(Instances instances) {
+    private static Instances sampleInstances(Instances instances, long seed, double percentageTrain) {
         Random random = new Random();
-        random.setSeed(foldIndex);
+        random.setSeed(seed);
         Instances sampled = new Instances(instances, 0);
         int numToSample = (int) Math.floor(percentageTrain * instances.numInstances());
         for(int i = 0; i < numToSample; i++) {
@@ -63,27 +62,26 @@ public class Experiment implements Runnable {
             String datasetName = dataset.getName();
             File datasetResultDir = new File(resultsDir, datasetName);
             datasetResultDir.mkdirs();
-            File resultsFile = new File(datasetResultDir, String.valueOf(foldIndex));
+            File resultsFile = new File(datasetResultDir, foldIndex + "_" + combination + ".csv");
             if(resultsFile.exists()) {
                 throw new IllegalStateException("results exist");
             }
-            DistanceMeasure distanceMeasure = DistanceMeasure.produce(distanceMeasureName);
+            DistanceMeasure distanceMeasure = new Dtw();
             NearestNeighbour nearestNeighbour = new NearestNeighbour();
+
             nearestNeighbour.setSeed(foldIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
             Instances instances = loadDataset(dataset);
-            int numFolds = 30;
-            instances.stratify(numFolds);
-            Random random = new Random();
-            random.setSeed(numFolds); // todo is this correct?
-            Instances train = instances.trainCV(numFolds, foldIndex, random); // todo should we randomize first? or after? currently does it inside
-            Instances sampledTrain = sampleInstances(train);
+            int numFolds = 10;
+            Folds folds = new Folds.Builder(instances, numFolds)
+                .stratify(true)
+                .build();
+            Instances train = folds.getTrain(foldIndex);
+            Instances sampledTrain = sampleInstances(train, foldIndex, );
             nearestNeighbour.buildClassifier(sampledTrain);
-            ClassifierResults results = new ClassifierResults();
-            Instances test = instances.testCV(numFolds, foldIndex); // todo why the heck is this so small? Damn weka
-            for(Instance testInstance : test) {
-                results.storeSingleResult(testInstance.classValue(), nearestNeighbour.distributionForInstance(testInstance));
-            }
+            Instances test = folds.getTest(foldIndex);
+            ClassifierResults results = nearestNeighbour.predict(test);
+            System.out.println(results);
             BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
             writer.write(results.toString());
             writer.close();
@@ -93,7 +91,6 @@ public class Experiment implements Runnable {
     }
 
     private static Instances loadDataset(File datasetDir) throws IOException {
-//        File datasetDir = new File(datasetDirPath);
         File datasetFile = new File(datasetDir, datasetDir.getName() + ".arff");
         if(datasetFile.exists()) {
             return instancesFromFile(datasetFile);
