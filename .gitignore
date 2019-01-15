@@ -29,3 +29,10 @@ hs_err_pid*
 .gradle/
 build/
 gradle/
+
+# java compiled sources
+out/
+
+# results
+results/
+*.csv

@@ -176,6 +176,9 @@ public class Utilities {
         if(size <= 0) {
             throw new IllegalArgumentException();
         }
+        if(combination > size - 1) {
+            throw new IllegalArgumentException();
+        }
         int[] result = new int[bins.length];
         for(int index = 0; index < bins.length; index++) {
             int bin = bins[index];

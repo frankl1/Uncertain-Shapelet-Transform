@@ -9,6 +9,7 @@ import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ClassifierResults;
+import utilities.Utilities;
 import utilities.instances.Folds;
 import utilities.instances.TrainTestSplit;
 import weka.core.Instance;
@@ -24,8 +25,6 @@ public class Experiment implements Runnable {
     // todo param validation
     @Parameter(names={"--dataset", "-d"}, description="path to dataset arff", converter= FileConverter.class, required=true)
     private File dataset;
-    @Parameter(names={"--foldIndex", "-f"}, description="foldIndex for reproducibility", required=true)
-    private int foldIndex;
     @Parameter(names={"--combination", "-c"}, description="combination of parameters", required=true)
     private int combination;
     @Parameter(names={"--results", "-r"}, description="path to dataset arff", converter= FileConverter.class, required=true)
@@ -35,11 +34,6 @@ public class Experiment implements Runnable {
         Experiment experiment = new Experiment();
         new JCommander(experiment).parse(args);
         experiment.run();
-    }
-
-    @Override
-    public String toString() {
-        return dataset + "," + foldIndex;
     }
 
     private static Instances sampleInstances(Instances instances, long seed, double percentageTrain) {
@@ -59,28 +53,35 @@ public class Experiment implements Runnable {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println(gson.toJson(this));
         try {
+            int numDatasetFolds = 5;
+            int numResamples = 5;
+            int numPercentageIntervals = 5;
+            int[] parameters = Utilities.fromCombination(combination, numPercentageIntervals, numResamples, numDatasetFolds);
+            int datasetFoldIndex = parameters[2];
+            int resampleIndex = parameters[1];
+            int percentageIntervalIndex = parameters[0];
             String datasetName = dataset.getName();
             File datasetResultDir = new File(resultsDir, datasetName);
             datasetResultDir.mkdirs();
-            File resultsFile = new File(datasetResultDir, foldIndex + "_" + combination + ".csv");
+            File resultsFile = new File(datasetResultDir, combination + ".csv");
             if(resultsFile.exists()) {
                 throw new IllegalStateException("results exist");
             }
             DistanceMeasure distanceMeasure = new Dtw();
             NearestNeighbour nearestNeighbour = new NearestNeighbour();
-
-            nearestNeighbour.setSeed(foldIndex);
+            nearestNeighbour.setSeed(datasetFoldIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
             Instances instances = loadDataset(dataset);
-            int numFolds = 10;
-            Folds folds = new Folds.Builder(instances, numFolds)
+            Folds folds = new Folds.Builder(instances, numDatasetFolds)
                 .stratify(true)
                 .build();
-            Instances train = folds.getTrain(foldIndex);
-            Instances sampledTrain = sampleInstances(train, foldIndex, );
+            Instances train = folds.getTrain(datasetFoldIndex);
+            double percentageToSample = (double) percentageIntervalIndex / (numPercentageIntervals - 1);
+            Instances sampledTrain = sampleInstances(train, resampleIndex, percentageToSample);
             nearestNeighbour.buildClassifier(sampledTrain);
-            Instances test = folds.getTest(foldIndex);
+            Instances test = folds.getTest(datasetFoldIndex);
             ClassifierResults results = nearestNeighbour.predict(test);
+            results.findAllStatsOnce();
             System.out.println(results);
             BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
             writer.write(results.toString());

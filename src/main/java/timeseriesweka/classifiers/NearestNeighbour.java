@@ -3,15 +3,13 @@ package timeseriesweka.classifiers;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
-import weka.classifiers.AbstractClassifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
-public class NearestNeighbour implements Classifier, Contracted {
+public class NearestNeighbour implements Classifier {
 
     public NearestNeighbour() {}
 
@@ -27,10 +25,27 @@ public class NearestNeighbour implements Classifier, Contracted {
     }
 
     private DistanceMeasure distanceMeasure = new Dtw();
-    private final Random random = new Random();
+    private final Random random = new Random(); // generic random for tied breaks, etc
+    private final Random samplingRandom = new Random(); // random stream specifically for sampling - ensures sampling in same order
     private Map<Instance, Map<Instance, Double>> distanceCache = null;
     private String cacheName = "";
     private Long seed = null;
+    private double samplePercentage = 1;
+    private long trainTime = -1;
+
+    public double getSamplePercentage() {
+        return samplePercentage;
+    }
+
+    public void setSamplePercentage(double percentage) {
+        if(percentage < 0) {
+            throw new IllegalArgumentException(); // todo
+        } else if(percentage > 1) {
+            throw new IllegalArgumentException(); // todo
+        } else {
+            this.samplePercentage = percentage;
+        }
+    }
 
     public boolean isCachingDistances() {
         return distanceCache != null;
@@ -81,15 +96,23 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        this.trainInstances = trainInstances; // todo checks
-        setCacheName();
-        if(distanceCache != null) {
-            String datasetName = trainInstances.relationName();
-            if(!datasetName.equalsIgnoreCase(cacheName)) {
-                distanceCache.clear();
-                cacheName = datasetName;
-            }
+        long startTime = System.nanoTime();
+        trainInstances = new Instances(trainInstances);
+        this.trainInstances = new Instances(trainInstances, 0);
+        int sampleSize = (int) (trainInstances.numInstances() * samplePercentage);
+        for(int i = 0; i < sampleSize; i++) {
+            this.trainInstances.add(trainInstances.remove(samplingRandom.nextInt(trainInstances.size())));
         }
+        long stopTime = System.nanoTime();
+        trainTime = stopTime - startTime;
+//        setCacheName();
+//        if(distanceCache != null) {
+//            String datasetName = trainInstances.relationName();
+//            if(!datasetName.equalsIgnoreCase(cacheName)) {
+//                distanceCache.clear();
+//                cacheName = datasetName;
+//            }
+//        }
     }
 
     @Override
@@ -216,14 +239,16 @@ public class NearestNeighbour implements Classifier, Contracted {
         ClassifierResults results = new ClassifierResults();
         results.setNumClasses(testInstances.numClasses());
         results.setNumInstances(testInstances.numInstances());
+        results.setTrainTime(trainTime);
         long startTime = System.nanoTime();
         for(Instance testInstance : testInstances) {
             results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
         }
         long stopTime = System.nanoTime();
         results.setName(toString());
-        results.setParas(getParameters() + ",testTime=" + (stopTime - startTime));
-        results.findAllStatsOnce();
+        results.setParas(getParameters());
+        results.setTrainTime(trainTime);
+        results.setTestTime(stopTime - startTime);
         return results;
     }
 
@@ -247,44 +272,10 @@ public class NearestNeighbour implements Classifier, Contracted {
     @Override
     public void setSeed(long seed) {
         random.setSeed(seed);
+        samplingRandom.setSeed(seed);
         this.seed = seed;
     }
 
-    public static void main(String[] args) {
-        NearestNeighbour nearestNeighbour = new NearestNeighbour();
-        nearestNeighbour.cacheDistances(true);
-        nearestNeighbour.setSeed(4);
-        Instances instances = ClassifierTools.loadData("TSCProblems2018/Coffee");
-        CrossValidator crossValidator = new CrossValidator();
-//        crossValidator.crossValidateWithStats(nearestNeighbour, )
-    }
-
-    private long trainContract = -1;
-    private long testContract = -1;
-
-    @Override
-    public void setTrainContract(final long nanoseconds) {
-        trainContract = nanoseconds;
-    }
-
-    @Override
-    public long getTrainContract() {
-        return trainContract;
-    }
-
-    @Override
-    public void setTestContract(final long nanoseconds) {
-        testContract = nanoseconds;
-    }
-
-    @Override
-    public long getTestContract() {
-        return testContract;
-    }
-
-
-
-    @Override
     public double[][] distributionForInstances(final Instances testInstances) throws Exception {
         double[][] distributions = new double[testInstances.numInstances()][];
         for(int i = 0; i < distributions.length; i++) {
@@ -295,6 +286,11 @@ public class NearestNeighbour implements Classifier, Contracted {
             distributions[i] = distributionForInstance(testInstance);
         }
         return distributions;
+    }
+
+    @Override
+    public String getParameters() {
+        return "samplePercentage=" + samplePercentage + ",k=" + k;
     }
 
     @Override
@@ -310,10 +306,5 @@ public class NearestNeighbour implements Classifier, Contracted {
     @Override
     public void setTimeLimit(final long time) {
 
-    }
-
-    @Override
-    public String getParameters() {
-        return null;
     }
 }

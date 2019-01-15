@@ -56,6 +56,26 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     private boolean finalised = false;
     private boolean allStatsFound = false;
+
+    public long getTrainTime() {
+        return trainTime;
+    }
+
+    public void setTrainTime(final long trainTime) {
+        this.trainTime = trainTime;
+    }
+
+    private long trainTime = -1;
+
+    public long getTestTime() {
+        return testTime;
+    }
+
+    public void setTestTime(final long testTime) {
+        this.testTime = testTime;
+    }
+
+    private long testTime = -1;
     
     public ClassifierResults() {
         actualClassValues= new ArrayList<>();
@@ -292,7 +312,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
    public String writeResultsFileToString() {
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
-        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("\n");
+        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("trainTime").append(",").append("testTime").append(testTime).append("\n");
         st.append(acc).append("\n");
   
         st.append(writeInstancePredictions());
