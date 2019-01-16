@@ -165,9 +165,9 @@ public class Utilities {
 
     // todo cleanup
 
-    public static int[] fromCombination(int combination, int... bins) {
+    public static int[] fromCombination(int combination, int... binSizes) {
         int size = 1;
-        for(int bin : bins) {
+        for(int bin : binSizes) {
             size *= bin;
             if(bin <= 0) {
                 throw new IllegalArgumentException();
@@ -179,11 +179,11 @@ public class Utilities {
         if(combination > size - 1) {
             throw new IllegalArgumentException();
         }
-        int[] result = new int[bins.length];
-        for(int index = 0; index < bins.length; index++) {
-            int bin = bins[index];
-            result[index] = combination % bin;
-            combination /= bin;
+        int[] result = new int[binSizes.length];
+        for(int index = 0; index < binSizes.length; index++) {
+            int binSize = binSizes[index];
+            result[index] = combination % binSize;
+            combination /= binSize;
         }
         return result;
     }
@@ -193,8 +193,11 @@ public class Utilities {
             throw new IllegalArgumentException("incorrect number of args, must be index followed by bin size");
         }
         int combination = 0;
-        for(int i = 0; i < indices.length / 2; i++) {
-            combination += indices[i * 2] * Math.pow(indices[i * 2 + 1], i);
+        for(int i = indices.length / 2 - 1; i >= 0; i--) {
+            int binSize = indices[i * 2 + 1];
+            int value = indices[i * 2];
+            combination *= binSize;
+            combination += value;
         }
         return combination;
     }

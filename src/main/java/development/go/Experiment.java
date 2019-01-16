@@ -23,16 +23,16 @@ public class Experiment implements Runnable {
     // todo param validation
     @Parameter(names={"-d"}, description="path to dataset arff", converter= FileConverter.class, required=true)
     private File dataset;
-    @Parameter(names={"-c"}, description="combination of parameters", required=true)
-    private int combination;
     @Parameter(names={"-r"}, description="path to dataset dir containing arffs", converter= FileConverter.class, required=true)
     private File globalResultsDir;
-    @Parameter(names={"-f"}, description="number of dataset folds", required=true)
+    @Parameter(names={"-f"}, description="fold index", required=true)
+    private int foldIndex;
+    @Parameter(names={"-n"}, description="number of folds", required=true)
     private int numFolds;
-    @Parameter(names={"-p"}, description="number of percentage intervals of train instances to sample", required=true)
-    private int numPercentageIntervals;
-    @Parameter(names={"-s"}, description="number of resamples", required=true)
-    private int numResamples;
+    @Parameter(names={"-p"}, description="percentage of train to use", required=true)
+    private double samplePercentage;
+    @Parameter(names={"-s"}, description="sample index", required=true)
+    private int sampleIndex;
 
     public static void main(String[] args) {
         Experiment experiment = new Experiment();
@@ -40,29 +40,20 @@ public class Experiment implements Runnable {
         experiment.run();
     }
 
-    private static Instances sampleInstances(Instances instances, long seed, double percentageTrain) {
-        Random random = new Random();
-        random.setSeed(seed);
-        Instances sampled = new Instances(instances, 0);
-        int numToSample = (int) Math.floor(percentageTrain * instances.numInstances());
-        for(int i = 0; i < numToSample; i++) {
-            sampled.add(instances.remove(random.nextInt(instances.numInstances())));
-        }
-        return sampled;
-    }
-
     @Override
     public void run() {
 
-        for(int i = 0; i < 88; i++) {
-            int[] parameters = Utilities.fromCombination(i, 5, 5, 5);
-            for(int j : parameters) {
-                System.out.print(j);
-                System.out.print(", ");
-            }
-            System.out.println();
-        }
-        System.exit(0);
+//        for(int i = 0; i < 32; i++) {
+//            int[] parameters = Utilities.fromCombination(i, 3, 4, 5);
+//            for(int j : parameters) {
+//                System.out.print(j);
+//                System.out.print(", ");
+//            }
+//            System.out.println();
+//        }
+//        System.out.println();
+//        System.out.println(Utilities.toCombination(1, 3, 2, 4, 2, 5));
+//        System.exit(0);
 
         System.out.println("Configuration:");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -72,41 +63,24 @@ public class Experiment implements Runnable {
             // setup results file
             NearestNeighbour nearestNeighbour = new NearestNeighbour();
             String datasetName = dataset.getName();
-            File experimentResultDir = new File(globalResultsDir, datasetName + "/" + nearestNeighbour.toString() + "/Predictions");
+            File experimentResultDir = new File(globalResultsDir, datasetName);
             experimentResultDir.mkdirs();
-            File resultsFile = new File(experimentResultDir, combination + ".csv");
+            File resultsFile = new File(experimentResultDir, "f" + foldIndex + "_s" + sampleIndex + "_p" + samplePercentage + ".csv");
             if(resultsFile.exists()) {
                 throw new IllegalStateException("results exist");
             }
-            // setup experiment parameters
-            int[] parameters = Utilities.fromCombination(combination, numPercentageIntervals, numResamples, numFolds);
-            int datasetFoldIndex = parameters[2];
-            int resampleIndex = parameters[1];
-            int percentageIntervalIndex = parameters[0];
-//            DistanceMeasure[] distanceMeasures = new DistanceMeasure[] {
-//                    new Dtw(),
-//                    new Ddtw(),
-//                    new Msm(),
-//                    new Wdtw(),
-//                    new Wddtw(),
-//                    new Erp(),
-//                    new Lcss(),
-//                    new Twe(),
-//                    new Euclidean()
-//            };
             // setup experiment
             DistanceMeasure distanceMeasure = new Dtw();
-            nearestNeighbour.setSeed(resampleIndex);
+            nearestNeighbour.setSeed(sampleIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
             Instances instances = loadDataset(dataset);
             Folds folds = new Folds.Builder(instances, numFolds)
                 .stratify(true)
                 .build();
-            Instances train = folds.getTrain(datasetFoldIndex);
-            double percentageToSample = (double) percentageIntervalIndex / (numPercentageIntervals - 1);
-            nearestNeighbour.setSamplePercentage(percentageToSample);
+            Instances train = folds.getTrain(foldIndex);
+            nearestNeighbour.setSamplePercentage(samplePercentage);
             nearestNeighbour.buildClassifier(train);
-            Instances test = folds.getTest(datasetFoldIndex);
+            Instances test = folds.getTest(foldIndex);
             ClassifierResults results = nearestNeighbour.predict(test);
             results.findAllStatsOnce();
             System.out.println(results);
