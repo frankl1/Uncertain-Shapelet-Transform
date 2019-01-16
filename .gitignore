@@ -36,3 +36,5 @@ out/
 # results
 results/
 *.csv
+*.txt
+*.arff

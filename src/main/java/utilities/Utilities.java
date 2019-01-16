@@ -188,6 +188,17 @@ public class Utilities {
         return result;
     }
 
+    public static int toCombination(int... indices) {
+        if(indices.length % 2 != 0) {
+            throw new IllegalArgumentException("incorrect number of args, must be index followed by bin size");
+        }
+        int combination = 0;
+        for(int i = 0; i < indices.length / 2; i++) {
+            combination += indices[i * 2] * Math.pow(indices[i * 2 + 1], i);
+        }
+        return combination;
+    }
+
     public static void main(String[] args) {
         for(int i = 0; i < 48; i++) {
             int[] result = fromCombination(i, 4, 3, 4);
