@@ -73,6 +73,7 @@ public class Experiment implements Runnable {
             DistanceMeasure distanceMeasure = new Dtw();
             nearestNeighbour.setSeed(sampleIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
+            nearestNeighbour.setStratifiedSample(true);
             Instances instances = loadDataset(dataset);
             Folds folds = new Folds.Builder(instances, numFolds)
                 .stratify(true)

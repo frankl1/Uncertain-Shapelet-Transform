@@ -31,7 +31,7 @@ public class ExperimentAnalysis {
                     results.balancedAcc = 0;
                 }
                 statOverPercentage.compute(percentage, (key, previous) -> {
-                    double stat = results.balancedAcc;
+                    double stat = results.getTrainTime();//balancedAcc;
                     if(previous != null) {
                         stat += previous;
                     }
