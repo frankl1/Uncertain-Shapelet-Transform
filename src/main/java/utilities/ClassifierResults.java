@@ -2,13 +2,9 @@ package utilities;
 
 import fileIO.InFile;
 import fileIO.OutFile;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Scanner;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * This class has morphed over time. At it's base form, it's a simple container class for the 
@@ -312,7 +308,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
    public String writeResultsFileToString() {
         StringBuilder st = new StringBuilder();
         st.append(name).append("\n");
-        st.append("BuildTime,").append(buildTime).append(",").append(paras).append("trainTime").append(",").append("testTime").append(testTime).append("\n");
+        st.append("BuildTime,").append(buildTime).append(",trainTime,").append(trainTime).append(",testTime,").append(testTime).append(",benchmark,").append(benchmark).append(",").append(paras).append("\n");
         st.append(acc).append("\n");
   
         st.append(writeInstancePredictions());
@@ -323,6 +319,8 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public String toString() {
         return writeResultsFileToString();
     }
+
+
 
     public void loadFromFile(String path) throws FileNotFoundException{
         File f=new File(path);
@@ -336,14 +334,34 @@ public class ClassifierResults implements DebugPrinting, Serializable{
             //handle buildtime, taking it out of the generic paras string and putting 
             //the value into the actual field
             String[] parts = paras.split(",");
-            if (parts.length > 0 && parts[0].contains("BuildTime")) {
-                buildTime = (long)Double.parseDouble(parts[1].trim());
-                 if (parts.length > 2) { //actual paras too, rebuild this string without buildtime
-                     paras = parts[2];
-                     for (int i = 3; i < parts.length; i++) {
-                         paras += "," + parts[i];
-                     }
-                 }
+            if (parts.length > 0) {
+                int index = 0;
+                if(parts[index].contains("BuildTime")) {
+                    index++;
+                    buildTime = (long)Double.parseDouble(parts[index].trim());
+                    index++;
+                }
+                if(parts[index].equalsIgnoreCase("trainTime")) {
+                    index++;
+                    trainTime = Long.parseLong(parts[index].trim());
+                    index++;
+                }
+                if(parts[index].equalsIgnoreCase("testTime")) {
+                    index++;
+                    testTime = Long.parseLong(parts[index].trim());
+                    index++;
+                }
+                if(parts[index].equalsIgnoreCase("benchmark")) {
+                    index++;
+                    benchmark = Long.parseLong(parts[index].trim());
+                    index++;
+                }
+                StringBuilder params = new StringBuilder();
+                for (; index < parts.length - 1; index++) {
+                    params.append(parts[index]).append(",");
+                }
+                params.append(parts[index]);
+                paras = params.toString();
             }
 
             double testAcc=Double.parseDouble(inf.nextLine());
@@ -703,17 +721,52 @@ base xi+1 to xi , that is, A
    
     boolean hasInstanceData(){ return numInstances()!=0;}
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public void benchmark() {
+        Random random = new Random();
+        List<Long> times = new ArrayList<>();
+        for(int i = 0; i < 101; i++) { // + 1 for div 2 later
+            random.setSeed(0);
+            List<Integer> list = new ArrayList<>();
+            for(int j = 0; j < 1000000; j++) {
+                list.add(random.nextInt());
+            }
+            long startTime = System.nanoTime();
+            Collections.sort(list);
+            long endTime = System.nanoTime();
+            times.add(endTime - startTime);
+        }
+        Collections.sort(times);
+        benchmark = times.get(times.size() / 2);
+    }
+
+    private long benchmark = -1;
+
+    public static void main(String[] args) throws IOException {
         
-        String path="C:\\JamesLPHD\\testFold1.csv";
-//        String path="C:\\JamesLPHD\\testFold0.csv";
-//        String path="C:/JamesLPHD/TwoClass.csv";
-        ClassifierResults cr= new ClassifierResults();
-        cr.loadFromFile(path);
-        cr.findAllStats();
-        System.out.println("AUROC = "+cr.meanAUROC);
-        System.out.println("FILE TEST =\n"+cr.writeAllStats());
-        OutFile out=new OutFile("C:\\JamesLPHD\\testFold1stats.csv");
-        out.writeLine(cr.writeAllStats());
+//        String path="C:\\JamesLPHD\\testFold1.csv";
+////        String path="C:\\JamesLPHD\\testFold0.csv";
+////        String path="C:/JamesLPHD/TwoClass.csv";
+//        ClassifierResults cr= new ClassifierResults();
+//        cr.loadFromFile(path);
+//        cr.findAllStats();
+//        System.out.println("AUROC = "+cr.meanAUROC);
+//        System.out.println("FILE TEST =\n"+cr.writeAllStats());
+//        OutFile out=new OutFile("C:\\JamesLPHD\\testFold1stats.csv");
+//        out.writeLine(cr.writeAllStats());
+        ClassifierResults classifierResults = new ClassifierResults();
+        classifierResults.setParas("abc,1,def,2");
+        classifierResults.setTrainTime(20);
+        classifierResults.setTestTime(30);
+        classifierResults.benchmark();
+        classifierResults.storeSingleResult(1, new double[] {1, 2, 3});
+        BufferedWriter writer = new BufferedWriter(new FileWriter("test.txt"));
+        writer.write(classifierResults.writeResultsFileToString());
+        writer.close();
+        ClassifierResults readIn = new ClassifierResults();
+        readIn.loadFromFile("test.txt");
+        System.out.println(readIn);
+//        ClassifierResults results = new ClassifierResults();
+//        results.benchmark();
+//        System.out.println(results.benchmark);
     }
 }
