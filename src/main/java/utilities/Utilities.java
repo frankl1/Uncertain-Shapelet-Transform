@@ -1,6 +1,7 @@
 package utilities;
 
 import weka.core.Instance;
+import weka.core.Instances;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -211,6 +212,17 @@ public class Utilities {
             }
             System.out.println();
         }
+    }
+
+    public static Instances[] instancesByClass(Instances instances) {
+        Instances[] instancesByClass = new Instances[instances.numClasses()];
+        for(int i = 0; i < instancesByClass.length; i++) {
+            instancesByClass[i] = new Instances(instances, 0);
+        }
+        for(Instance instance : instances) {
+            instancesByClass[(int) instance.classValue()].add(instance);
+        }
+        return instancesByClass;
     }
 
 }

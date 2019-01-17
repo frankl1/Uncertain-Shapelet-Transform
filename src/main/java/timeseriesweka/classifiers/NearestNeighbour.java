@@ -33,6 +33,16 @@ public class NearestNeighbour implements Classifier {
     private double samplePercentage = 1;
     private long trainTime = -1;
 
+    public boolean isStratifiedSample() {
+        return stratifiedSample;
+    }
+
+    public void setStratifiedSample(final boolean stratifiedSample) {
+        this.stratifiedSample = stratifiedSample;
+    }
+
+    private boolean stratifiedSample = true;
+
     public double getSamplePercentage() {
         return samplePercentage;
     }
@@ -99,20 +109,33 @@ public class NearestNeighbour implements Classifier {
         long startTime = System.nanoTime();
         trainInstances = new Instances(trainInstances);
         this.trainInstances = new Instances(trainInstances, 0);
-        int sampleSize = (int) (trainInstances.numInstances() * samplePercentage);
-        for(int i = 0; i < sampleSize; i++) {
-            this.trainInstances.add(trainInstances.remove(samplingRandom.nextInt(trainInstances.size())));
+        int overallSampleSize = (int) (trainInstances.numInstances() * samplePercentage);
+        if(stratifiedSample) {
+            Instances[] instancesByClass = Utilities.instancesByClass(trainInstances);
+            for(int i = 0; i < instancesByClass.length; i++) {
+                Instances homogeneousInstances = instancesByClass[i];
+                int sampleSize = (int) (homogeneousInstances.numInstances() * samplePercentage);
+                for(int j = 0; j < sampleSize; j++) {
+                    this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
+                }
+            }
+            List<Integer> classIndices = new ArrayList<>();
+            for(int i = 0; i < instancesByClass.length; i++) {
+                classIndices.add(i);
+            }
+            Collections.shuffle(classIndices, samplingRandom);
+            int overflow = overallSampleSize - this.trainInstances.numInstances();
+            for(int i = 0; i < overflow; i++) {
+                Instances homogeneousInstances = instancesByClass[classIndices.remove(0)];
+                this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
+            }
+        } else {
+            for(int i = 0; i < overallSampleSize; i++) {
+                this.trainInstances.add(trainInstances.remove(samplingRandom.nextInt(trainInstances.numInstances())));
+            }
         }
         long stopTime = System.nanoTime();
         trainTime = stopTime - startTime;
-//        setCacheName();
-//        if(distanceCache != null) {
-//            String datasetName = trainInstances.relationName();
-//            if(!datasetName.equalsIgnoreCase(cacheName)) {
-//                distanceCache.clear();
-//                cacheName = datasetName;
-//            }
-//        }
     }
 
     @Override
@@ -290,7 +313,7 @@ public class NearestNeighbour implements Classifier {
 
     @Override
     public String getParameters() {
-        return "samplePercentage=" + samplePercentage + ",k=" + k;
+        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample;
     }
 
     @Override
