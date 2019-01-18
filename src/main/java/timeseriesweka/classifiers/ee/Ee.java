@@ -193,10 +193,10 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
             double stdDev = ArrayUtilities.populationStandardDeviation(instances);
             ErpConstituent erpConstituent = new ErpConstituent();
             ValueRange<Double> warpingWindowValueRange = erpConstituent.getWarpingWindowValueRange();
-            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 0.25));
+            warpingWindowValueRange.setIndexedSupplier(new LinearInterpolater(0, 0.25));
             warpingWindowValueRange.getRange().add(0, 9);
             ValueRange<Double> penaltyValueRange = erpConstituent.getPenaltyValueRange();
-            penaltyValueRange.setIndexed(new LinearInterpolater(0.2 * stdDev, stdDev));
+            penaltyValueRange.setIndexedSupplier(new LinearInterpolater(0.2 * stdDev, stdDev));
             penaltyValueRange.getRange().add(0, 9);
             return erpConstituent;
         };
@@ -207,10 +207,10 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
             double stdDev = ArrayUtilities.populationStandardDeviation(instances);
             LcssConstituent lcssConstituent = new LcssConstituent();
             ValueRange<Double> warpingWindowValueRange = lcssConstituent.getWarpingWindowValueRange();
-            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, (double) (instances.numAttributes() - 1) / 4));
+            warpingWindowValueRange.setIndexedSupplier(new LinearInterpolater(0, (double) (instances.numAttributes() - 1) / 4));
             warpingWindowValueRange.getRange().add(0, 9);
             ValueRange<Double> toleranceValueRange = lcssConstituent.getToleranceValueRange();
-            toleranceValueRange.setIndexed(new LinearInterpolater(0.2 * stdDev, stdDev));
+            toleranceValueRange.setIndexedSupplier(new LinearInterpolater(0.2 * stdDev, stdDev));
             toleranceValueRange.getRange().add(0, 9);
             return lcssConstituent;
         };
@@ -323,7 +323,7 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
                 96.4,
                 100.0// </editor-fold>
             };
-            toleranceValueRange.setIndexed(new ElementObtainer<>(Arrays.asList(costs)));
+            toleranceValueRange.setIndexedSupplier(new ElementObtainer<>(Arrays.asList(costs)));
             toleranceValueRange.getRange().add(0, costs.length - 1);
             return msmConstituent;
         };
@@ -333,10 +333,10 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
         return instances -> {
             TweConstituent tweConstitent = new TweConstituent();
             ValueRange<Double> warpingWindowValueRange = tweConstitent.getNuValueRange();
-            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 9));
+            warpingWindowValueRange.setIndexedSupplier(new LinearInterpolater(0, 9));
             warpingWindowValueRange.getRange().add(0, 9);
             ValueRange<Double> lambdaValueRange = tweConstitent.getLambdaValueRange();
-            lambdaValueRange.setIndexed(new LinearInterpolater(0, 9));
+            lambdaValueRange.setIndexedSupplier(new LinearInterpolater(0, 9));
             lambdaValueRange.getRange().add(0, 9);
             return tweConstitent;
         };
@@ -346,7 +346,7 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
         return instances -> {
             WdtwConstituent wdtwConstitent = new WdtwConstituent();
             ValueRange<Double> warpingWindowValueRange = wdtwConstitent.getWeightValueRange();
-            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 99));
+            warpingWindowValueRange.setIndexedSupplier(new LinearInterpolater(0, 99));
             warpingWindowValueRange.getRange().add(0, 99);
             return wdtwConstitent;
         };
@@ -356,7 +356,7 @@ public class Ee implements Classifier, Reproducible, CheckpointClassifier, Contr
         return instances -> {
             WddtwConstituent wddtwConstitent = new WddtwConstituent();
             ValueRange<Double> warpingWindowValueRange = wddtwConstitent.getWeightValueRange();
-            warpingWindowValueRange.setIndexed(new LinearInterpolater(0, 99));
+            warpingWindowValueRange.setIndexedSupplier(new LinearInterpolater(0, 99));
             warpingWindowValueRange.getRange().add(0, 99);
             return wddtwConstitent;
         };

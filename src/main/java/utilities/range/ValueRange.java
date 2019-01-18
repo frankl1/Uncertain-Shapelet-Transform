@@ -1,12 +1,14 @@
 package utilities.range;
 
-import timeseriesweka.classifiers.ee.index.Indexed;
+import timeseriesweka.classifiers.ee.index.IndexedSupplier;
 
-public class ValueRange<A> implements Indexed<A> {
-    private Indexed<A> indexed;
+public class ValueRange<A> implements IndexedSupplier<A> {
 
-    public void setIndexed(final Indexed<A> indexed) {
-        this.indexed = indexed;
+    private IndexedSupplier<? extends A> indexedSupplier;
+
+    public void setIndexedSupplier(final IndexedSupplier<? extends A> indexedSupplier) {
+        this.indexedSupplier = indexedSupplier;
+        reset();
     }
 
     public void setRange(final Range range) {
@@ -15,13 +17,27 @@ public class ValueRange<A> implements Indexed<A> {
 
     private Range range;
 
-    public ValueRange(Indexed<A> indexed, Range range) {
-        this.indexed = indexed;
+    public ValueRange(IndexedSupplier<? extends A> indexedSupplier, Range range) {
+        this.indexedSupplier = indexedSupplier;
         this.range = range;
     }
 
-    public Indexed<A> getIndexed() {
-        return indexed;
+    public ValueRange() {
+        this(new IndexedSupplier<A>() {
+            @Override
+            public int size() {
+                return 0;
+            }
+
+            @Override
+            public A get(final int index) {
+                return null;
+            }
+        }, new Range());
+    }
+
+    public IndexedSupplier<? extends A> getIndexedSupplier() {
+        return indexedSupplier;
     }
 
     public Range getRange() {
@@ -35,11 +51,15 @@ public class ValueRange<A> implements Indexed<A> {
 
     public void reset() {
         range.clear();
-        range.add(0, indexed.size() - 1);
+        range.add(0, indexedSupplier.size() - 1);
     }
 
     @Override
     public A get(final int index) {
-        return indexed.get(range.get(index));
+        return indexedSupplier.get(range.get(index));
+    }
+
+    public <B extends A> Integer get(final B subject) {
+        throw new UnsupportedOperationException();
     }
 }

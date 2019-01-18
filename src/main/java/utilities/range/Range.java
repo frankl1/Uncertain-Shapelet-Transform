@@ -1,11 +1,11 @@
 package utilities.range;
 
-import timeseriesweka.classifiers.ee.index.Indexed;
+import timeseriesweka.classifiers.ee.index.IndexedSupplier;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Range implements Indexed<Integer> {
+public class Range implements IndexedSupplier<Integer> {
 
     public void add(final Range range) {
         for(FixedRange fixedRange : range.ranges) {

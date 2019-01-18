@@ -1,12 +1,12 @@
 package timeseriesweka.classifiers.ee.index;
 
-public abstract class IndexedObtainer<A> implements Indexed<A> {
+public abstract class IndexedSupplierObtainer<A> implements IndexedSupplier<A> {
 
-    public IndexedObtainer() {
+    public IndexedSupplierObtainer() {
         this(0);
     }
 
-    public IndexedObtainer(int size) {
+    public IndexedSupplierObtainer(int size) {
         this.size = size;
     }
 
