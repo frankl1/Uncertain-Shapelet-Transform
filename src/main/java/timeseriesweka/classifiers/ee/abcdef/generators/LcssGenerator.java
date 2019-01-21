@@ -26,13 +26,20 @@ public class LcssGenerator extends NnGenerator {
 
     public LcssGenerator() {
         List<Indexed> parameters = getParameters().getIndexeds();
-        parameters.add(warpingWindowMutator);
         parameters.add(costMutator);
+        parameters.add(warpingWindowMutator);
     }
 
     @Override
     protected DistanceMeasure getDistanceMeasure() {
         distanceMeasureBox.setContents(new Lcss());
         return distanceMeasureBox.getContents();
+    }
+
+    @Override
+    public void setParameterRanges(final Instances instances) {
+        double pStdDev = StatisticUtilities.populationStandardDeviation(instances);
+        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 0.25, 10));
+        costParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0.2 * pStdDev, pStdDev, 10));
     }
 }

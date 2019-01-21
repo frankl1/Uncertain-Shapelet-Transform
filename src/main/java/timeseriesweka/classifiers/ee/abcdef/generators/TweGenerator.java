@@ -3,10 +3,13 @@ package timeseriesweka.classifiers.ee.abcdef.generators;
 import timeseriesweka.classifiers.ee.abcdef.Indexed;
 import timeseriesweka.classifiers.ee.abcdef.IndexedMutator;
 import timeseriesweka.classifiers.ee.abcdef.TargetedMutator;
+import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.twe.Twe;
 import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.Box;
+import utilities.StatisticUtilities;
+import weka.core.Instances;
 
 import java.util.List;
 
@@ -27,5 +30,11 @@ public class TweGenerator extends NnGenerator {
     protected DistanceMeasure getDistanceMeasure() {
         distanceMeasureBox.setContents(new Twe());
         return distanceMeasureBox.getContents();
+    }
+
+    @Override
+    public void setParameterRanges(final Instances instances) {
+        nuParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 9, 10));
+        lambdaParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 9, 10));
     }
 }

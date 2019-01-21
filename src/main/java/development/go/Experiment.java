@@ -119,17 +119,18 @@ public class Experiment {
                 .build();
             for(int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
                 for(int foldIndex = 0; foldIndex < numFolds; foldIndex++) {
+                    Instances trainInstances = folds.getTrain(foldIndex);
+                    nnGenerator.setParameterRanges(trainInstances);
                     NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
+                    nearestNeighbour.setSamplePercentage(samplePercentage);
+                    nearestNeighbour.setSeed(sampleIndex);
                     String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",p=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage + ",d=" + stratifiedSample + ".csv";
                     File resultsFile = new File(resultsFileName);
                     if(resultsFile.exists()) {
                         continue;
                     }
-                    nearestNeighbour.setSamplePercentage(samplePercentage);
-                    nearestNeighbour.setSeed(sampleIndex);
-                    Instances trainInstances = folds.getTrain(foldIndex);
-                    Instances testInstances = folds.getTest(foldIndex);
                     nearestNeighbour.buildClassifier(trainInstances);
+                    Instances testInstances = folds.getTest(foldIndex);
                     ClassifierResults results = nearestNeighbour.predict(testInstances);
                     results.findAllStatsOnce();
                     results.setBenchmark(benchmark);

@@ -6,10 +6,12 @@ import timeseriesweka.classifiers.ee.abcdef.Indexed;
 import timeseriesweka.classifiers.ee.abcdef.IndexedMutator;
 import timeseriesweka.classifiers.ee.abcdef.TargetedMutator;
 import timeseriesweka.classifiers.ee.index.IndexedSupplier;
+import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.ddtw.Ddtw;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.Box;
+import weka.core.Instances;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +33,11 @@ public class DtwGenerator extends NnGenerator {
     protected DistanceMeasure getDistanceMeasure() {
         distanceMeasureBox.setContents(new Dtw());
         return distanceMeasureBox.getContents();
+    }
+
+    @Override
+    public void setParameterRanges(final Instances instances) {
+        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 1, 100));
     }
 
 }

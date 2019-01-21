@@ -7,6 +7,7 @@ import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.euclidean.Euclidean;
 import timeseriesweka.measures.wdtw.Wdtw;
+import weka.core.Instances;
 
 import java.util.List;
 
@@ -15,5 +16,10 @@ public class EuclideanGenerator extends NnGenerator {
     @Override
     protected DistanceMeasure getDistanceMeasure() {
         return new Euclidean();
+    }
+
+    @Override
+    public void setParameterRanges(final Instances instances) {
+
     }
 }

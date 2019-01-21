@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ee.abcdef;
 
 import timeseriesweka.classifiers.ee.index.CombinedIndexConsumer;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,4 +50,5 @@ public class CombinedIndexed implements Indexed {
         }
         return overallSize;
     }
+
 }

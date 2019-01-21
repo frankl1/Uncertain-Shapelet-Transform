@@ -37,4 +37,6 @@ public abstract class NnGenerator implements IndexedSupplier<NearestNeighbour> {
     }
 
     protected abstract DistanceMeasure getDistanceMeasure();
+
+    public abstract void setParameterRanges(Instances instances);
 }
