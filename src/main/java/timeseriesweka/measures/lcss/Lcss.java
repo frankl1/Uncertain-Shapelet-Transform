@@ -1,8 +1,32 @@
 package timeseriesweka.measures.lcss;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Lcss extends DistanceMeasure {
+
+    public static final Mutable<Lcss, Double> WARPING_WINDOW_MUTABLE = new Mutable<Lcss, Double>() {
+        @Override
+        public <C extends Lcss, D extends Double> void setValue(final C subject, final D value) {
+            subject.setWarpingWindow(value);
+        }
+
+        @Override
+        public <C extends Lcss> Double getValue(final C subject) {
+            return subject.getWarpingWindow();
+        }
+    };
+    public static final Mutable<Lcss, Double> COST_MUTABLE = new Mutable<Lcss, Double>() {
+        @Override
+        public <C extends Lcss, D extends Double> void setValue(final C subject, final D value) {
+            subject.setTolerance(value);
+        }
+
+        @Override
+        public <C extends Lcss> Double getValue(final C subject) {
+            return subject.getTolerance();
+        }
+    };
 
     public Lcss(double epsilon, int delta) {
         this.tolerance = epsilon;

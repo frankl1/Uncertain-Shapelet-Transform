@@ -1,5 +1,7 @@
 package timeseriesweka.classifiers.ee.abcdef;
 
+import timeseriesweka.classifiers.ee.index.CombinedIndexConsumer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,12 +13,16 @@ public class CombinedIndexed implements Indexed {
         this.indexeds.addAll(indexeds);
     }
 
-    public List<Indexed> getAttachedIndexeds() {
+    public CombinedIndexed() {
+
+    }
+
+    public List<Indexed> getIndexeds() {
         return indexeds;
     }
 
     @Override
-    public <D extends Integer> void setValueAt(final D combination) {
+    public void setValueAt(final Integer combination) {
         int combo = combination;
         for(int i = 0; i < indexeds.size(); i++) {
             Indexed indexedMutator = indexeds.get(i);

@@ -14,7 +14,6 @@ import utilities.instances.Folds;
 import weka.core.Instances;
 
 import java.io.*;
-import java.util.Random;
 
 public class Experiment implements Runnable {
 
@@ -74,7 +73,7 @@ public class Experiment implements Runnable {
             nearestNeighbour.setSeed(sampleIndex);
             nearestNeighbour.setDistanceMeasure(distanceMeasure);
             nearestNeighbour.setStratifiedSample(true);
-            Instances instances = loadDataset(dataset);
+            Instances instances = Utilities.loadDataset(dataset);
             Folds folds = new Folds.Builder(instances, numFolds)
                 .stratify(true)
                 .build();
@@ -93,28 +92,4 @@ public class Experiment implements Runnable {
         }
     }
 
-    private static Instances loadDataset(File datasetDir) throws IOException {
-        File datasetFile = new File(datasetDir, datasetDir.getName() + ".arff");
-        if(datasetFile.exists()) {
-            return instancesFromFile(datasetFile);
-        }
-        datasetFile = new File(datasetDir, datasetDir.getName() + "_TRAIN.arff");
-        File testDatasetFile = new File(datasetDir, datasetDir.getName() + "_TEST.arff");
-        if(datasetFile.exists() && testDatasetFile.exists()) {
-            Instances instances = instancesFromFile(datasetFile);
-            instances.addAll(instancesFromFile(testDatasetFile));
-            return instances;
-        }
-        throw new IllegalArgumentException();
-    }
-
-    private static Instances instancesFromFile(File file) throws IOException {
-        Instances instances = new Instances(new BufferedReader(new FileReader(file)));
-        instances.setClassIndex(instances.numAttributes() - 1);
-        return instances;
-    }
-
-    private static Instances instancesFromFile(String path) throws IOException {
-        return instancesFromFile(new File(path));
-    }
 }

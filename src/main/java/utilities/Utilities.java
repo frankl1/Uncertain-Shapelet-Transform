@@ -3,6 +3,11 @@ package utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+
 public class Utilities {
     public static final int size(double[][] matrix) {
         int population = 0;
@@ -225,4 +230,32 @@ public class Utilities {
         return instancesByClass;
     }
 
+    public static Instances loadDataset(File datasetDir) throws IOException {
+        File datasetFile = new File(datasetDir, datasetDir.getName() + ".arff");
+        if(datasetFile.exists()) {
+            return instancesFromFile(datasetFile);
+        }
+        datasetFile = new File(datasetDir, datasetDir.getName() + "_TRAIN.arff");
+        File testDatasetFile = new File(datasetDir, datasetDir.getName() + "_TEST.arff");
+        if(datasetFile.exists() && testDatasetFile.exists()) {
+            Instances instances = instancesFromFile(datasetFile);
+            instances.addAll(instancesFromFile(testDatasetFile));
+            return instances;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static Instances loadDataset(String datasetDir) throws IOException {
+        return loadDataset(new File(datasetDir));
+    }
+
+    public static Instances instancesFromFile(File file) throws IOException {
+        Instances instances = new Instances(new BufferedReader(new FileReader(file)));
+        instances.setClassIndex(instances.numAttributes() - 1);
+        return instances;
+    }
+
+    public static Instances instancesFromFile(String path) throws IOException {
+        return instancesFromFile(new File(path));
+    }
 }

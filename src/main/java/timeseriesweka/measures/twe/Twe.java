@@ -1,8 +1,33 @@
 package timeseriesweka.measures.twe;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Twe extends DistanceMeasure {
+
+    public static final Mutable<Twe, Double> LAMBDA_MUTABLE = new Mutable<Twe, Double>() {
+        @Override
+        public <C extends Twe, D extends Double> void setValue(final C subject, final D value) {
+            subject.setLambda(value);
+        }
+
+        @Override
+        public <C extends Twe> Double getValue(final C subject) {
+            return subject.getLambda();
+        }
+    };
+    public static final Mutable<Twe, Double> NU_MUTABLE = new Mutable<Twe, Double>() {
+        @Override
+        public <C extends Twe, D extends Double> void setValue(final C subject, final D value) {
+            subject.setNu(value);
+        }
+
+        @Override
+        public <C extends Twe> Double getValue(final C subject) {
+            return subject.getNu();
+        }
+    };
+
     @Override
     protected double measureDistance(double[] a, double[] b, double cutOff) {
         /*This code is faithful to the c version, so uses ee redundant

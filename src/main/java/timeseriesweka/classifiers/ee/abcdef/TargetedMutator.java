@@ -31,7 +31,7 @@ public class TargetedMutator<A> implements Indexed {
         return indexedMutator.size();
     }
 
-    public <D extends Integer> void setValueAt(final D value) {
+    public void setValueAt(final Integer value) {
         indexedMutator.setValue(supplier.get(), value);
     }
 

@@ -1,11 +1,35 @@
 package timeseriesweka.measures.erp;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 import utilities.instances.TrainTestSplit;
 
 import java.io.IOException;
 
 public class Erp extends DistanceMeasure {
+
+    public static final Mutable<Erp, Double> WARPING_WINDOW_MUTABLE = new Mutable<Erp, Double>() {
+        @Override
+        public <C extends Erp, D extends Double> void setValue(final C subject, final D value) {
+            subject.setWarpingWindow(value);
+        }
+
+        @Override
+        public <C extends Erp> Double getValue(final C subject) {
+            return subject.getWarpingWindow();
+        }
+    };
+    public static final Mutable<Erp, Double> PENALTY_MUTABLE = new Mutable<Erp, Double>() {
+        @Override
+        public <C extends Erp, D extends Double> void setValue(final C subject, final D value) {
+            subject.setPenalty(value);
+        }
+
+        @Override
+        public <C extends Erp> Double getValue(final C subject) {
+            return subject.getPenalty();
+        }
+    };
 
     public double getWarpingWindow() {
         return warpingWindow;

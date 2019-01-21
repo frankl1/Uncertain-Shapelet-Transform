@@ -35,7 +35,7 @@ public class LinearInterpolater extends IndexedSupplierObtainer<Double> {
         return min + range;
     }
 
-    private double range = 1;
+    private double range = 0;
 
     public LinearInterpolater(double min, double max) {
         setMin(min);
