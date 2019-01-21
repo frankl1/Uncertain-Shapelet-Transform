@@ -194,7 +194,7 @@ public class Utilities {
         return result;
     }
 
-    public static int toCombination(int... indices) {
+    public static int toCombinationOld(int... indices) {
         if(indices.length % 2 != 0) {
             throw new IllegalArgumentException("incorrect number of args, must be index followed by bin size");
         }
@@ -202,6 +202,20 @@ public class Utilities {
         for(int i = indices.length / 2 - 1; i >= 0; i--) {
             int binSize = indices[i * 2 + 1];
             int value = indices[i * 2];
+            combination *= binSize;
+            combination += value;
+        }
+        return combination;
+    }
+
+    public static int toCombination(int[] values, int[] binSizes) {
+        if(values.length != binSizes.length) {
+            throw new IllegalArgumentException("incorrect number of args");
+        }
+        int combination = 0;
+        for(int i = binSizes.length - 1; i >= 0; i--) {
+            int binSize = binSizes[i];
+            int value = values[i];
             combination *= binSize;
             combination += value;
         }

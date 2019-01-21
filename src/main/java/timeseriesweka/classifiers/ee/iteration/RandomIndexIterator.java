@@ -25,6 +25,6 @@ public class RandomIndexIterator extends LinearIndexIterator {
 
     @Override
     public void resetPostRange() {
-        random.setSeed(seed);
+        if(seed != null) random.setSeed(seed);
     }
 }

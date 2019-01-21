@@ -313,7 +313,7 @@ public class NearestNeighbour implements Classifier {
 
     @Override
     public String getParameters() {
-        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample;
+        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample + ",distanceMeasure=" + distanceMeasure.toString() + ",distanceMeasureParameters=\"" + distanceMeasure.getParameters() + "\"";
     }
 
     @Override

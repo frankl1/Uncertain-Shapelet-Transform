@@ -317,6 +317,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     @Override
     public String toString() {
+        findAllStatsOnce();
         return writeResultsFileToString();
     }
 
@@ -721,13 +722,13 @@ base xi+1 to xi , that is, A
    
     boolean hasInstanceData(){ return numInstances()!=0;}
 
-    public void benchmark() {
+    public static long benchmark() {
         Random random = new Random();
         List<Long> times = new ArrayList<>();
         for(int i = 0; i < 101; i++) { // + 1 for div 2 later
             random.setSeed(0);
             List<Integer> list = new ArrayList<>();
-            for(int j = 0; j < 1000000; j++) {
+            for(int j = 0; j < /*1000000*/1; j++) {
                 list.add(random.nextInt());
             }
             long startTime = System.nanoTime();
@@ -736,7 +737,15 @@ base xi+1 to xi , that is, A
             times.add(endTime - startTime);
         }
         Collections.sort(times);
-        benchmark = times.get(times.size() / 2);
+        return times.get(times.size() / 2);
+    }
+
+    public void setBenchmark() {
+        setBenchmark(benchmark());
+    }
+
+    public void setBenchmark(long benchmark) {
+        this.benchmark = benchmark;
     }
 
     private long benchmark = -1;
@@ -757,7 +766,7 @@ base xi+1 to xi , that is, A
         classifierResults.setParas("abc,1,def,2");
         classifierResults.setTrainTime(20);
         classifierResults.setTestTime(30);
-        classifierResults.benchmark();
+        classifierResults.setBenchmark();
         classifierResults.storeSingleResult(1, new double[] {1, 2, 3});
         BufferedWriter writer = new BufferedWriter(new FileWriter("test.txt"));
         writer.write(classifierResults.writeResultsFileToString());
