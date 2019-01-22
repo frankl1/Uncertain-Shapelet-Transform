@@ -14,7 +14,7 @@ public class RandomIndexIterator extends LinearIndexIterator {
 
     @Override
     public boolean hasNext() {
-        return true;
+        return workingRange.size() > 0;
     }
 
     @Override

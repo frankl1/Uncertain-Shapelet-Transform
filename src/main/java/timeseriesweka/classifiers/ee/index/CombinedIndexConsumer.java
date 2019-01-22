@@ -1,5 +1,7 @@
 package timeseriesweka.classifiers.ee.index;
 
+import utilities.Utilities;
+
 import java.util.function.IntConsumer;
 
 public class CombinedIndexConsumer implements IntConsumer {
@@ -10,25 +12,22 @@ public class CombinedIndexConsumer implements IntConsumer {
     }
 
     public int size() {
-        int size = 1;
-        for(IndexConsumer<?> parameter : indexConsumers) {
-            int parameterSize = parameter.getValueRange().size();
-            if(parameterSize > 0) {
-                size *= parameterSize;
-            }
+        return Utilities.numCombinations(getSizes());
+    }
+
+    private int[] getSizes() {
+        int[] sizes = new int[indexConsumers.length];
+        for(int i = 0; i < sizes.length; i++) {
+            sizes[i] = indexConsumers[i].getValueRange().size();
         }
-        return size;
+        return sizes;
     }
 
     @Override
-    public void accept(final int combinationIndex) {
-        int index = combinationIndex;
-        if(indexConsumers.length > 0) {
-            for(IndexConsumer<?> parameter : indexConsumers) {
-                parameter.accept(4); // todo div index
-            }
-        } else if(combinationIndex != size()) {
-            throw new IllegalArgumentException("combination index exceeds size");
+    public void accept(int combinationIndex) {
+        int[] values = Utilities.fromCombination(combinationIndex, getSizes());
+        for(int i = 0; i < values.length; i++) {
+            indexConsumers[i].accept(values[i]);
         }
     }
 }

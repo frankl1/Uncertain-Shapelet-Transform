@@ -228,13 +228,15 @@ public class NearestNeighbour implements Classifier {
         Map<Integer, Integer> furthestNeighbours = neighbours.lastEntry().getValue();
         for(int index = 0; index < numNeighboursToRemove; index++) {
             // randomly remove 1 of the last neighbours
-            int randomIndex = random.nextInt(furthestNeighbours.size());
-            Integer classCount = furthestNeighbours.get(randomIndex);
+            List<Integer> keys = new ArrayList<>(furthestNeighbours.keySet());
+            int randomIndex = random.nextInt(keys.size());
+            Integer randomKey = keys.get(randomIndex);
+            Integer classCount = furthestNeighbours.get(randomKey);
             classCount--;
             if(classCount <= 0) {
-                furthestNeighbours.remove(randomIndex);
+                furthestNeighbours.remove(randomKey);
             } else {
-                furthestNeighbours.put(randomIndex, classCount);
+                furthestNeighbours.put(randomKey, classCount);
             }
         }
         return neighbours;
@@ -264,6 +266,7 @@ public class NearestNeighbour implements Classifier {
         results.setNumInstances(testInstances.numInstances());
         results.setTrainTime(trainTime);
         long startTime = System.nanoTime();
+        int i = 0;
         for(Instance testInstance : testInstances) {
             results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
         }
@@ -313,7 +316,7 @@ public class NearestNeighbour implements Classifier {
 
     @Override
     public String getParameters() {
-        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample + ",distanceMeasure=" + distanceMeasure.toString() + ",distanceMeasureParameters=\"" + distanceMeasure.getParameters() + "\"";
+        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample + ",distanceMeasure=" + distanceMeasure.toString() + ",distanceMeasureParameters={" + distanceMeasure.getParameters() + "}";
     }
 
     @Override

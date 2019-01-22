@@ -102,11 +102,17 @@ public class Range implements IndexedSupplier<Integer> {
         }
 
         public void disjoin(FixedRange range) {
-            if(overlapsStartOf(range)) {
-                end = range.start - 1;
-            }
-            if(overlapsEndOf(range)) {
+            if(range.start == start) {
                 start = range.end + 1;
+            } else if(range.end == end) {
+                end = range.end - 1;
+            } else {
+                if(overlapsStartOf(range)) {
+                    end = range.start - 1;
+                }
+                if(overlapsEndOf(range)) {
+                    start = range.end + 1;
+                }
             }
         }
 
@@ -245,23 +251,11 @@ public class Range implements IndexedSupplier<Integer> {
 
     public static void main(String[] args) {
         Range range = new Range();
-        range.add(1,5);
+        range.add(0,3);
         System.out.println(range);
-        range.add(22, 25);
+        range.add(5,9);
         System.out.println(range);
-        range.add(9, 11);
-        System.out.println(range);
-        range.add(6, 8);
-        System.out.println(range);
-        range.add(15, 20);
-        System.out.println(range);
-        range.add(27, 30);
-        System.out.println(range);
-        range.add(16, 28);
-        System.out.println(range);
-        range.add(0, 10);
-        System.out.println(range);
-        range.remove(10, 20);
+        range.removeAt(0);
         System.out.println(range);
     }
 

@@ -7,21 +7,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.abcdef.generators.*;
-import timeseriesweka.classifiers.ee.iteration.ElementIterator;
 import timeseriesweka.classifiers.ee.iteration.RandomIndexIterator;
-import timeseriesweka.measures.DistanceMeasure;
-import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.euclidean.Euclidean;
-import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.ClassifierResults;
 import utilities.Utilities;
 import utilities.instances.Folds;
 import weka.core.Instances;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class Experiment {
 
@@ -36,6 +31,8 @@ public class Experiment {
     private int numSamples;
     @Parameter(names={"-d"}, description="datasets", required=true)
     private List<File> datasets;
+    @Parameter(names={"-p"}, description="sample percentages", required=true)
+    private List<Double> samplePercentages;
 
     public static void main(String[] args) throws Exception {
         Experiment experiment = new Experiment();
@@ -70,13 +67,32 @@ public class Experiment {
     }
 
     public void run() throws Exception {
+        File killSwitchFile = new File("deleteToKill");
+        Thread killSwitch = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                while (!Thread.currentThread().isInterrupted()) {
+                    if(!killSwitchFile.exists()) {
+                        System.out.println("killed");
+                        System.exit(1);
+                    }
+                    try {
+                        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        });
+        killSwitch.start();
         System.out.println("configuration:");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println(gson.toJson(this));
         System.out.println();
-        System.out.println("benchmarking...");
+        System.out.println("benchmarking");
         long benchmark = ClassifierResults.benchmark();
-        System.out.println("running experiments...");
+        System.out.println("running experiments");
         NnGenerator[] generators = new NnGenerator[]{
             new DtwGenerator(),
             new DdtwGenerator(),
@@ -88,60 +104,71 @@ public class Experiment {
             new ErpGenerator(),
             new EuclideanGenerator()
         };
-
         final int[] parameterBins = new int[] {
-            1, // stratified sample // todo change to 2 to do non-strat'd as well
+            2, // stratified sample, 1 == not, 0 == strat'd
             generators.length,
-            100, // num distance measure params
             datasets.size(),
-            100 // num sample percentages
+            samplePercentages.size() // num sample percentages
         };
-        final int maxCombination = Utilities.toCombination(parameterBins, parameterBins);
-        RandomIndexIterator randomIndexIterator = new RandomIndexIterator();
-        randomIndexIterator.getRange().add(0, maxCombination - 1);
-        randomIndexIterator.reset();
-        while (randomIndexIterator.hasNext()) {
-            int combination = randomIndexIterator.next();
-            randomIndexIterator.remove();
-            int[] parameters = Utilities.fromCombination(combination, parameterBins);
-            boolean stratifiedSample = parameters[0] == 0;
-            NnGenerator nnGenerator = generators[parameters[1]];
-            int distanceMeasureParameter = parameters[2];
-            File datasetFile = datasets.get(parameters[3]);
-            double samplePercentage = (double) parameters[4] / 100;
-
-            String datasetName = datasetFile.getName();
-            File experimentResultDir = new File(globalResultsDir, datasetName);
-            experimentResultDir.mkdirs();
-            Instances dataset = Utilities.loadDataset(datasetFile);
-            Folds folds = new Folds.Builder(dataset, numFolds)
-                .stratify(true)
-                .build();
-            for(int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
-                for(int foldIndex = 0; foldIndex < numFolds; foldIndex++) {
+        final int numCombinations = Utilities.numCombinations(parameterBins);
+        for(int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++) {
+            for(int foldIndex = 0; foldIndex < numFolds; foldIndex++) {
+                RandomIndexIterator randomIndexIterator = new RandomIndexIterator();
+                randomIndexIterator.getRange().add(0, numCombinations - 1);
+                randomIndexIterator.reset();
+                while (randomIndexIterator.hasNext()) {
+                    int combination = randomIndexIterator.next();
+                    randomIndexIterator.remove();
+                    int[] parameters = Utilities.fromCombination(combination, parameterBins);
+                    int parameterIndex = 0;
+                    boolean stratifiedSample = parameters[parameterIndex++] == 0;
+                    NnGenerator nnGenerator = generators[parameters[parameterIndex++]];
+                    File datasetFile = datasets.get(parameters[parameterIndex++]);
+                    double samplePercentage = samplePercentages.get(parameters[parameterIndex++]); //(double) parameters[parameterIndex++] / 100;
+                    String datasetName = datasetFile.getName();
+                    File experimentResultDir = new File(globalResultsDir, datasetName);
+                    experimentResultDir.mkdirs();
+                    System.out.println("loading " + datasetFile.getName() + " dataset");
+                    Instances dataset = Utilities.loadDataset(datasetFile);
+                    System.out.println("folding");
+                    Folds folds = new Folds.Builder(dataset, numFolds)
+                        .stratify(true)
+                        .build();
                     Instances trainInstances = folds.getTrain(foldIndex);
                     nnGenerator.setParameterRanges(trainInstances);
-                    NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
-                    nearestNeighbour.setSamplePercentage(samplePercentage);
-                    nearestNeighbour.setSeed(sampleIndex);
-                    String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",p=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage + ",d=" + stratifiedSample + ".csv";
-                    File resultsFile = new File(resultsFileName);
-                    if(resultsFile.exists()) {
-                        continue;
-                    }
-                    nearestNeighbour.buildClassifier(trainInstances);
                     Instances testInstances = folds.getTest(foldIndex);
-                    ClassifierResults results = nearestNeighbour.predict(testInstances);
-                    results.findAllStatsOnce();
-                    results.setBenchmark(benchmark);
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
-                    writer.write(results.toString());
-                    System.out.println(results);
-                    System.out.println();
-                    writer.close();
+                    for(int distanceMeasureParameter = 0; distanceMeasureParameter < nnGenerator.size(); distanceMeasureParameter++) { // todo make this random
+                        trainInstances = new Instances(trainInstances); // deep copy just in case anything got modified from last iteration
+                        testInstances = new Instances(testInstances);
+                        NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
+                        String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",n=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage + ",d=" + stratifiedSample + ".csv";
+                        System.out.println(resultsFileName);
+                        nearestNeighbour.setSamplePercentage(samplePercentage);
+                        nearestNeighbour.setSeed(sampleIndex);
+                        File resultsFile = new File(experimentResultDir, resultsFileName);
+                        System.out.println("checking existing results");
+                        if(resultsFile.exists()) {
+                            System.out.println("results exist, skipping");
+                            continue;
+                        }
+                        System.out.println("training");
+                        nearestNeighbour.buildClassifier(trainInstances);
+                        System.out.println("testing");
+                        ClassifierResults results = nearestNeighbour.predict(testInstances);
+                        results.findAllStatsOnce();
+                        results.setBenchmark(benchmark);
+                        System.out.println("writing results");
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
+                        writer.write(results.toString());
+                        System.out.println();
+                        System.out.println(results);
+                        System.out.println();
+                        writer.close();
+                    }
                 }
             }
         }
+        killSwitch.interrupt();
     }
 
 

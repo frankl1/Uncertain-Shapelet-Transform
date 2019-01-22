@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ee.abcdef;
 
 import timeseriesweka.classifiers.ee.index.CombinedIndexConsumer;
+import utilities.Utilities;
 import weka.core.Instances;
 
 import java.util.ArrayList;
@@ -22,15 +23,23 @@ public class CombinedIndexed implements Indexed {
         return indexeds;
     }
 
+    private int[] getSizes() {
+        int[] sizes = new int[indexeds.size()];
+        for(int i = 0; i < sizes.length; i++) {
+            sizes[i] = indexeds.get(i).size();
+        }
+        return sizes;
+    }
+
     @Override
     public void setValueAt(final Integer combination) {
-        int combo = combination;
-        for(int i = 0; i < indexeds.size(); i++) {
-            Indexed indexedMutator = indexeds.get(i);
-            int size = indexedMutator.size();
-            int value = combo % size;
-            combo /= size;
-            indexedMutator.setValueAt(value);
+        if(indexeds.size() > 0) {
+            int[] values = Utilities.fromCombination(combination, getSizes());
+            for(int i = 0; i < indexeds.size(); i++) {
+                indexeds.get(i).setValueAt(values[i]);
+            }
+        } else if(combination != 0) {
+            throw new IllegalArgumentException();
         }
     }
 
@@ -41,14 +50,7 @@ public class CombinedIndexed implements Indexed {
 
     @Override
     public int size() {
-        int overallSize = 1;
-        for(Indexed indexedMutator : indexeds) {
-            int size = indexedMutator.size();
-            if(size > 0) {
-                overallSize *= size;
-            }
-        }
-        return overallSize;
+        return Utilities.numCombinations(getSizes());
     }
 
 }

@@ -172,24 +172,22 @@ public class Utilities {
     // todo cleanup
 
     public static int[] fromCombination(int combination, int... binSizes) {
-        int size = 1;
-        for(int bin : binSizes) {
-            size *= bin;
-            if(bin <= 0) {
-                throw new IllegalArgumentException();
-            }
-        }
-        if(size <= 0) {
-            throw new IllegalArgumentException();
-        }
-        if(combination > size - 1) {
+        int maxCombination = numCombinations(binSizes);
+        if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
             throw new IllegalArgumentException();
         }
         int[] result = new int[binSizes.length];
         for(int index = 0; index < binSizes.length; index++) {
             int binSize = binSizes[index];
-            result[index] = combination % binSize;
-            combination /= binSize;
+            if(binSize > 1) {
+                result[index] = combination % binSize;
+                combination /= binSize;
+            } else {
+                result[index] = 0;
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
         }
         return result;
     }
@@ -215,11 +213,23 @@ public class Utilities {
         int combination = 0;
         for(int i = binSizes.length - 1; i >= 0; i--) {
             int binSize = binSizes[i];
-            int value = values[i];
-            combination *= binSize;
-            combination += value;
+            if(binSize > 1) {
+                int value = values[i];
+                combination *= binSize;
+                combination += value;
+            } else if(binSize <= 0) {
+                throw new IllegalArgumentException();
+            }
         }
         return combination;
+    }
+
+    public static int numCombinations(int[] binSizes) {
+        int[] maxValues = new int[binSizes.length];
+        for(int i = 0; i < binSizes.length; i++) {
+            maxValues[i] = binSizes[i] - 1;
+        }
+        return toCombination(maxValues, binSizes) + 1;
     }
 
     public static void main(String[] args) {

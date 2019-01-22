@@ -728,7 +728,7 @@ base xi+1 to xi , that is, A
         for(int i = 0; i < 101; i++) { // + 1 for div 2 later
             random.setSeed(0);
             List<Integer> list = new ArrayList<>();
-            for(int j = 0; j < /*1000000*/1; j++) {
+            for(int j = 0; j < 1000000; j++) {
                 list.add(random.nextInt());
             }
             long startTime = System.nanoTime();

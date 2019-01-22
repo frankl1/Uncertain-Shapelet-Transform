@@ -25,6 +25,13 @@ public abstract class IndexedSupplierObtainer<A> implements IndexedSupplier<A> {
 
     @Override
     public A get(int index) {
-        return obtain((double) index / size);
-    } // todo should it be size - 1?
+        if (index >= size || index < 0) {
+            throw new IllegalArgumentException();
+        }
+        if(size == 1) {
+            return obtain(0);
+        } else {
+            return obtain((double) index / (size - 1));
+        }
+    }
 }
