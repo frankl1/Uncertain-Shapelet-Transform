@@ -1,10 +1,7 @@
 package timeseriesweka.measures.erp;
 
-import timeseriesweka.classifiers.ee.abcdef.Mutable;
+import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
-import utilities.instances.TrainTestSplit;
-
-import java.io.IOException;
 
 public class Erp extends DistanceMeasure {
 

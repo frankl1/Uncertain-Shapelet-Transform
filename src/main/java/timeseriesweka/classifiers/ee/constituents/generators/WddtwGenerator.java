@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.ee.abcdef.generators;
+package timeseriesweka.classifiers.ee.constituents.generators;
 
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.wddtw.Wddtw;

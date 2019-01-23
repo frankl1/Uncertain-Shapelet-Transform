@@ -1,8 +1,8 @@
-package timeseriesweka.classifiers.ee.abcdef.generators;
+package timeseriesweka.classifiers.ee.constituents.generators;
 
-import timeseriesweka.classifiers.ee.abcdef.Indexed;
-import timeseriesweka.classifiers.ee.abcdef.IndexedMutator;
-import timeseriesweka.classifiers.ee.abcdef.TargetedMutator;
+import timeseriesweka.classifiers.ee.constituents.Indexed;
+import timeseriesweka.classifiers.ee.constituents.IndexedMutator;
+import timeseriesweka.classifiers.ee.constituents.TargetedMutator;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;

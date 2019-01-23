@@ -778,4 +778,8 @@ base xi+1 to xi , that is, A
 //        results.benchmark();
 //        System.out.println(results.benchmark);
     }
+
+    public void addAll(final ClassifierResults predict) {
+        throw new UnsupportedOperationException(); // todo
+    }
 }

@@ -1,6 +1,6 @@
 package timeseriesweka.measures.msm;
 
-import timeseriesweka.classifiers.ee.abcdef.Mutable;
+import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 import static utilities.Utilities.positiveCheck;

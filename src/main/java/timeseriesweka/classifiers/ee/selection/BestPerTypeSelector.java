@@ -10,7 +10,7 @@ public class BestPerTypeSelector<A> implements Selector<A> {
 
     @Override
     public void consider(final A a, double stat) {
-        String key = a.toString();
+        String key = a.toString(); // todo replace with interface to get characteristic of A, i.e. distance measure
         Weighted<A> weighted = selected.get(key);
         if(weighted == null || stat > weighted.getWeight()) {
             // replace

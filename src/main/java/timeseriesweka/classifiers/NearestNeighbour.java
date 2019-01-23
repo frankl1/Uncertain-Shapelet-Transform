@@ -9,7 +9,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class NearestNeighbour implements Classifier {
+public class NearestNeighbour implements AdvancedClassifier {
 
     public NearestNeighbour() {}
 

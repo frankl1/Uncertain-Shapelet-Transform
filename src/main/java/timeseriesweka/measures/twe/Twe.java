@@ -1,6 +1,6 @@
 package timeseriesweka.measures.twe;
 
-import timeseriesweka.classifiers.ee.abcdef.Mutable;
+import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Twe extends DistanceMeasure {

@@ -1,15 +1,8 @@
-package timeseriesweka.classifiers.ee.abcdef.generators;
+package timeseriesweka.classifiers.ee.constituents.generators;
 
-import timeseriesweka.classifiers.ee.abcdef.Indexed;
-import timeseriesweka.classifiers.ee.abcdef.IndexedMutator;
-import timeseriesweka.classifiers.ee.abcdef.TargetedMutator;
 import timeseriesweka.measures.DistanceMeasure;
-import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.euclidean.Euclidean;
-import timeseriesweka.measures.wdtw.Wdtw;
 import weka.core.Instances;
-
-import java.util.List;
 
 public class EuclideanGenerator extends NnGenerator {
 

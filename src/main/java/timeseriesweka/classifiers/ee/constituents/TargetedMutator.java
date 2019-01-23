@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.ee.abcdef;
+package timeseriesweka.classifiers.ee.constituents;
 
 import java.util.function.Supplier;
 

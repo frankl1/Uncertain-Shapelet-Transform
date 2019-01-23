@@ -1,19 +1,12 @@
 package utilities.instances;
 
-import jdk.nashorn.internal.runtime.OptimisticBuiltins;
-import utilities.ClassifierResults;
 import utilities.range.Range;
-import weka.classifiers.Classifier;
-import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
-
-import static utilities.instances.Distribution.binClasses;
 
 public class Folds implements Iterable<TrainTestSplit>, Serializable {
     private Folds(Instances instances, Range[] ranges) {
@@ -54,7 +47,7 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
         return new TrainTestSplit(getTrain(index), getTest(index));
     }
 
-    public int getNumFolds() {
+    public int size() {
         return ranges.length;
     }
 
@@ -65,7 +58,7 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
 
             @Override
             public boolean hasNext() {
-                return foldIndex < getNumFolds();
+                return foldIndex < size();
             }
 
             @Override

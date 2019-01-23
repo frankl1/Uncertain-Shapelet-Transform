@@ -1,6 +1,6 @@
 package timeseriesweka.measures.dtw;
 
-import timeseriesweka.classifiers.ee.abcdef.Mutable;
+import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Dtw extends DistanceMeasure {

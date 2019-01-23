@@ -1,19 +1,13 @@
-package timeseriesweka.classifiers.ee.abcdef.generators;
+package timeseriesweka.classifiers.ee.constituents.generators;
 
-import timeseriesweka.classifiers.NearestNeighbour;
-import timeseriesweka.classifiers.ee.abcdef.*;
-import timeseriesweka.classifiers.ee.index.IndexedSupplier;
+import timeseriesweka.classifiers.ee.constituents.*;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.lcss.Lcss;
 import utilities.Box;
 import utilities.StatisticUtilities;
-import utilities.Utilities;
-import utilities.range.ValueRange;
 import weka.core.Instances;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 public class LcssGenerator extends NnGenerator {

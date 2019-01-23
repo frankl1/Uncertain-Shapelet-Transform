@@ -1,8 +1,6 @@
-package timeseriesweka.classifiers.ee.abcdef;
+package timeseriesweka.classifiers.ee.constituents;
 
-import timeseriesweka.classifiers.ee.index.CombinedIndexConsumer;
 import utilities.Utilities;
-import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Collection;

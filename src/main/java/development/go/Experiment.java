@@ -6,7 +6,7 @@ import com.beust.jcommander.converters.FileConverter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import timeseriesweka.classifiers.NearestNeighbour;
-import timeseriesweka.classifiers.ee.abcdef.generators.*;
+import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.classifiers.ee.iteration.RandomIndexIterator;
 import utilities.ClassifierResults;
 import utilities.Utilities;
@@ -15,7 +15,6 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class Experiment {
