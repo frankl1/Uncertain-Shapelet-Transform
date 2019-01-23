@@ -6,7 +6,7 @@ import timeseriesweka.classifiers.ee.iteration.Iterator;
 import timeseriesweka.classifiers.ee.iteration.LinearIndexIterator;
 import timeseriesweka.classifiers.ee.index.IndexConsumer;
 import timeseriesweka.classifiers.ee.index.CombinedIndexConsumer;
-import timeseriesweka.classifiers.ee.range.Range;
+import utilities.range.Range;
 
 public abstract class Constituent implements Iterator<Classifier> {
 

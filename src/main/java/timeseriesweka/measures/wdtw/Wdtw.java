@@ -1,8 +1,21 @@
 package timeseriesweka.measures.wdtw;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.dtw.Dtw;
 
 public class Wdtw extends Dtw {
+
+    public static Mutable<Wdtw, Double> WEIGHT_MUTABLE = new Mutable<Wdtw, Double>() {
+        @Override
+        public <C extends Wdtw, D extends Double> void setValue(final C subject, final D value) {
+            subject.setWeight(value);
+        }
+
+        @Override
+        public <C extends Wdtw> Double getValue(final C subject) {
+            return subject.getWeight();
+        }
+    };
 
     public double getWeight() {
         return weight;

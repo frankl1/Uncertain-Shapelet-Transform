@@ -1,11 +1,9 @@
 package timeseriesweka.classifiers.ee.index;
 
-import timeseriesweka.classifiers.ee.index.Indexed;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class ElementObtainer<A> implements Indexed<A> {
+public class ElementObtainer<A> implements IndexedSupplier<A> {
 
     public void setList(final List<A> list) {
         this.list = list;

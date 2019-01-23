@@ -1,6 +1,12 @@
 package utilities;
 
 import weka.core.Instance;
+import weka.core.Instances;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -165,4 +171,115 @@ public class Utilities {
 
     // todo cleanup
 
+    public static int[] fromCombination(int combination, int... binSizes) {
+        int maxCombination = numCombinations(binSizes);
+        if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
+            throw new IllegalArgumentException();
+        }
+        int[] result = new int[binSizes.length];
+        for(int index = 0; index < binSizes.length; index++) {
+            int binSize = binSizes[index];
+            if(binSize > 1) {
+                result[index] = combination % binSize;
+                combination /= binSize;
+            } else {
+                result[index] = 0;
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        return result;
+    }
+
+    public static int toCombinationOld(int... indices) {
+        if(indices.length % 2 != 0) {
+            throw new IllegalArgumentException("incorrect number of args, must be index followed by bin size");
+        }
+        int combination = 0;
+        for(int i = indices.length / 2 - 1; i >= 0; i--) {
+            int binSize = indices[i * 2 + 1];
+            int value = indices[i * 2];
+            combination *= binSize;
+            combination += value;
+        }
+        return combination;
+    }
+
+    public static int toCombination(int[] values, int[] binSizes) {
+        if(values.length != binSizes.length) {
+            throw new IllegalArgumentException("incorrect number of args");
+        }
+        int combination = 0;
+        for(int i = binSizes.length - 1; i >= 0; i--) {
+            int binSize = binSizes[i];
+            if(binSize > 1) {
+                int value = values[i];
+                combination *= binSize;
+                combination += value;
+            } else if(binSize <= 0) {
+                throw new IllegalArgumentException();
+            }
+        }
+        return combination;
+    }
+
+    public static int numCombinations(int[] binSizes) {
+        int[] maxValues = new int[binSizes.length];
+        for(int i = 0; i < binSizes.length; i++) {
+            maxValues[i] = binSizes[i] - 1;
+        }
+        return toCombination(maxValues, binSizes) + 1;
+    }
+
+    public static void main(String[] args) {
+        for(int i = 0; i < 48; i++) {
+            int[] result = fromCombination(i, 4, 3, 4);
+            for(int j : result) {
+                System.out.print(j);
+                System.out.print(", ");
+            }
+            System.out.println();
+        }
+    }
+
+    public static Instances[] instancesByClass(Instances instances) {
+        Instances[] instancesByClass = new Instances[instances.numClasses()];
+        for(int i = 0; i < instancesByClass.length; i++) {
+            instancesByClass[i] = new Instances(instances, 0);
+        }
+        for(Instance instance : instances) {
+            instancesByClass[(int) instance.classValue()].add(instance);
+        }
+        return instancesByClass;
+    }
+
+    public static Instances loadDataset(File datasetDir) throws IOException {
+        File datasetFile = new File(datasetDir, datasetDir.getName() + ".arff");
+        if(datasetFile.exists()) {
+            return instancesFromFile(datasetFile);
+        }
+        datasetFile = new File(datasetDir, datasetDir.getName() + "_TRAIN.arff");
+        File testDatasetFile = new File(datasetDir, datasetDir.getName() + "_TEST.arff");
+        if(datasetFile.exists() && testDatasetFile.exists()) {
+            Instances instances = instancesFromFile(datasetFile);
+            instances.addAll(instancesFromFile(testDatasetFile));
+            return instances;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public static Instances loadDataset(String datasetDir) throws IOException {
+        return loadDataset(new File(datasetDir));
+    }
+
+    public static Instances instancesFromFile(File file) throws IOException {
+        Instances instances = new Instances(new BufferedReader(new FileReader(file)));
+        instances.setClassIndex(instances.numAttributes() - 1);
+        return instances;
+    }
+
+    public static Instances instancesFromFile(String path) throws IOException {
+        return instancesFromFile(new File(path));
+    }
 }

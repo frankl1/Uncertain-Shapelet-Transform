@@ -1,6 +1,9 @@
 package utilities;
 
-public class Box<A> {
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+public class Box<A> implements Supplier<A>, Consumer<A> {
     private A contents;
 
     public Box(A contents) {
@@ -17,5 +20,15 @@ public class Box<A> {
 
     public A getContents() {
         return contents;
+    }
+
+    @Override
+    public void accept(final A a) {
+        setContents(a);
+    }
+
+    @Override
+    public A get() {
+        return getContents();
     }
 }

@@ -3,8 +3,8 @@ package timeseriesweka.classifiers.ee.constituents;
 import timeseriesweka.classifiers.Classifier;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.index.IndexConsumer;
-import timeseriesweka.classifiers.ee.range.Range;
-import timeseriesweka.classifiers.ee.range.ValueRange;
+import utilities.range.Range;
+import utilities.range.ValueRange;
 import timeseriesweka.measures.dtw.Dtw;
 
 import static timeseriesweka.classifiers.ee.index.LinearInterpolater.SCALED;

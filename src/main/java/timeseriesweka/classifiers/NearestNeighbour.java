@@ -2,19 +2,14 @@ package timeseriesweka.classifiers;
 
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
-import utilities.ClassifierTools;
-import utilities.CrossValidator;
-import utilities.Reproducible;
-import utilities.Utilities;
-import weka.classifiers.AbstractClassifier;
+import utilities.*;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
-public class NearestNeighbour implements Classifier, Contracted {
+public class NearestNeighbour implements Classifier {
 
     public NearestNeighbour() {}
 
@@ -30,10 +25,37 @@ public class NearestNeighbour implements Classifier, Contracted {
     }
 
     private DistanceMeasure distanceMeasure = new Dtw();
-    private final Random random = new Random();
+    private final Random random = new Random(); // generic random for tied breaks, etc
+    private final Random samplingRandom = new Random(); // random stream specifically for sampling - ensures sampling in same order
     private Map<Instance, Map<Instance, Double>> distanceCache = null;
     private String cacheName = "";
     private Long seed = null;
+    private double samplePercentage = 1;
+    private long trainTime = -1;
+
+    public boolean isStratifiedSample() {
+        return stratifiedSample;
+    }
+
+    public void setStratifiedSample(final boolean stratifiedSample) {
+        this.stratifiedSample = stratifiedSample;
+    }
+
+    private boolean stratifiedSample = true;
+
+    public double getSamplePercentage() {
+        return samplePercentage;
+    }
+
+    public void setSamplePercentage(double percentage) {
+        if(percentage < 0) {
+            throw new IllegalArgumentException(); // todo
+        } else if(percentage > 1) {
+            throw new IllegalArgumentException(); // todo
+        } else {
+            this.samplePercentage = percentage;
+        }
+    }
 
     public boolean isCachingDistances() {
         return distanceCache != null;
@@ -84,15 +106,36 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        this.trainInstances = trainInstances; // todo checks
-        setCacheName();
-        if(distanceCache != null) {
-            String datasetName = trainInstances.relationName();
-            if(!datasetName.equalsIgnoreCase(cacheName)) {
-                distanceCache.clear();
-                cacheName = datasetName;
+        long startTime = System.nanoTime();
+        trainInstances = new Instances(trainInstances);
+        this.trainInstances = new Instances(trainInstances, 0);
+        int overallSampleSize = (int) (trainInstances.numInstances() * samplePercentage);
+        if(stratifiedSample) {
+            Instances[] instancesByClass = Utilities.instancesByClass(trainInstances);
+            for(int i = 0; i < instancesByClass.length; i++) {
+                Instances homogeneousInstances = instancesByClass[i];
+                int sampleSize = (int) (homogeneousInstances.numInstances() * samplePercentage);
+                for(int j = 0; j < sampleSize; j++) {
+                    this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
+                }
+            }
+            List<Integer> classIndices = new ArrayList<>();
+            for(int i = 0; i < instancesByClass.length; i++) {
+                classIndices.add(i);
+            }
+            Collections.shuffle(classIndices, samplingRandom);
+            int overflow = overallSampleSize - this.trainInstances.numInstances();
+            for(int i = 0; i < overflow; i++) {
+                Instances homogeneousInstances = instancesByClass[classIndices.remove(0)];
+                this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
+            }
+        } else {
+            for(int i = 0; i < overallSampleSize; i++) {
+                this.trainInstances.add(trainInstances.remove(samplingRandom.nextInt(trainInstances.numInstances())));
             }
         }
+        long stopTime = System.nanoTime();
+        trainTime = stopTime - startTime;
     }
 
     @Override
@@ -120,7 +163,7 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public String toString() {
-        return distanceMeasure.toString() + "NN";
+        return distanceMeasure.toString() + "-nn";
     }
 
     public boolean isUsingCutOff() {
@@ -137,7 +180,6 @@ public class NearestNeighbour implements Classifier, Contracted {
     private TreeMap<Double, Map<Integer, Integer>> findNeighbours(Instance testInstance) {
         // list of distances to neighbours (multiple neighbours *could* have same distance, hence list)
         TreeMap<Double, Map<Integer, Integer>> neighbours = new TreeMap<>();
-        // todo no train instances
         // for each instance in the train set
         double cutOff = DistanceMeasure.MAX;
         int numNeighbours = 0;
@@ -148,7 +190,7 @@ public class NearestNeighbour implements Classifier, Contracted {
             // map of classValue to number of neighbours with said class
             Map<Integer, Integer> neighbourMap = neighbours.computeIfAbsent(distance, key -> new HashMap<>());
             Integer classValue = (int) trainInstance.classValue();
-            Integer classValueCount = neighbourMap.get(classValue);
+            Integer classValueCount = neighbourMap.get(classValue); // todo make class vals doubles
             if(classValueCount == null) {
                 classValueCount = 1;
             } else {
@@ -156,7 +198,7 @@ public class NearestNeighbour implements Classifier, Contracted {
             }
             neighbourMap.put(classValue, classValueCount);
             numNeighbours++;
-            if(numNeighbours > k && neighbours.size() > 1 && distance < neighbours.lastKey()) {
+            if(numNeighbours > k && neighbours.size() > 1) {
                 // too many neighbours and neighbours with different distances exist
                 // if distance is less than the furthest neighbour's distance then current train instance must displace neighbour
                 // check if number of neighbours can be trimmed
@@ -186,13 +228,15 @@ public class NearestNeighbour implements Classifier, Contracted {
         Map<Integer, Integer> furthestNeighbours = neighbours.lastEntry().getValue();
         for(int index = 0; index < numNeighboursToRemove; index++) {
             // randomly remove 1 of the last neighbours
-            int randomIndex = random.nextInt(furthestNeighbours.size());
-            Integer classCount = furthestNeighbours.get(randomIndex);
+            List<Integer> keys = new ArrayList<>(furthestNeighbours.keySet());
+            int randomIndex = random.nextInt(keys.size());
+            Integer randomKey = keys.get(randomIndex);
+            Integer classCount = furthestNeighbours.get(randomKey);
             classCount--;
             if(classCount <= 0) {
-                furthestNeighbours.remove(randomIndex);
+                furthestNeighbours.remove(randomKey);
             } else {
-                furthestNeighbours.put(randomIndex, classCount);
+                furthestNeighbours.put(randomKey, classCount);
             }
         }
         return neighbours;
@@ -200,16 +244,38 @@ public class NearestNeighbour implements Classifier, Contracted {
 
     @Override
     public double[] distributionForInstance(Instance testInstance) throws Exception {
-        // todo no train insts
         // majority vote // todo k voting scheme
-        TreeMap<Double, Map<Integer, Integer>> neighbours = findNeighbours(testInstance);
         double[] distribution = new double[testInstance.numClasses()];
-        for(Map<Integer, Integer> neighbourMap : neighbours.values()) {
-            for(Integer classValue : neighbourMap.keySet()) {
-                distribution[classValue] += neighbourMap.get(classValue);
+        if(trainInstances.size() == 0) {
+            distribution[random.nextInt(distribution.length)]++;
+        } else {
+            TreeMap<Double, Map<Integer, Integer>> neighbours = findNeighbours(testInstance);
+            for(Map<Integer, Integer> neighbourMap : neighbours.values()) {
+                for(Integer classValue : neighbourMap.keySet()) {
+                    distribution[classValue] += neighbourMap.get(classValue);
+                }
             }
         }
+        ArrayUtilities.normalise(distribution);
         return distribution;
+    }
+
+    public ClassifierResults predict(Instances testInstances) throws Exception {
+        ClassifierResults results = new ClassifierResults();
+        results.setNumClasses(testInstances.numClasses());
+        results.setNumInstances(testInstances.numInstances());
+        results.setTrainTime(trainTime);
+        long startTime = System.nanoTime();
+        int i = 0;
+        for(Instance testInstance : testInstances) {
+            results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
+        }
+        long stopTime = System.nanoTime();
+        results.setName(toString());
+        results.setParas(getParameters());
+        results.setTrainTime(trainTime);
+        results.setTestTime(stopTime - startTime);
+        return results;
     }
 
     @Override
@@ -232,44 +298,10 @@ public class NearestNeighbour implements Classifier, Contracted {
     @Override
     public void setSeed(long seed) {
         random.setSeed(seed);
+        samplingRandom.setSeed(seed);
         this.seed = seed;
     }
 
-    public static void main(String[] args) {
-        NearestNeighbour nearestNeighbour = new NearestNeighbour();
-        nearestNeighbour.cacheDistances(true);
-        nearestNeighbour.setSeed(4);
-        Instances instances = ClassifierTools.loadData("TSCProblems2018/Coffee");
-        CrossValidator crossValidator = new CrossValidator();
-//        crossValidator.crossValidateWithStats(nearestNeighbour, )
-    }
-
-    private long trainContract = -1;
-    private long testContract = -1;
-
-    @Override
-    public void setTrainContract(final long nanoseconds) {
-        trainContract = nanoseconds;
-    }
-
-    @Override
-    public long getTrainContract() {
-        return trainContract;
-    }
-
-    @Override
-    public void setTestContract(final long nanoseconds) {
-        testContract = nanoseconds;
-    }
-
-    @Override
-    public long getTestContract() {
-        return testContract;
-    }
-
-
-
-    @Override
     public double[][] distributionForInstances(final Instances testInstances) throws Exception {
         double[][] distributions = new double[testInstances.numInstances()][];
         for(int i = 0; i < distributions.length; i++) {
@@ -280,6 +312,11 @@ public class NearestNeighbour implements Classifier, Contracted {
             distributions[i] = distributionForInstance(testInstance);
         }
         return distributions;
+    }
+
+    @Override
+    public String getParameters() {
+        return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample + ",distanceMeasure=" + distanceMeasure.toString() + ",distanceMeasureParameters={" + distanceMeasure.getParameters() + "}";
     }
 
     @Override
@@ -295,10 +332,5 @@ public class NearestNeighbour implements Classifier, Contracted {
     @Override
     public void setTimeLimit(final long time) {
 
-    }
-
-    @Override
-    public String getParameters() {
-        return null;
     }
 }

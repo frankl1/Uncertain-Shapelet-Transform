@@ -6,7 +6,7 @@ public class LinearIndexIterator extends AbstractIndexIterator {
 
     @Override
     public void remove() {
-        workingRange.remove(index);
+        workingRange.removeAt(index);
     }
 
     @Override

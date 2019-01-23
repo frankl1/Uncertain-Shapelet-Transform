@@ -1,10 +1,34 @@
 package timeseriesweka.measures.msm;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 import static utilities.Utilities.positiveCheck;
 
 public class Msm extends DistanceMeasure {
+
+    public static final Mutable<Msm, Double> COST_MUTABLE = new Mutable<Msm, Double>() {
+        @Override
+        public <C extends Msm, D extends Double> void setValue(final C subject, final D value) {
+            subject.setCost(value);
+        }
+
+        @Override
+        public <C extends Msm> Double getValue(final C subject) {
+            return subject.getCost();
+        }
+    };
+    public static final Mutable<Msm, Double> WARPING_WINDOW_MUTABLE = new Mutable<Msm, Double>() {
+        @Override
+        public <C extends Msm, D extends Double> void setValue(final C subject, final D value) {
+            subject.setWarpingWindow(value);
+        }
+
+        @Override
+        public <C extends Msm> Double getValue(final C subject) {
+            return subject.getWarpingWindow();
+        }
+    };
 
     public double getCost() {
         return cost;

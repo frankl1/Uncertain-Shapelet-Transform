@@ -1,7 +1,7 @@
 package timeseriesweka.classifiers.ee;
 
 import org.junit.Test;
-import timeseriesweka.classifiers.ee.range.Range;
+import utilities.range.Range;
 
 import static org.junit.Assert.*;
 

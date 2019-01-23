@@ -1,10 +1,8 @@
 package timeseriesweka.classifiers.ee.index;
 
-import timeseriesweka.classifiers.ee.index.IndexedObtainer;
+public class LinearInterpolater extends IndexedSupplierObtainer<Double> {
 
-public class LinearInterpolater extends IndexedObtainer<Double> {
-
-    public static final IndexedObtainer<Double> SCALED = new IndexedObtainer<Double>() {
+    public static final IndexedSupplierObtainer<Double> SCALED = new IndexedSupplierObtainer<Double>() {
         @Override
         protected Double obtain(final double value) {
             return value;
@@ -37,9 +35,10 @@ public class LinearInterpolater extends IndexedObtainer<Double> {
         return min + range;
     }
 
-    private double range = 1;
+    private double range = 0;
 
-    public LinearInterpolater(double min, double max) {
+    public LinearInterpolater(double min, double max, int size) {
+        super(size);
         setMin(min);
         setMax(max);
     }

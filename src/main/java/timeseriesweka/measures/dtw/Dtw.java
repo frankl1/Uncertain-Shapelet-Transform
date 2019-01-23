@@ -1,8 +1,22 @@
 package timeseriesweka.measures.dtw;
 
+import timeseriesweka.classifiers.ee.abcdef.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Dtw extends DistanceMeasure {
+
+    public static Mutable<Dtw, Double> WARPING_WINDOW_MUTABLE = new Mutable<Dtw, Double>() {
+        @Override
+        public <C extends Dtw, D extends Double> void setValue(final C subject, final D value) {
+            subject.setWarpingWindow(value);
+        }
+
+        @Override
+        public <C extends Dtw> Double getValue(final C subject) {
+            return subject.getWarpingWindow();
+        }
+    };
+
     /**
      * get the current warp percentage
      * @return warp percentage between 0 and 1 inclusive

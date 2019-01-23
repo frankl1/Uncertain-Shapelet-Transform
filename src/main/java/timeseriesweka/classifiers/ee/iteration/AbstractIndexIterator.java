@@ -1,6 +1,6 @@
 package timeseriesweka.classifiers.ee.iteration;
 
-import timeseriesweka.classifiers.ee.range.Range;
+import utilities.range.Range;
 
 public abstract class AbstractIndexIterator implements IndexIterator {
     public Range getRange() {
