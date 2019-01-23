@@ -15,7 +15,6 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class Experiment {
@@ -36,10 +35,17 @@ public class Experiment {
     @Parameter(names={"-k"}, description="kill switch file path", required=true)
     private String killSwitchFilePath;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Experiment experiment = new Experiment();
         new JCommander(experiment).parse(args);
-        experiment.run();
+        Thread killSwitch = experiment.startKillSwitch();
+        try {
+            experiment.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            killSwitch.interrupt();
+        }
     }
 
     private static NnGenerator generatorFromString(String name) {
@@ -68,26 +74,26 @@ public class Experiment {
         }
     }
 
-    public void run() throws Exception {
+    public Thread startKillSwitch() {
         File killSwitchFile = new File(killSwitchFilePath);
-        Thread killSwitch = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                while (!Thread.currentThread().isInterrupted()) {
-                    if(!killSwitchFile.exists()) {
-                        System.out.println("killed");
-                        System.exit(1);
-                    }
-                    try {
-                        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+        Thread killSwitch = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                if(!killSwitchFile.exists()) {
+                    System.out.println("killed");
+                    System.exit(1);
+                }
+                try {
+                    Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
         });
         killSwitch.start();
+        return killSwitch;
+    }
+
+    public void run() throws Exception {
         System.out.println("configuration:");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         System.out.println(gson.toJson(this));
@@ -174,7 +180,6 @@ public class Experiment {
                 }
             }
         }
-        killSwitch.interrupt();
     }
 
 
