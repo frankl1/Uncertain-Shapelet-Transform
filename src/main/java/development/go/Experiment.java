@@ -146,10 +146,11 @@ public class Experiment {
                     nnGenerator.setParameterRanges(trainInstances);
                     Instances testInstances = folds.getTest(foldIndex);
                     RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                    randomIndexIterator.getRange().add(0, nnGenerator.size() - 1);
-                    randomIndexIterator.reset();
-                    while(randomIndexIterator.hasNext()) {
-                        int distanceMeasureParameter = randomIndexIterator.next();
+                    distanceMeasureParameterIterator.getRange().add(0, nnGenerator.size() - 1);
+                    distanceMeasureParameterIterator.reset();
+                    while(distanceMeasureParameterIterator.hasNext()) {
+                        int distanceMeasureParameter = distanceMeasureParameterIterator.next();
+                        distanceMeasureParameterIterator.remove();
                         trainInstances = new Instances(trainInstances); // deep copy just in case anything got modified from last iteration
                         testInstances = new Instances(testInstances);
                         NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
