@@ -33,6 +33,8 @@ public class Experiment {
     private List<File> datasets;
     @Parameter(names={"-p"}, description="sample percentages", required=true)
     private List<Double> samplePercentages;
+    @Parameter(names={"-k"}, description="kill switch file path", required=true)
+    private String killSwitchFilePath;
 
     public static void main(String[] args) throws Exception {
         Experiment experiment = new Experiment();
@@ -67,7 +69,7 @@ public class Experiment {
     }
 
     public void run() throws Exception {
-        File killSwitchFile = new File("deleteToKill");
+        File killSwitchFile = new File(killSwitchFilePath);
         Thread killSwitch = new Thread(new Runnable() {
 
             @Override
@@ -137,7 +139,11 @@ public class Experiment {
                     Instances trainInstances = folds.getTrain(foldIndex);
                     nnGenerator.setParameterRanges(trainInstances);
                     Instances testInstances = folds.getTest(foldIndex);
-                    for(int distanceMeasureParameter = 0; distanceMeasureParameter < nnGenerator.size(); distanceMeasureParameter++) { // todo make this random
+                    RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
+                    randomIndexIterator.getRange().add(0, nnGenerator.size());
+                    randomIndexIterator.reset();
+                    while(randomIndexIterator.hasNext()) {
+                        int distanceMeasureParameter = randomIndexIterator.next();
                         trainInstances = new Instances(trainInstances); // deep copy just in case anything got modified from last iteration
                         testInstances = new Instances(testInstances);
                         NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
