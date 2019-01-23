@@ -146,7 +146,7 @@ public class Experiment {
                     nnGenerator.setParameterRanges(trainInstances);
                     Instances testInstances = folds.getTest(foldIndex);
                     RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                    randomIndexIterator.getRange().add(0, nnGenerator.size());
+                    randomIndexIterator.getRange().add(0, nnGenerator.size() - 1);
                     randomIndexIterator.reset();
                     while(randomIndexIterator.hasNext()) {
                         int distanceMeasureParameter = randomIndexIterator.next();
