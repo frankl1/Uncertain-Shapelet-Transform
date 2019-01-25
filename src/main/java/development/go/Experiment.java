@@ -16,6 +16,8 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class Experiment {
 
@@ -35,10 +37,15 @@ public class Experiment {
     @Parameter(names={"-k"}, description="kill switch file path", required=true)
     private String killSwitchFilePath;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Experiment experiment = new Experiment();
         new JCommander(experiment).parse(args);
-        experiment.run();
+        try {
+            experiment.run();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(2);
+        }
     }
 
     private static NnGenerator generatorFromString(String name) {
@@ -87,10 +94,10 @@ public class Experiment {
             }
         });
         killSwitch.start();
-        System.out.println("configuration:");
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        System.out.println(gson.toJson(this));
-        System.out.println();
+//        System.out.println("configuration:");
+//        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+//        System.out.println(gson.toJson(this));
+//        System.out.println();
         System.out.println("benchmarking");
         long benchmark = ClassifierResults.benchmark();
         System.out.println("running experiments");
@@ -139,41 +146,66 @@ public class Experiment {
                     nnGenerator.setParameterRanges(trainInstances);
                     Instances testInstances = folds.getTest(foldIndex);
                     RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                    randomIndexIterator.getRange().add(0, nnGenerator.size());
-                    randomIndexIterator.reset();
-                    while(randomIndexIterator.hasNext()) {
-                        int distanceMeasureParameter = randomIndexIterator.next();
+                    distanceMeasureParameterIterator.getRange().add(0, nnGenerator.size());
+                    distanceMeasureParameterIterator.reset();
+                    while(distanceMeasureParameterIterator.hasNext()) {
+                        int distanceMeasureParameter = distanceMeasureParameterIterator.next();
                         trainInstances = new Instances(trainInstances); // deep copy just in case anything got modified from last iteration
                         testInstances = new Instances(testInstances);
                         NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
-                        String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",n=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage + ",d=" + stratifiedSample + ".csv";
+                        String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",n=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage + ",d=" + stratifiedSample;
                         System.out.println(resultsFileName);
                         nearestNeighbour.setSamplePercentage(samplePercentage);
                         nearestNeighbour.setSeed(sampleIndex);
-                        File resultsFile = new File(experimentResultDir, resultsFileName);
+                        File resultsFile = new File(experimentResultDir, resultsFileName + ".gzip");
                         System.out.println("checking existing results");
                         if(resultsFile.exists()) {
-                            System.out.println("results exist, skipping");
-                            continue;
+                            System.out.println("results exist");
+//                            System.out.println("checking for benchmark");
+//                            ClassifierResults results = new ClassifierResults();
+//                            GZIPInputStream gzipInputStream = new GZIPInputStream(new BufferedInputStream(new FileInputStream(resultsFile)));
+//                            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//                            byte[] buffer = new byte[1024];
+//                            int length;
+//                            while ((length = gzipInputStream.read(buffer)) >= 0) {
+//                                byteArrayOutputStream.write(buffer);
+//                            }
+//                            gzipInputStream.close();
+//                            String resultsString = byteArrayOutputStream.toString();
+//                            if(results.getBenchmark() >= 0) {
+                                continue;
+//                            }
                         }
-                        System.out.println("training");
-                        nearestNeighbour.buildClassifier(trainInstances);
-                        System.out.println("testing");
-                        ClassifierResults results = nearestNeighbour.predict(testInstances);
-                        results.findAllStatsOnce();
-                        results.setBenchmark(benchmark);
-                        System.out.println("writing results");
-                        BufferedWriter writer = new BufferedWriter(new FileWriter(resultsFile));
-                        writer.write(results.toString());
+                        File resultsFileCsv = new File(experimentResultDir, resultsFileName + ".csv");
+                        ClassifierResults results;
+                        if(resultsFileCsv.exists()) {
+                            System.out.println("compressing");
+                            results = new ClassifierResults();
+                            results.loadFromFile(resultsFileCsv.getPath());
+                        } else {
+                            System.out.println("training");
+                            nearestNeighbour.buildClassifier(trainInstances);
+                            System.out.println("testing");
+                            results = nearestNeighbour.predict(testInstances);
+                            results.findAllStatsOnce();
+                            results.setBenchmark(benchmark);
+                            System.out.println("writing results");
+                        }
+                        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(resultsFile)));
+                        byte[] bytes = results.toString().getBytes();
+                        gzipOutputStream.write(bytes, 0, bytes.length);
+                        gzipOutputStream.close();
+//                        System.out.println();
+//                        System.out.println(results);
                         System.out.println();
-                        System.out.println(results);
-                        System.out.println();
-                        writer.close();
+                        if(resultsFileCsv.exists()) {
+                            resultsFileCsv.delete();
+                        }
                     }
                 }
             }
         }
-        killSwitch.interrupt();
+        System.exit(0);
     }
 
 

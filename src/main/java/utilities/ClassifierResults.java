@@ -748,6 +748,10 @@ base xi+1 to xi , that is, A
         this.benchmark = benchmark;
     }
 
+    public long getBenchmark() {
+        return benchmark;
+    }
+
     private long benchmark = -1;
 
     public static void main(String[] args) throws IOException {
