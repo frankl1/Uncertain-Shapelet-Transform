@@ -1,5 +1,6 @@
 package utilities;
 
+import weka.classifiers.rules.ZeroR;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -266,7 +267,7 @@ public class Utilities {
             instances.addAll(instancesFromFile(testDatasetFile));
             return instances;
         }
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("failed to load: " + datasetDir.getPath());
     }
 
     public static Instances loadDataset(String datasetDir) throws IOException {

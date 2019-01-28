@@ -12,7 +12,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
-import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
@@ -26,18 +26,13 @@ public class DistanceCalculator {
     private int combination;
     @Parameter(names={"-b"}, description="benchmark", required=true)
     private long benchmark;
-    private HashMap<Integer, HashMap<Integer, DistanceMeasurement>> distanceMap = new HashMap<>();
+    private TreeMap<Integer, TreeMap<Integer, DistanceMeasurement>> distanceMap = new TreeMap<>();
     private DistanceMeasure distanceMeasure;
 
     public static void main(String[] args) {
         DistanceCalculator distanceCalculator = new DistanceCalculator();
         new JCommander(distanceCalculator).parse(args);
-        try {
-            distanceCalculator.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        distanceCalculator.run();
     }
 
     private DistanceMeasure getDistanceMeasure(Instances instances) {
@@ -84,7 +79,7 @@ public class DistanceCalculator {
     }
 
     private void recordDistance(int i, int j, DistanceMeasurement distance) {
-        Map<Integer, DistanceMeasurement> map = distanceMap.computeIfAbsent(i, key -> new HashMap<>());
+        Map<Integer, DistanceMeasurement> map = distanceMap.computeIfAbsent(i, key -> new TreeMap<>());
         map.put(j, distance);
     }
 
@@ -99,26 +94,46 @@ public class DistanceCalculator {
         }
     }
 
-    public void run() throws IOException {
-        Instances instances = Utilities.loadDataset(datasetDir);
-        distanceMeasure = getDistanceMeasure(instances);
-        File distanceMeasureResultsDir = new File(resultsDir, distanceMeasure.toString());
-        distanceMeasureResultsDir.mkdirs();
-        File distanceMeasureResultsFile = new File(distanceMeasureResultsDir, distanceMeasure.getParameters());
-        if(distanceMeasureResultsFile.exists()) {
-            System.out.println("results exist");
-        } else {
-            for(int i = 0; i < instances.size(); i++) {
-                instances.get(i).setWeight(i);
-            }
-            for(int i = 1; i < instances.size(); i++) {
-                Instance instanceA = instances.get(i);
-                for(int j = 0; j < i; j++) {
-                    Instance instanceB = instances.get(j);
-                    recordDistance(instanceA, instanceB);
+    public void run() {
+        try {
+            Instances instances = Utilities.loadDataset(datasetDir);
+            distanceMeasure = getDistanceMeasure(instances);
+            resultsDir.mkdirs();
+            resultsDir.setReadable(true, false);
+            resultsDir.setWritable(true, false);
+            resultsDir.setExecutable(true, false);
+            File datasetResultsDir = new File(resultsDir, datasetDir.getName());
+            datasetResultsDir.mkdirs();
+            datasetResultsDir.setReadable(true, false);
+            datasetResultsDir.setWritable(true, false);
+            datasetResultsDir.setExecutable(true, false);
+            File distanceMeasureResultsDir = new File(datasetResultsDir, distanceMeasure.toString());
+            distanceMeasureResultsDir.mkdirs();
+            distanceMeasureResultsDir.setReadable(true, false);
+            distanceMeasureResultsDir.setWritable(true, false);
+            distanceMeasureResultsDir.setExecutable(true, false);
+            File distanceMeasureResultsFile = new File(distanceMeasureResultsDir, distanceMeasure.getParameters());
+            if(distanceMeasureResultsFile.exists()) {
+                System.out.println("results exist");
+            } else {
+                for(int i = 0; i < instances.size(); i++) {
+                    instances.get(i).setWeight(i);
+                }
+                for(int i = 1; i < instances.size(); i++) {
+                    Instance instanceA = instances.get(i);
+                    for(int j = 0; j < i; j++) {
+                        Instance instanceB = instances.get(j);
+                        recordDistance(instanceA, instanceB);
+                    }
+                }
+                try {
+                    writeCalculatedDistance(distanceMeasureResultsFile);
+                } catch (IOException e) {
+                    System.out.println(distanceMeasureResultsFile.getPath() + " io error");
                 }
             }
-            writeCalculatedDistance(distanceMeasureResultsFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
