@@ -31,7 +31,7 @@ public class DtwGenerator extends NnGenerator {
 
     @Override
     public void setParameterRanges(final Instances instances) {
-        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 1, 100));
+        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 1, 101));
     }
 
 }

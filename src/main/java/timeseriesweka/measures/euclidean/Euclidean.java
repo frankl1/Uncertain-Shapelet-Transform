@@ -24,7 +24,7 @@ public class Euclidean extends DistanceMeasure {
 
     @Override
     public String getParameters() {
-        return "";
+        return "no parameters";
     }
 
     @Override
