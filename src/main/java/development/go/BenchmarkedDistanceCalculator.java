@@ -29,9 +29,9 @@ public class BenchmarkedDistanceCalculator {
     }
 
     private void run() {
-        System.out.print("benchmarking: ");
+//        System.out.print("benchmarking: ");
         long benchmark = ClassifierResults.benchmark();
-        System.out.println(benchmark);
+//        System.out.println(benchmark);
 
         ElementIterator<File> datasetIterator = new ElementIterator<>();
         datasetIterator.setIndexIterator(new RandomIndexIterator());
@@ -44,7 +44,7 @@ public class BenchmarkedDistanceCalculator {
             distanceMeasureParameterIndexIterator.reset();
             while (distanceMeasureParameterIndexIterator.hasNext()) {
                 int distanceMeasureParameterIndex = distanceMeasureParameterIndexIterator.next();
-                System.out.println(dataset.getName() + " " + distanceMeasureParameterIndex);
+//                System.out.print(dataset.getName() + " " + distanceMeasureParameterIndex + ": ");
                 DistanceCalculator.main(new String[] {
                         "-d", dataset.getPath(),
                         "-c", String.valueOf(distanceMeasureParameterIndex),
