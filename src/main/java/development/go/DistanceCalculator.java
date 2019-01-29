@@ -12,6 +12,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.TreeMap;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
@@ -26,7 +27,8 @@ public class DistanceCalculator {
     private int combination;
     @Parameter(names={"-b"}, description="benchmark", required=true)
     private long benchmark;
-    private TreeMap<Integer, TreeMap<Integer, DistanceMeasurement>> distanceMap = new TreeMap<>();
+    private double[] distances;
+    private double[] times;
     private DistanceMeasure distanceMeasure;
 
     public static void main(String[] args) {
@@ -36,7 +38,7 @@ public class DistanceCalculator {
     }
 
     private DistanceMeasure getDistanceMeasure(Instances instances) {
-        if(combination < 0 || combination >= 803) {
+        if(combination < 0 || combination > 802) {
             throw new IllegalArgumentException("out of range: " + combination);
         }
         NnGenerator[] generators = new NnGenerator[]{
@@ -63,37 +65,6 @@ public class DistanceCalculator {
         return nearestNeighbour.getDistanceMeasure();
     }
 
-    private boolean distanceHasBeenRecordedOrdered(Instance instanceA, Instance instanceB) {
-        Map<Integer, DistanceMeasurement> map = distanceMap.get((int) instanceA.weight());
-        if(map == null) {
-            return false;
-        }
-        if(map.containsKey((int) instanceB.weight())) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean distanceHasBeenRecorded(Instance instanceA, Instance instanceB) {
-        return distanceHasBeenRecordedOrdered(instanceA, instanceB) || distanceHasBeenRecordedOrdered(instanceB, instanceA);
-    }
-
-    private void recordDistance(int i, int j, DistanceMeasurement distance) {
-        Map<Integer, DistanceMeasurement> map = distanceMap.computeIfAbsent(i, key -> new TreeMap<>());
-        map.put(j, distance);
-    }
-
-    private void recordDistance(Instance instanceA, Instance instanceB) {
-        if(!distanceHasBeenRecorded(instanceA, instanceB)) {
-//            System.out.println("Recording distance between " + (int) instanceA.weight() + "th and " + (int) instanceB.weight() + "th");
-            long startTime = System.nanoTime();
-            double distance = distanceMeasure.distance(instanceA, instanceB);
-            long stopTime = System.nanoTime();
-            long time = stopTime - startTime;
-            recordDistance((int) instanceA.weight(), (int) instanceB.weight(), new DistanceMeasurement(distance, time));
-        }
-    }
-
     public void run() {
         try {
             Instances instances = Utilities.loadDataset(datasetDir);
@@ -114,37 +85,30 @@ public class DistanceCalculator {
             distanceMeasureResultsDir.setExecutable(true, false);
             File distanceMeasureResultsFile = new File(distanceMeasureResultsDir, distanceMeasure.getParameters());
             if(distanceMeasureResultsFile.exists()) {
-                System.out.println("results exist");
+//                System.out.print("results exist");
             } else {
+                FileOutputStream fos = new FileOutputStream(distanceMeasureResultsFile);
+                GZIPOutputStream zos = new GZIPOutputStream(fos);
+                ObjectOutputStream oos = new ObjectOutputStream(zos);
+                oos.writeLong(benchmark);
                 for(int i = 0; i < instances.size(); i++) {
-                    instances.get(i).setWeight(i);
-                }
-                for(int i = 1; i < instances.size(); i++) {
                     Instance instanceA = instances.get(i);
                     for(int j = 0; j < i; j++) {
                         Instance instanceB = instances.get(j);
-                        recordDistance(instanceA, instanceB);
+                        long time = System.nanoTime();
+                        double distance = distanceMeasure.distance(instanceA, instanceB);
+                        time = System.nanoTime() - time;
+                        oos.writeDouble(distance);
+                        oos.writeLong(time);
                     }
                 }
-                try {
-                    writeCalculatedDistance(distanceMeasureResultsFile);
-                } catch (IOException e) {
-                    System.out.println(distanceMeasureResultsFile.getPath() + " io error");
-                }
+                oos.close();
+                zos.close();
+                fos.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void writeCalculatedDistance(File file) throws IOException {
-        FileOutputStream fos = new FileOutputStream(file);
-        GZIPOutputStream zos = new GZIPOutputStream(fos);
-        ObjectOutputStream ous = new ObjectOutputStream(zos);
-        ous.writeObject(distanceMap);
-        ous.writeDouble(benchmark);
-        ous.close();
-        zos.close();
-        fos.close();
+//        System.out.println();
     }
 }
