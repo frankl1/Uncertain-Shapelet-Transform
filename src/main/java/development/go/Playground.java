@@ -1,6 +1,7 @@
 package development.go;
 
 import net.sourceforge.sizeof.SizeOf;
+import utilities.ClassifierResults;
 
 import java.io.*;
 import java.net.URI;
@@ -12,7 +13,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class Playground {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
 //        String dirPath = System.getProperty("user.dir") + "/resources";
 //        String zipPath = System.getProperty("user.dir") + "/test.zip";
 //        String internalPath = "abc";
@@ -26,21 +27,27 @@ public class Playground {
 //        }
 //        gzipInputStream.close();
 //        System.out.println(byteArrayOutputStream.toString());
-        int numClasses = 30;
-        Random random = new Random();
-        double[][] distances = new double[numClasses - 1][];
-        Map<Integer, Map<Integer, Double>> map = new TreeMap<>();
-        for(int i = 0; i < distances.length; i++) {
-            double distance = random.nextDouble();
-            distances[i] = new double[i + 1];
-            map.computeIfAbsent(i, key -> new TreeMap<>());
-            for(int j = 0; j < distances[i].length; j++) {
-                distances[i][j] = distance;
-                map.get(i).put(j, distance);
-            }
-        }
-        System.out.println(SizeOf.deepSizeOf(distances));
-        System.out.println(SizeOf.deepSizeOf(map));
+//        int numClasses = 30;
+//        Random random = new Random();
+//        double[][] distances = new double[numClasses - 1][];
+//        Map<Integer, Map<Integer, Double>> map = new TreeMap<>();
+//        for(int i = 0; i < distances.length; i++) {
+//            double distance = random.nextDouble();
+//            distances[i] = new double[i + 1];
+//            map.computeIfAbsent(i, key -> new TreeMap<>());
+//            for(int j = 0; j < distances[i].length; j++) {
+//                distances[i][j] = distance;
+//                map.get(i).put(j, distance);
+//            }
+//        }
+//        System.out.println(SizeOf.deepSizeOf(distances));
+//        System.out.println(SizeOf.deepSizeOf(map));
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/ElectricDevices/m=msm,n=30,f=0,s=0,p=0.25.gzip")));
+        ClassifierResults classifierResults = (ClassifierResults) objectInputStream.readObject();
+        objectInputStream.close();
+        System.out.println(classifierResults);
+
     }
 
     private static void zip(String externalPath, String zipPath, String internalPath, int compressionLevel) throws IOException {
