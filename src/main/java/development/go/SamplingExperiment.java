@@ -7,6 +7,7 @@ import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.classifiers.ee.iteration.RandomIndexIterator;
 import utilities.ClassifierResults;
+import utilities.ClassifierStats;
 import utilities.Utilities;
 import utilities.instances.Folds;
 import weka.core.Instances;
@@ -45,27 +46,27 @@ public class SamplingExperiment {
         samplingExperiment.run();
     }
 
-    private static NnGenerator generatorFromString(String name) {
+    private static ParameterisedSupplier generatorFromString(String name) {
         name = name.toLowerCase();
         switch(name) {
             case "msm":
-                return new MsmGenerator();
+                return new MsmParameterisedSupplier();
             case "dtw":
-                return new DtwGenerator();
+                return new DtwParameterisedSupplier();
             case "ddtw":
-                return new DdtwGenerator();
+                return new DdtwParameterisedSupplier();
             case "erp":
-                return new ErpGenerator();
+                return new ErpParameterisedSupplier();
             case "twe":
-                return new TweGenerator();
+                return new TweParameterisedSupplier();
             case "wdtw":
-                return new WdtwGenerator();
+                return new WdtwParameterisedSupplier();
             case "wddtw":
-                return new WddtwGenerator();
+                return new WddtwParameterisedSupplier();
             case "lcss":
-                return new LcssGenerator();
+                return new LcssParameterisedSupplier();
             case "ed":
-                return new EuclideanGenerator();
+                return new EuclideanParameterisedSupplier();
             default:
                 throw new IllegalArgumentException();
         }
@@ -94,20 +95,20 @@ public class SamplingExperiment {
 //        System.out.println("benchmarking");
         long benchmark = ClassifierResults.benchmark();
 //        System.out.println("running experiments");
-        NnGenerator[] generators = new NnGenerator[]{
-            new DtwGenerator(),
-            new DdtwGenerator(),
-            new WdtwGenerator(),
-            new WddtwGenerator(),
-            new LcssGenerator(),
-            new MsmGenerator(),
-            new TweGenerator(),
-            new ErpGenerator(),
-            new EuclideanGenerator()
+        ParameterisedSupplier[] parameterisedSuppliers = new ParameterisedSupplier[]{
+            new DtwParameterisedSupplier(),
+            new DdtwParameterisedSupplier(),
+            new WdtwParameterisedSupplier(),
+            new WddtwParameterisedSupplier(),
+            new LcssParameterisedSupplier(),
+            new MsmParameterisedSupplier(),
+            new TweParameterisedSupplier(),
+            new ErpParameterisedSupplier(),
+            new EuclideanParameterisedSupplier()
         };
         final int[] parameterBins = new int[] {
 //            1, // stratified sample, 1 == not, 0 == strat'd
-            generators.length,
+            parameterisedSuppliers.length,
             datasets.size(),
             samplePercentages.size() // num sample percentages
         };
@@ -127,7 +128,7 @@ public class SamplingExperiment {
                     int[] parameters = Utilities.fromCombination(combination, parameterBins);
                     int parameterIndex = 0;
 //                    boolean stratifiedSample = parameters[parameterIndex++] == 0;
-                    NnGenerator nnGenerator = generators[parameters[parameterIndex++]];
+                    ParameterisedSupplier parameterisedSupplier = parameterisedSuppliers[parameters[parameterIndex++]];
                     File datasetFile = datasets.get(parameters[parameterIndex++]);
                     double samplePercentage = samplePercentages.get(parameters[parameterIndex++]); //(double) parameters[parameterIndex++] / 100;
                     String datasetName = datasetFile.getName();
@@ -144,51 +145,62 @@ public class SamplingExperiment {
                             .stratify(true)
                             .build();
                         Instances trainInstances = folds.getTrain(foldIndex);
-                        nnGenerator.setParameterRanges(trainInstances);
+                        parameterisedSupplier.setParameterRanges(trainInstances);
                         Instances testInstances = folds.getTest(foldIndex);
                         RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                        distanceMeasureParameterIterator.getRange().add(0, nnGenerator.size() - 1);
+                        distanceMeasureParameterIterator.getRange().add(0, parameterisedSupplier.size() - 1);
                         distanceMeasureParameterIterator.reset();
                         while(distanceMeasureParameterIterator.hasNext()) {
                             int distanceMeasureParameter = distanceMeasureParameterIterator.next();
                             distanceMeasureParameterIterator.remove();
-                            NearestNeighbour nearestNeighbour = nnGenerator.get(distanceMeasureParameter);
+                            NearestNeighbour nearestNeighbour = parameterisedSupplier.get(distanceMeasureParameter);
                             String resultsFileName = "m=" + nearestNeighbour.getDistanceMeasure().toString() + ",n=" + distanceMeasureParameter + ",f=" + foldIndex + ",s=" + sampleIndex + ",p=" + samplePercentage;// + ",d=" + stratifiedSample;
 //                        System.out.println(resultsFileName);
                             nearestNeighbour.setSamplePercentage(samplePercentage);
                             nearestNeighbour.setSeed(sampleIndex);
                             File resultsFile = new File(experimentResultDir, resultsFileName + ".gzip");
 //                        System.out.println("checking existing results");
-                            if(resultsFile.exists()) {
-//                            System.out.println("results exist");
-                                // results exist so attempt to load them in to ensure they're not corrupt (due to bkill :( )
-                                try {
-                                    ObjectInputStream in = new ObjectInputStream(
-                                        new GZIPInputStream(
-                                            new BufferedInputStream(
-                                                new FileInputStream(resultsFile)
-                                            )
-                                        )
-                                    );
-                                    ClassifierResults results = (ClassifierResults) in.readObject();
-                                    continue; // success, so continue
-                                } catch (ClassNotFoundException e) {
-                                    e.printStackTrace(); // fail, need the be re-run
-                                }
-                            }
+                            ClassifierResults results = null;
+                            boolean run = false;
                             try {
+                                if(resultsFile.exists()) {
+//                            System.out.println("results exist");
+                                    // results exist so attempt to load them in to ensure they're not corrupt (due to bkill :( )
+                                    try {
+                                        ObjectInputStream in = new ObjectInputStream(
+                                            new GZIPInputStream(
+                                                new BufferedInputStream(
+                                                    new FileInputStream(resultsFile)
+                                                )
+                                            )
+                                        );
+                                        Object object = in.readObject();
+                                        if(object instanceof ClassifierResults) {
+                                            results = (ClassifierResults) object;
+                                        } else {
+                                            continue; // success, so continue
+                                        }
+                                    } catch (ClassNotFoundException e) {
+                                        e.printStackTrace(); // fail, need the be re-run
+                                        run = true;
+                                    }
+                                } else {
+                                    run = true;
+                                }
+                                if(run) {
 //                        System.out.println("training");
-                                nearestNeighbour.buildClassifier(trainInstances);
+                                    nearestNeighbour.buildClassifier(trainInstances);
 //                        System.out.println("testing");
-                                ClassifierResults results = nearestNeighbour.predict(testInstances);
+                                    results = nearestNeighbour.predict(testInstances);
+                                    results.setBenchmark(benchmark);
+                                }
                                 results.findAllStatsOnce();
-                                results.setBenchmark(benchmark);
 //                        System.out.println("writing results");
                                 ObjectOutputStream out = new ObjectOutputStream(
                                     new GZIPOutputStream(
                                         new BufferedOutputStream(
                                             new FileOutputStream(resultsFile))));
-                                out.writeObject(results);
+                                out.writeObject(new ClassifierStats(results));
                                 out.close();
                             } catch (Exception e) {
                                 e.printStackTrace();

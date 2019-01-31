@@ -13,29 +13,26 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class WdtwGenerator extends NnGenerator {
+public class WdtwParameterisedSupplier extends ParameterisedSupplier<Wdtw> {
 
-    protected final Box<Wdtw> distanceMeasureBox = new Box<>();
     private final IndexedMutator<Dtw, Double> warpingWindowParameter = new IndexedMutator<>(Dtw.WARPING_WINDOW_MUTABLE);
-    private final TargetedMutator<Dtw> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, distanceMeasureBox);
+    private final TargetedMutator<Dtw> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, getBox());
     private final IndexedMutator<Wdtw, Double> weightParameter = new IndexedMutator<>(Wdtw.WEIGHT_MUTABLE);
-    private final TargetedMutator<Wdtw> weightMutator = new TargetedMutator<>(weightParameter, distanceMeasureBox);
+    private final TargetedMutator<Wdtw> weightMutator = new TargetedMutator<>(weightParameter, getBox());
 
-    public WdtwGenerator() {
+    public WdtwParameterisedSupplier() {
         List<Indexed> parameters = getParameters().getIndexeds();
         parameters.add(warpingWindowMutator);
         parameters.add(weightMutator);
     }
 
     @Override
-    protected DistanceMeasure getDistanceMeasure() {
-        distanceMeasureBox.setContents(new Wdtw());
-        return distanceMeasureBox.getContents();
+    protected Wdtw get() {
+        return new Wdtw();
     }
 
     @Override
     public void setParameterRanges(final Instances instances) {
-        double pStdDev = StatisticUtilities.populationStandardDeviation(instances);
         warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(1, 1, 1));
         weightParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0.01, 1, 100));
     }

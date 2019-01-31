@@ -54,14 +54,17 @@ public class SamplingExperimentAnalysis {
         for(File datasetDir : datasetDirs) {
             System.out.println(datasetDir.getName());
             File[] resultFiles = datasetDir.listFiles();
-            Arrays.sort(resultFiles, (file, other) -> {
-                double result = Double.parseDouble(parseVariableValue("p", file.getName())) - Double.parseDouble(parseVariableValue("p", other.getName()));
-                if(result == 0) {
-                    return Integer.parseInt(parseVariableValue("n", file.getName())) - Integer.parseInt(parseVariableValue("n", other.getName()));
-                } else if(result > 0) {
-                    return 1;
-                } else {
-                    return -1;
+            Arrays.sort(resultFiles, new Comparator<File>() {
+                @Override
+                public int compare(final File file, final File other) {
+                    double result = Double.parseDouble(parseVariableValue("p", file.getName())) - Double.parseDouble(parseVariableValue("p", other.getName()));
+                    if(result == 0) {
+                        return Integer.parseInt(parseVariableValue("n", file.getName())) - Integer.parseInt(parseVariableValue("n", other.getName()));
+                    } else if(result > 0) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
                 }
             });
             for(File resultFile : resultFiles) {

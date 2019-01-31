@@ -4,10 +4,10 @@ import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.euclidean.Euclidean;
 import weka.core.Instances;
 
-public class EuclideanGenerator extends NnGenerator {
+public class EuclideanParameterisedSupplier extends ParameterisedSupplier<Euclidean> {
 
     @Override
-    protected DistanceMeasure getDistanceMeasure() {
+    protected Euclidean get() {
         return new Euclidean();
     }
 

@@ -7,6 +7,18 @@ import java.util.List;
 
 public class Range implements IndexedSupplier<Integer> {
 
+    public Range(final Range originalRange) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Range() {
+
+    }
+
+    public Range(final int from, final int to) {
+        add(from, to);
+    }
+
     public void add(final Range range) {
         for(FixedRange fixedRange : range.ranges) {
             add(fixedRange);

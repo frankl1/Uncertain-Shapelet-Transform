@@ -12,23 +12,21 @@ import weka.core.Instances;
 
 import java.util.List;
 
-public class ErpGenerator extends NnGenerator {
-    private final Box<Erp> distanceMeasureBox = new Box<>();
+public class ErpParameterisedSupplier extends ParameterisedSupplier<Erp> {
     private final IndexedMutator<Erp, Double> warpingWindowParameter = new IndexedMutator<>(Erp.WARPING_WINDOW_MUTABLE);
-    private final TargetedMutator<Erp> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, distanceMeasureBox);
+    private final TargetedMutator<Erp> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, getBox());
     private final IndexedMutator<Erp, Double> penaltyParameter = new IndexedMutator<>(Erp.PENALTY_MUTABLE);
-    private final TargetedMutator<Erp> penaltyMutator = new TargetedMutator<>(penaltyParameter, distanceMeasureBox);
+    private final TargetedMutator<Erp> penaltyMutator = new TargetedMutator<>(penaltyParameter, getBox());
 
-    public ErpGenerator() {
+    public ErpParameterisedSupplier() {
         List<Indexed> parameters = getParameters().getIndexeds();
         parameters.add(warpingWindowMutator);
         parameters.add(penaltyMutator);
     }
 
     @Override
-    protected DistanceMeasure getDistanceMeasure() {
-        distanceMeasureBox.setContents(new Erp());
-        return distanceMeasureBox.getContents();
+    protected Erp get() {
+        return new Erp();
     }
 
     @Override

@@ -6,27 +6,23 @@ import timeseriesweka.classifiers.ee.constituents.TargetedMutator;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
-import utilities.Box;
 import weka.core.Instances;
 
 import java.util.List;
 
-public class DtwGenerator extends NnGenerator {
+public class DtwParameterisedSupplier extends ParameterisedSupplier<Dtw> {
 
-    protected final Box<Dtw> distanceMeasureBox = new Box<>();
     private final IndexedMutator<Dtw, Double> warpingWindowParameter = new IndexedMutator<>(Dtw.WARPING_WINDOW_MUTABLE);
-    private final TargetedMutator<Dtw> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, distanceMeasureBox);
+    private final TargetedMutator<Dtw> warpingWindowMutator = new TargetedMutator<>(warpingWindowParameter, getBox());
 
-    public DtwGenerator() {
+    public DtwParameterisedSupplier() {
         List<Indexed> parameters = getParameters().getIndexeds();
         parameters.add(warpingWindowMutator);
     }
 
-
     @Override
-    protected DistanceMeasure getDistanceMeasure() {
-        distanceMeasureBox.setContents(new Dtw());
-        return distanceMeasureBox.getContents();
+    protected Dtw get() {
+        return new Dtw();
     }
 
     @Override

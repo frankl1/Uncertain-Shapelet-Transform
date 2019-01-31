@@ -4,6 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ElementIterator<E> implements Iterator<E> {
+    public ElementIterator(final List<E> elements) {
+        setList(elements);
+    }
+
+    public ElementIterator() {
+
+    }
+
     public void setIndexIterator(final AbstractIndexIterator indexIterator) {
         this.indexIterator = indexIterator;
     }

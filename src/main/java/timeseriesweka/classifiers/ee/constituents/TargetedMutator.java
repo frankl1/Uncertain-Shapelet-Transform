@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 public class TargetedMutator<A> implements Indexed {
     public IndexedMutator<A, ?> getIndexedMutator() {
         return indexedMutator;
-    }
+    } // todo extend A
 
     public void setIndexedMutator(final IndexedMutator<A, ?> indexedMutator) {
         this.indexedMutator = indexedMutator;

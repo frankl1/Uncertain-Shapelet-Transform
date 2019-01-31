@@ -4,10 +4,8 @@ import weka.classifiers.rules.ZeroR;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.zip.GZIPInputStream;
 
 public class Utilities {
     public static final int size(double[][] matrix) {

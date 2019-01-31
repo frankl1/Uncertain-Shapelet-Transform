@@ -6,15 +6,11 @@ import com.beust.jcommander.converters.FileConverter;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.measures.DistanceMeasure;
-import timeseriesweka.measures.DistanceMeasurement;
 import utilities.Utilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.TreeMap;
-import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 public class DistanceCalculator {
@@ -41,27 +37,27 @@ public class DistanceCalculator {
         if(combination < 0 || combination > 802) {
             throw new IllegalArgumentException("out of range: " + combination);
         }
-        NnGenerator[] generators = new NnGenerator[]{
-                new DtwGenerator(),
-                new DdtwGenerator(),
-                new WdtwGenerator(),
-                new WddtwGenerator(),
-                new LcssGenerator(),
-                new MsmGenerator(),
-                new TweGenerator(),
-                new ErpGenerator(),
-                new EuclideanGenerator()
+        ParameterisedSupplier[] parameterisedSuppliers = new ParameterisedSupplier[]{
+                new DtwParameterisedSupplier(),
+                new DdtwParameterisedSupplier(),
+                new WdtwParameterisedSupplier(),
+                new WddtwParameterisedSupplier(),
+                new LcssParameterisedSupplier(),
+                new MsmParameterisedSupplier(),
+                new TweParameterisedSupplier(),
+                new ErpParameterisedSupplier(),
+                new EuclideanParameterisedSupplier()
         };
-        for(NnGenerator generator : generators) {
-            generator.setParameterRanges(instances);
+        for(ParameterisedSupplier parameterisedSupplier : parameterisedSuppliers) {
+            parameterisedSupplier.setParameterRanges(instances);
         }
         int index = 0;
-        while(combination >= generators[index].size()) {
-            combination -= generators[index].size();
+        while(combination >= parameterisedSuppliers[index].size()) {
+            combination -= parameterisedSuppliers[index].size();
             index++;
         }
-        NnGenerator generator = generators[index];
-        NearestNeighbour nearestNeighbour = generator.get(combination);
+        ParameterisedSupplier parameterisedSupplier = parameterisedSuppliers[index];
+        NearestNeighbour nearestNeighbour = parameterisedSupplier.get(combination);
         return nearestNeighbour.getDistanceMeasure();
     }
 
