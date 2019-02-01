@@ -12,6 +12,7 @@ import utilities.Utilities;
 import utilities.instances.Folds;
 import utilities.range.Range;
 import weka.classifiers.Classifier;
+import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -44,7 +45,7 @@ public class Ee implements AdvancedClassifier {
                     Instances trainFold = folds.getTrain(i);
                     Instances testFold = folds.getTest(i);
                     candidateClassifier.buildClassifier(trainFold);
-                    results.addAll(candidateClassifier.predict(testFold)); // todo adjust this to predict on 2d arr using modern weka instances class
+//                    results.addAll(candidateClassifier.predict(testFold)); // todo adjust this to predict on 2d arr using modern weka instances class
                 }
             }
         }
@@ -55,7 +56,7 @@ public class Ee implements AdvancedClassifier {
             constituent.getIndexedSupplier().setParameterRanges(trainInstances);
             constituent.reset();
         }
-        constituentIndexIterator.setRange(new Range(0, constituents.size()));
+        constituentIterator.reset();
     }
 
     private Folds foldInstances(Instances instances) {
@@ -73,14 +74,41 @@ public class Ee implements AdvancedClassifier {
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
-        if (selectedCandidates == null) {
-            throw new IllegalStateException("not trained");
-        }
+        return null;
+    }
 
+    @Override
+    public Capabilities getCapabilities() {
+        return null;
     }
 
     @Override
     public void setSeed(final long seed) {
 
+    }
+
+    @Override
+    public ClassifierResults predict(Instances testFold) throws Exception {
+        return null;
+    }
+
+    @Override
+    public void setSavePath(String path) {
+
+    }
+
+    @Override
+    public void copyFromSerObject(Object obj) throws Exception {
+
+    }
+
+    @Override
+    public void setTimeLimit(long time) {
+
+    }
+
+    @Override
+    public String getParameters() {
+        return null;
     }
 }

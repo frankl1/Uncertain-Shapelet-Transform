@@ -1,6 +1,8 @@
 package utilities.range;
 
+import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.index.IndexedSupplier;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,10 @@ public class Range implements IndexedSupplier<Integer> {
         add(from, to);
     }
 
+    public Range(List<?> list) {
+        add(list);
+    }
+
     public void add(final Range range) {
         for(FixedRange fixedRange : range.ranges) {
             add(fixedRange);
@@ -29,7 +35,7 @@ public class Range implements IndexedSupplier<Integer> {
         add(range.getStart(), range.getEnd());
     }
 
-    public <E> void add(List<E> list) {
+    public void add(List<?> list) {
         add(0, list.size() - 1);
     }
 

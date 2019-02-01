@@ -1,8 +1,10 @@
 package timeseriesweka.classifiers;
 
+import timeseriesweka.classifiers.ee.iteration.*;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
+import utilities.range.Range;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -11,9 +13,224 @@ import java.util.*;
 
 public class NearestNeighbour implements AdvancedClassifier {
 
-    public NearestNeighbour() {}
+    @Override
+    public void setSavePath(String path) {
+
+    }
+
+    @Override
+    public void copyFromSerObject(Object obj) throws Exception {
+
+    }
+
+    @Override
+    public void setTimeLimit(long time) {
+
+    }
+
+    private class NeighbourSearcher {
+        private final TreeMap<Double, TreeMap<Double, Integer>> neighbourClusters = new TreeMap<>();
+        private final IndexIterator trainInstanceIterator;
+        private final Instance testInstance;
+        private int numNeighbours = 0;
+        private final Random random = new Random();
+
+        public NeighbourSearcher(Instance testInstance) {
+            this.testInstance = testInstance;
+            RandomIndexIterator randomIndexIterator = new RandomIndexIterator();
+            randomIndexIterator.setRange(new Range(0, trainInstances.numInstances()));
+            trainInstanceIterator = randomIndexIterator;
+        }
+
+        public boolean hasRemainingTicks() {
+            return trainInstanceIterator.hasNext();
+        }
+
+        public void tick() {
+            Instance trainInstance = trainInstances.get(trainInstanceIterator.next());
+            double cutOff = getCutOff();
+            double distance = distanceMeasure.distance(trainInstance, testInstance, cutOff);
+            if(distance <= cutOff) {
+                 addNeighbour(distance, trainInstance.classValue());
+            }
+        }
+
+        public double[] predict() {
+            TreeMap<Double, TreeMap<Double, Integer>> neighbours = findNeighbours();
+            double[] probabilities = new double[testInstance.numClasses()];
+            for(Double distance : neighbours.keySet()) {
+                TreeMap<Double, Integer> neighbourCluster = neighbours.get(distance);
+                for(Double classValue : neighbourCluster.keySet()) {
+                    probabilities[classValue.intValue()] += neighbourCluster.get(classValue);
+                }
+            }
+            ArrayUtilities.normalise(probabilities);
+            return probabilities;
+        }
+
+        private TreeMap<Double, TreeMap<Double, Integer>> findNeighbours() {
+            TreeMap<Double, TreeMap<Double, Integer>> neighbours = new TreeMap<>();
+            for(Double key : neighbourClusters.keySet()) {
+                neighbours.put(key, new TreeMap<>(neighbourClusters.get(key)));
+            }
+            int numNeighboursToRemove = numNeighbours - k;
+            TreeMap<Double, Integer> lastCluster = neighbours.lastEntry().getValue();
+            List<Double> lastClusterClassValues = new ArrayList<>(lastCluster.keySet());
+            while (numNeighboursToRemove > 0) {
+                numNeighboursToRemove--;
+                Double randomClassValue = lastClusterClassValues.get(random.nextInt(lastClusterClassValues.size()));
+                Integer count = lastCluster.get(randomClassValue);
+                count--;
+                if(count <= 0) {
+                    lastCluster.remove(randomClassValue);
+                } else {
+                    lastCluster.put(randomClassValue, count);
+                }
+            }
+            return neighbours;
+        }
+
+        private void addNeighbour(double distance, double classValue) {
+            Map<Double, Integer> neighbourCluster = neighbourClusters.computeIfAbsent(distance, key -> new TreeMap<>());
+            Integer count = neighbourCluster.get(classValue);
+            if(count == null) {
+                count = 0;
+            } else {
+                count++;
+            }
+            neighbourCluster.put(classValue, count);
+            numNeighbours++;
+            int kOverflow = numNeighbours - k;
+            Map.Entry<Double, TreeMap<Double, Integer>> furtherNeighbourCluster = neighbourClusters.lastEntry();
+            if(kOverflow > furtherNeighbourCluster.getValue().size()) {
+                neighbourClusters.pollLastEntry();
+            }
+        }
+
+        private double getCutOff() {
+            if(useCutOff) {
+                if(neighbourClusters.isEmpty()) {
+                    return distanceMeasure.MAX;
+                } else {
+                    return neighbourClusters.lastKey();
+                }
+            } else {
+                return DistanceMeasure.MAX;
+            }
+        }
+
+        public void reset() {
+            neighbourClusters.clear();
+            trainInstanceIterator.reset();
+            numNeighbours = 0;
+        }
+
+    }
+
+    // todo set seed for random iterators
+    // todo add seed to reset
+    // todo k check to flag too little training instances?
+    // todo k as a percentage (in adition to absolute k)
 
     private Instances trainInstances;
+    private Instances testInstances;
+    private NeighbourSearcher[] neighbourSearchers;
+    private AbstractIndexIterator testInstanceIndexIterator = new RoundRobinIndexIterator();
+    private Instances[] instancesByClass;
+    private int[] sampleSizes;
+    private AbstractIndexIterator sampleSizesIndexIterator = new RoundRobinIndexIterator();
+    private AbstractIndexIterator sampleOverflowClassValueIterator = new RandomIndexIterator();
+    private Random samplingRandom = new Random();
+
+    public boolean hasRemainingTrainingTicks() {
+        return sampleSizesIndexIterator.hasNext() || sampleOverflowClassValueIterator.hasNext();
+    }
+
+    public boolean hasRemainingTestingTicks() {
+        return testInstanceIndexIterator.hasNext();
+    }
+
+    public void tickTrain() {
+        if(stratifiedSample) {
+            int classValue;
+            if(sampleSizesIndexIterator.hasNext()) {
+                int sampleSizeIndex = sampleSizesIndexIterator.next();
+                int sampleSize = sampleSizes[sampleSizeIndex];
+                sampleSize--;
+                if(sampleSize <= 0) {
+                    sampleSizesIndexIterator.remove();
+                }
+                classValue = sampleSizeIndex;
+            } else {
+                // overflow
+                classValue = sampleOverflowClassValueIterator.next();
+                sampleOverflowClassValueIterator.remove();
+            }
+            Instances instances = instancesByClass[classValue];
+            trainInstances.add(instances.remove(samplingRandom.nextInt(instances.numInstances())));
+        }
+    }
+
+    public void setTrainInstances(Instances trainInstances) {
+        if(stratifiedSample) {
+            this.trainInstances = new Instances(trainInstances, 0);
+            instancesByClass = Utilities.instancesByClass(trainInstances);
+            sampleSizes = new int[instancesByClass.length];
+            int sum = 0;
+            for(int i = 0; i < sampleSizes.length; i++) {
+                sampleSizes[i] = (int) (instancesByClass[i].numInstances() * samplePercentage);
+                sum += sampleSizes[i];
+            }
+            sampleSizesIndexIterator.setRange(new Range(0, sampleSizes.length));
+            int overallSampleSize = (int) (trainInstances.numInstances() * samplePercentage);
+            int overflow = overallSampleSize - sum;
+            sampleOverflowClassValueIterator.setRange(new Range(0, instancesByClass.length));
+            for(int i = 0; i < instancesByClass.length - overflow; i++) {
+                sampleOverflowClassValueIterator.next();
+                sampleOverflowClassValueIterator.remove();
+            }
+        }
+    }
+
+    public void setTestInstances(Instances testInstances) {
+        this.testInstances = testInstances;
+        neighbourSearchers = new NeighbourSearcher[testInstances.numInstances()];
+        for(int i = 0; i < neighbourSearchers.length; i++) {
+            neighbourSearchers[i] = new NeighbourSearcher(testInstances.get(i));
+        }
+        testInstanceIndexIterator.setRange(new Range(0, neighbourSearchers.length)); // todo edge case when test instances is empty, same with train
+    }
+
+    public void testTick() {
+        int testInstanceIndex = testInstanceIndexIterator.next();
+        NeighbourSearcher neighbourSearcher = neighbourSearchers[testInstanceIndex];
+        neighbourSearcher.tick();
+        if(!neighbourSearcher.hasRemainingTicks()) {
+            testInstanceIndexIterator.remove();
+        }
+    }
+
+    public void reset() {
+        testInstanceIndexIterator.reset();
+        while (testInstanceIndexIterator.hasNext()) {
+            int testInstanceIndex = testInstanceIndexIterator.next();
+            neighbourSearchers[testInstanceIndex].reset();
+        }
+        testInstanceIndexIterator.reset();
+        sampleSizesIndexIterator.reset();
+        sampleOverflowClassValueIterator.reset();
+    }
+
+    public double[][] predict() {
+        double[][] predictions = new double[testInstances.numInstances()][testInstances.numClasses()];
+        for(int i = 0; i < predictions.length; i++) {
+            predictions[i] = neighbourSearchers[i].predict();
+        }
+        return predictions;
+    }
+
+    public NearestNeighbour() {}
+
     private int k = 1;
 
     public DistanceMeasure getDistanceMeasure() {
@@ -26,9 +243,6 @@ public class NearestNeighbour implements AdvancedClassifier {
 
     private DistanceMeasure distanceMeasure = new Dtw();
     private final Random random = new Random(); // generic random for tied breaks, etc
-    private final Random samplingRandom = new Random(); // random stream specifically for sampling - ensures sampling in same order
-    private Map<Instance, Map<Instance, Double>> distanceCache = null;
-    private String cacheName = "";
     private Long seed = null;
     private double samplePercentage = 1;
     private long trainTime = -1;
@@ -54,53 +268,6 @@ public class NearestNeighbour implements AdvancedClassifier {
             throw new IllegalArgumentException(); // todo
         } else {
             this.samplePercentage = percentage;
-        }
-    }
-
-    public boolean isCachingDistances() {
-        return distanceCache != null;
-    }
-
-    public void cacheDistances(boolean cache) {
-        if(cache) {
-            distanceCache = new HashMap<>();
-        } else {
-            distanceCache = null;
-        }
-    }
-
-    /**
-     * only used by getCachedDistance function, do not use elsewhere
-     * @param a
-     * @param b
-     * @return
-     */
-    private Double getCachedDistanceOrdered(Instance a, Instance b) {
-        if(distanceCache == null) {
-            return null;
-        }
-        Map<Instance, Double> map = distanceCache.get(a);
-        if(map != null) {
-            return map.get(b);
-        }
-        return null;
-    }
-
-    private Double getCachedDistance(Instance a, Instance b) {
-        if(distanceCache == null) {
-            return null;
-        }
-        Double distance = getCachedDistanceOrdered(a, b);
-        if(distance == null) {
-            distance = getCachedDistanceOrdered(b, a);
-        }
-        return distance;
-    }
-
-    private void cacheDistance(Instance a, Instance b, Double distance) {
-        if(distanceCache != null) {
-            Map<Instance, Double> map = distanceCache.computeIfAbsent(a, key -> new HashMap<>());
-            map.put(b, distance);
         }
     }
 
@@ -143,24 +310,6 @@ public class NearestNeighbour implements AdvancedClassifier {
         return Utilities.max(distributionForInstance(testInstance));
     }
 
-    private Double findDistance(Instance a, Instance b, Double cutOff) {
-//        // find the distance between the train case and test case
-//        // check if cached
-//        Double cachedDistance = getCachedDistance(a, b); // todo
-//        // if distance not in cache then compute and cache
-//        if(cachedDistance == null) {
-//            cachedDistance = Double.POSITIVE_INFINITY;
-//        }
-//        if(cachedDistance > cutOff) {
-//            double distance = distanceMeasure.distance(a, b, cutOff);
-//            if(distance < cachedDistance) {
-//                cacheDistance(a, b, cachedDistance);
-//            }
-//        }
-//        return cachedDistance; // todo THIS DOENS'T WORK!
-        return distanceMeasure.distance(a, b, cutOff);
-    }
-
     @Override
     public String toString() {
         return distanceMeasure.toString() + "-nn";
@@ -186,7 +335,7 @@ public class NearestNeighbour implements AdvancedClassifier {
         for(int instanceIndex = 0; instanceIndex < trainInstances.size(); instanceIndex++) { // todo train set iteration technique
             // find distance between train instance and test instance
             Instance trainInstance = trainInstances.get(instanceIndex);
-            Double distance = findDistance(trainInstance, testInstance, cutOff);
+            Double distance = distanceMeasure.distance(trainInstance, testInstance, cutOff);
             // map of classValue to number of neighbours with said class
             Map<Integer, Integer> neighbourMap = neighbours.computeIfAbsent(distance, key -> new HashMap<>());
             Integer classValue = (int) trainInstance.classValue();
@@ -291,10 +440,6 @@ public class NearestNeighbour implements AdvancedClassifier {
         this.k = k;
     }
 
-    private void setCacheName() {
-        cacheName = trainInstances.relationName() + "_" + seed;
-    }
-
     @Override
     public void setSeed(long seed) {
         random.setSeed(seed);
@@ -317,20 +462,5 @@ public class NearestNeighbour implements AdvancedClassifier {
     @Override
     public String getParameters() {
         return "samplePercentage=" + samplePercentage + ",k=" + k + ",stratifiedSample=" + stratifiedSample + ",distanceMeasure=" + distanceMeasure.toString() + ",distanceMeasureParameters={" + distanceMeasure.getParameters() + "}";
-    }
-
-    @Override
-    public void setSavePath(final String path) {
-
-    }
-
-    @Override
-    public void copyFromSerObject(final Object obj) throws Exception {
-
-    }
-
-    @Override
-    public void setTimeLimit(final long time) {
-
     }
 }
