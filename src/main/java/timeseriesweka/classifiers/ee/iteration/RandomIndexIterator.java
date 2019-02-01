@@ -3,8 +3,17 @@ package timeseriesweka.classifiers.ee.iteration;
 import java.util.*;
 
 public class RandomIndexIterator extends LinearIndexIterator {
-    private final Random random = new Random();
+    private Random random = new Random();
     private Long seed = null;
+
+    public Random getRandom() {
+        return random;
+    }
+
+    public void setRandom(final Random random) {
+        this.random = random;
+        reset();
+    }
 
     @Override
     public void setSeed(final long seed) {

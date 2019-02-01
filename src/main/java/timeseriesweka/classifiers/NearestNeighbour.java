@@ -127,11 +127,6 @@ public class NearestNeighbour implements AdvancedClassifier {
 
     }
 
-    // todo set seed for random iterators
-    // todo add seed to reset
-    // todo k check to flag too little training instances?
-    // todo k as a percentage (in adition to absolute k)
-
     private Instances trainInstances;
     private Instances testInstances;
     private NeighbourSearcher[] neighbourSearchers;
@@ -139,18 +134,30 @@ public class NearestNeighbour implements AdvancedClassifier {
     private Instances[] instancesByClass;
     private int[] sampleSizes;
     private AbstractIndexIterator sampleSizesIndexIterator = new RoundRobinIndexIterator();
-    private AbstractIndexIterator sampleOverflowClassValueIterator = new RandomIndexIterator();
+    private RandomIndexIterator sampleOverflowClassValueIterator = new RandomIndexIterator();
     private Random samplingRandom = new Random();
 
-    public boolean hasRemainingTrainingTicks() {
+    public boolean remainingTrainTicks() {
         return sampleSizesIndexIterator.hasNext() || sampleOverflowClassValueIterator.hasNext();
     }
 
-    public boolean hasRemainingTestingTicks() {
+    public boolean remainingTestTicks() {
         return testInstanceIndexIterator.hasNext();
     }
 
-    public void tickTrain() {
+    public void train() {
+        while (remainingTrainTicks()) {
+            trainTick();
+        }
+    }
+
+    public void test() {
+        while (remainingTestTicks()) {
+            testTick();
+        }
+    }
+
+    public void trainTick() {
         if(stratifiedSample) {
             int classValue;
             if(sampleSizesIndexIterator.hasNext()) {
@@ -219,6 +226,7 @@ public class NearestNeighbour implements AdvancedClassifier {
         testInstanceIndexIterator.reset();
         sampleSizesIndexIterator.reset();
         sampleOverflowClassValueIterator.reset();
+        setSeed(seed);
     }
 
     public double[][] predict() {
@@ -229,7 +237,9 @@ public class NearestNeighbour implements AdvancedClassifier {
         return predictions;
     }
 
-    public NearestNeighbour() {}
+    public NearestNeighbour() {
+        sampleOverflowClassValueIterator.setRandom(samplingRandom);
+    }
 
     private int k = 1;
 
@@ -273,36 +283,12 @@ public class NearestNeighbour implements AdvancedClassifier {
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        long startTime = System.nanoTime();
-        trainInstances = new Instances(trainInstances);
-        this.trainInstances = new Instances(trainInstances, 0);
-        int overallSampleSize = (int) (trainInstances.numInstances() * samplePercentage);
-        if(stratifiedSample) {
-            Instances[] instancesByClass = Utilities.instancesByClass(trainInstances);
-            for(int i = 0; i < instancesByClass.length; i++) {
-                Instances homogeneousInstances = instancesByClass[i];
-                int sampleSize = (int) (homogeneousInstances.numInstances() * samplePercentage);
-                for(int j = 0; j < sampleSize; j++) {
-                    this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
-                }
-            }
-            List<Integer> classIndices = new ArrayList<>();
-            for(int i = 0; i < instancesByClass.length; i++) {
-                classIndices.add(i);
-            }
-            Collections.shuffle(classIndices, samplingRandom);
-            int overflow = overallSampleSize - this.trainInstances.numInstances();
-            for(int i = 0; i < overflow; i++) {
-                Instances homogeneousInstances = instancesByClass[classIndices.remove(0)];
-                this.trainInstances.add(homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.numInstances())));
-            }
-        } else {
-            for(int i = 0; i < overallSampleSize; i++) {
-                this.trainInstances.add(trainInstances.remove(samplingRandom.nextInt(trainInstances.numInstances())));
-            }
+        trainTime = System.nanoTime();
+        setTrainInstances(trainInstances);
+        while(remainingTrainTicks()) {
+            trainTick();
         }
-        long stopTime = System.nanoTime();
-        trainTime = stopTime - startTime;
+        trainTime = System.nanoTime() - trainTime;
     }
 
     @Override
@@ -415,7 +401,6 @@ public class NearestNeighbour implements AdvancedClassifier {
         results.setNumInstances(testInstances.numInstances());
         results.setTrainTime(trainTime);
         long startTime = System.nanoTime();
-        int i = 0;
         for(Instance testInstance : testInstances) {
             results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
         }
