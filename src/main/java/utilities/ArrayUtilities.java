@@ -75,4 +75,41 @@ public class ArrayUtilities {
         }
         return derivative;
     }
+
+    public static int gcd(int a, int b) {
+        while (b != 0) {
+            int temp = a;
+            a = b;
+            b = temp % b;
+        }
+        return a;
+    }
+
+    public static int gcd(int... values) {
+        int result = values[0];
+        for(int value : values) {
+            result = gcd(result, value);
+        }
+        return result;
+    }
+
+    public static void divideGcd(int[] array) {
+        int gcd = gcd(array);
+        divide(array, gcd);
+    }
+
+    public static void divide(int[] array, int divisor) {
+        for(int i = 0; i < array.length; i++) {
+            array[i] /= divisor;
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] abc = new int[] {120,268,782};
+        divideGcd(abc);
+        for(int i : abc) {
+            System.out.print(i);
+            System.out.print(", ");
+        }
+    }
 }

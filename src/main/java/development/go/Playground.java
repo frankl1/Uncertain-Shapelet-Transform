@@ -2,6 +2,7 @@ package development.go;
 
 import net.sourceforge.sizeof.SizeOf;
 import utilities.ClassifierResults;
+import utilities.ClassifierStats;
 
 import java.io.*;
 import java.net.URI;
@@ -43,10 +44,10 @@ public class Playground {
 //        System.out.println(SizeOf.deepSizeOf(distances));
 //        System.out.println(SizeOf.deepSizeOf(map));
 
-        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/ElectricDevices/m=msm,n=30,f=0,s=0,p=0.25.gzip")));
-        ClassifierResults classifierResults = (ClassifierResults) objectInputStream.readObject();
+        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results3/Coffee/m=erp,n=0,f=0,s=0,p=0.25.gzip")));
+        ClassifierStats stats = (ClassifierStats) objectInputStream.readObject();
         objectInputStream.close();
-        System.out.println(classifierResults);
+        System.out.println(stats);
 
     }
 

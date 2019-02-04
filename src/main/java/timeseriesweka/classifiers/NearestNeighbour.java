@@ -15,39 +15,41 @@ public class NearestNeighbour implements AdvancedClassifier {
 
     @Override
     public void setSavePath(String path) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void copyFromSerObject(Object obj) throws Exception {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setTimeLimit(long time) {
+    throw new UnsupportedOperationException();
 
     }
 
     private class NeighbourSearcher {
         private final TreeMap<Double, TreeMap<Double, Integer>> neighbourClusters = new TreeMap<>();
-        private final IndexIterator trainInstanceIterator;
         private final Instance testInstance;
         private int numNeighbours = 0;
-        private final Random random = new Random();
+        private final AbstractIndexIterator trainInstanceIndexIterator = new RandomIndexIterator();
 
         public NeighbourSearcher(Instance testInstance) {
             this.testInstance = testInstance;
-            RandomIndexIterator randomIndexIterator = new RandomIndexIterator();
-            randomIndexIterator.setRange(new Range(0, trainInstances.numInstances()));
-            trainInstanceIterator = randomIndexIterator;
         }
 
-        public boolean hasRemainingTicks() {
-            return trainInstanceIterator.hasNext();
+        public void addInstanceIndex(int index) {
+            trainInstanceIndexIterator.getRange().add(index);
+        }
+
+        public boolean remainingTicks() {
+            return trainInstanceIndexIterator.hasNext();
         }
 
         public void tick() {
-            Instance trainInstance = trainInstances.get(trainInstanceIterator.next());
+            int trainInstanceIndex = trainInstanceIndexIterator.next();
+            Instance trainInstance = trainInstances.get(trainInstanceIndex);
             double cutOff = getCutOff();
             double distance = distanceMeasure.distance(trainInstance, testInstance, cutOff);
             if(distance <= cutOff) {
@@ -121,28 +123,28 @@ public class NearestNeighbour implements AdvancedClassifier {
 
         public void reset() {
             neighbourClusters.clear();
-            trainInstanceIterator.reset();
             numNeighbours = 0;
+            trainInstanceIndexIterator.reset();
         }
 
     }
 
+    private Instances originalTrainInstances;
     private Instances trainInstances;
-    private Instances testInstances;
     private NeighbourSearcher[] neighbourSearchers;
     private AbstractIndexIterator testInstanceIndexIterator = new RoundRobinIndexIterator();
+    private AbstractIndexIterator classValueIndexIterator = new RoundRobinIndexIterator();
     private Instances[] instancesByClass;
     private int[] sampleSizes;
-    private AbstractIndexIterator sampleSizesIndexIterator = new RoundRobinIndexIterator();
-    private RandomIndexIterator sampleOverflowClassValueIterator = new RandomIndexIterator();
+    private int[] originalSampleSizes;
     private Random samplingRandom = new Random();
 
     public boolean remainingTrainTicks() {
-        return sampleSizesIndexIterator.hasNext() || sampleOverflowClassValueIterator.hasNext();
+        return false;
     }
 
     public boolean remainingTestTicks() {
-        return testInstanceIndexIterator.hasNext();
+//        return testInstanceIndexIterator.hasNext();
     }
 
     public void train() {
@@ -158,49 +160,27 @@ public class NearestNeighbour implements AdvancedClassifier {
     }
 
     public void trainTick() {
-        if(stratifiedSample) {
-            int classValue;
-            if(sampleSizesIndexIterator.hasNext()) {
-                int sampleSizeIndex = sampleSizesIndexIterator.next();
-                int sampleSize = sampleSizes[sampleSizeIndex];
-                sampleSize--;
-                if(sampleSize <= 0) {
-                    sampleSizesIndexIterator.remove();
-                }
-                classValue = sampleSizeIndex;
-            } else {
-                // overflow
-                classValue = sampleOverflowClassValueIterator.next();
-                sampleOverflowClassValueIterator.remove();
-            }
-            Instances instances = instancesByClass[classValue];
-            trainInstances.add(instances.remove(samplingRandom.nextInt(instances.numInstances())));
-        }
+
     }
 
     public void setTrainInstances(Instances trainInstances) {
-        if(stratifiedSample) {
-            this.trainInstances = new Instances(trainInstances, 0);
-            instancesByClass = Utilities.instancesByClass(trainInstances);
-            sampleSizes = new int[instancesByClass.length];
-            int sum = 0;
-            for(int i = 0; i < sampleSizes.length; i++) {
-                sampleSizes[i] = (int) (instancesByClass[i].numInstances() * samplePercentage);
-                sum += sampleSizes[i];
-            }
-            sampleSizesIndexIterator.setRange(new Range(0, sampleSizes.length));
-            int overallSampleSize = (int) (trainInstances.numInstances() * samplePercentage);
-            int overflow = overallSampleSize - sum;
-            sampleOverflowClassValueIterator.setRange(new Range(0, instancesByClass.length));
-            for(int i = 0; i < instancesByClass.length - overflow; i++) {
-                sampleOverflowClassValueIterator.next();
-                sampleOverflowClassValueIterator.remove();
-            }
+        originalTrainInstances = trainInstances;
+        this.trainInstances = new Instances(trainInstances, 0);
+        instancesByClass = Utilities.instancesByClass(trainInstances);
+        classValueIndexIterator.setRange(new Range(0, instancesByClass.length));
+        sampleSizes = new int[instancesByClass.length];
+        for(int i = 0; i < sampleSizes.length; i++) {
+            sampleSizes[i] = instancesByClass[i].size();
         }
+        ArrayUtilities.divideGcd(sampleSizes);
+    }
+
+    private void setupWorkingSampleSizes() {
+        sampleSizes = new int[originalSampleSizes.length];
+        System.arraycopy(originalSampleSizes, 0, sampleSizes, 0, sampleSizes.length);
     }
 
     public void setTestInstances(Instances testInstances) {
-        this.testInstances = testInstances;
         neighbourSearchers = new NeighbourSearcher[testInstances.numInstances()];
         for(int i = 0; i < neighbourSearchers.length; i++) {
             neighbourSearchers[i] = new NeighbourSearcher(testInstances.get(i));
@@ -208,7 +188,28 @@ public class NearestNeighbour implements AdvancedClassifier {
         testInstanceIndexIterator.setRange(new Range(0, neighbourSearchers.length)); // todo edge case when test instances is empty, same with train
     }
 
+    private void findNextTrainInstance() {
+        int classValueIndex = classValueIndexIterator.next();
+        sampleSizes[classValueIndex]--;
+        if(sampleSizes[classValueIndex] == 0) {
+            classValueIndexIterator.remove();
+            if(!classValueIndexIterator.hasNext()) {
+                System.arraycopy(originalSampleSizes, 0, sampleSizes, 0, sampleSizes.length);
+                classValueIndexIterator.reset();
+            }
+        }
+        Instances homogenousTrainInstances = instancesByClass[classValueIndex];
+        Instance trainInstance = homogenousTrainInstances.remove(samplingRandom.nextInt(homogenousTrainInstances.size()));
+        trainInstances.add(trainInstance);
+        int index = trainInstances.size() - 1;
+        for(NeighbourSearcher searcher : neighbourSearchers) {
+            searcher.addInstanceIndex(index);
+        }
+    }
+
     public void testTick() {
+
+
         int testInstanceIndex = testInstanceIndexIterator.next();
         NeighbourSearcher neighbourSearcher = neighbourSearchers[testInstanceIndex];
         neighbourSearcher.tick();
@@ -224,9 +225,8 @@ public class NearestNeighbour implements AdvancedClassifier {
             neighbourSearchers[testInstanceIndex].reset();
         }
         testInstanceIndexIterator.reset();
-        sampleSizesIndexIterator.reset();
-        sampleOverflowClassValueIterator.reset();
         setSeed(seed);
+        setupWorkingSampleSizes();
     }
 
     public double[][] predict() {

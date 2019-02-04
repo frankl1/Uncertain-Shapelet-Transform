@@ -4,12 +4,11 @@ import utilities.range.Range;
 
 public abstract class AbstractIndexIterator implements IndexIterator {
     public Range getRange() {
-        return new Range(originalRange);
+        return originalRange;
     }
 
     public void setRange(Range range) {
         originalRange = new Range(range);
-        reset();
     }
 
     private Range originalRange = new Range();
