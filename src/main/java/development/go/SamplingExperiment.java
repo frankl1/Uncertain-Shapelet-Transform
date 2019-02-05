@@ -11,6 +11,7 @@ import utilities.ClassifierResults;
 import utilities.ClassifierStats;
 import utilities.Utilities;
 import utilities.instances.Folds;
+import utilities.range.Range;
 import weka.core.Instances;
 
 import java.io.*;
@@ -55,6 +56,7 @@ public class SamplingExperiment {
             while (!Thread.currentThread().isInterrupted()) {
                 if(!killSwitchFile.exists()) {
                     stop[0] = true;
+                    System.out.println("killing");
                 }
                 try {
                     Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
@@ -86,7 +88,7 @@ public class SamplingExperiment {
         globalResultsDir.setExecutable(true, false);
         // todo fold and resample rand iter and list param for both
         RandomIndexIterator combinationIndexIterator = new RandomIndexIterator();
-        combinationIndexIterator.getRange().add(0, numCombinations - 1);
+        combinationIndexIterator.setRange(new Range(0, numCombinations - 1));
         combinationIndexIterator.reset();
         while (combinationIndexIterator.hasNext() && !stop[0]) {
             int combination = combinationIndexIterator.next();
@@ -110,7 +112,7 @@ public class SamplingExperiment {
                 parameterisedSupplier.setParameterRanges(trainInstances);
                 Instances testInstances = folds.getTest(foldIndex);
                 RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                distanceMeasureParameterIterator.getRange().add(0, parameterisedSupplier.size() - 1);
+                distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
                 distanceMeasureParameterIterator.reset();
                 while(distanceMeasureParameterIterator.hasNext()) {
                     int distanceMeasureParameter = distanceMeasureParameterIterator.next();

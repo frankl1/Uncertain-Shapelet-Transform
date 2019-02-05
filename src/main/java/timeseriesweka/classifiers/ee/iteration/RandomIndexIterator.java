@@ -27,9 +27,9 @@ public class RandomIndexIterator extends LinearIndexIterator {
     }
 
     @Override
-    public Integer next() {
+    protected int nextIndex() {
         index = random.nextInt(workingRange.size());
-        return workingRange.get(index);
+        return index;
     }
 
     @Override

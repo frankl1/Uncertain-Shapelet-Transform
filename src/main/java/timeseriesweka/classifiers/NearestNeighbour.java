@@ -40,7 +40,7 @@ public class NearestNeighbour implements AdvancedClassifier {
         }
 
         public void addInstanceIndex(int index) {
-            trainInstanceIndexIterator.getRange().add(index);
+            trainInstanceIndexIterator.add(index);
         }
 
         public boolean remainingTicks() {
@@ -49,6 +49,7 @@ public class NearestNeighbour implements AdvancedClassifier {
 
         public void tick() {
             int trainInstanceIndex = trainInstanceIndexIterator.next();
+            trainInstanceIndexIterator.remove();
             Instance trainInstance = trainInstances.get(trainInstanceIndex);
             double cutOff = getCutOff();
             double distance = distanceMeasure.distance(trainInstance, testInstance, cutOff);
@@ -60,18 +61,25 @@ public class NearestNeighbour implements AdvancedClassifier {
         public double[] predict() {
             TreeMap<Double, TreeMap<Double, Integer>> neighbours = findNeighbours();
             double[] probabilities = new double[testInstance.numClasses()];
-            for(Double distance : neighbours.keySet()) {
-                TreeMap<Double, Integer> neighbourCluster = neighbours.get(distance);
-                for(Double classValue : neighbourCluster.keySet()) {
-                    probabilities[classValue.intValue()] += neighbourCluster.get(classValue);
+            if(neighbours.isEmpty()) {
+                probabilities[random.nextInt(probabilities.length)]++;
+            } else {
+                for(Double distance : neighbours.keySet()) {
+                    TreeMap<Double, Integer> neighbourCluster = neighbours.get(distance);
+                    for(Double classValue : neighbourCluster.keySet()) {
+                        probabilities[classValue.intValue()] += neighbourCluster.get(classValue);
+                    }
                 }
+                ArrayUtilities.normalise(probabilities);
             }
-            ArrayUtilities.normalise(probabilities);
             return probabilities;
         }
 
         private TreeMap<Double, TreeMap<Double, Integer>> findNeighbours() {
             TreeMap<Double, TreeMap<Double, Integer>> neighbours = new TreeMap<>();
+            if(neighbourClusters.isEmpty()) {
+                return neighbours;
+            }
             for(Double key : neighbourClusters.keySet()) {
                 neighbours.put(key, new TreeMap<>(neighbourClusters.get(key)));
             }
@@ -85,6 +93,9 @@ public class NearestNeighbour implements AdvancedClassifier {
                 count--;
                 if(count <= 0) {
                     lastCluster.remove(randomClassValue);
+                    if(lastCluster.isEmpty()) {
+                        neighbours.pollLastEntry();
+                    }
                 } else {
                     lastCluster.put(randomClassValue, count);
                 }
@@ -96,7 +107,7 @@ public class NearestNeighbour implements AdvancedClassifier {
             Map<Double, Integer> neighbourCluster = neighbourClusters.computeIfAbsent(distance, key -> new TreeMap<>());
             Integer count = neighbourCluster.get(classValue);
             if(count == null) {
-                count = 0;
+                count = 1;
             } else {
                 count++;
             }
@@ -206,7 +217,7 @@ public class NearestNeighbour implements AdvancedClassifier {
         }
         selectedNextTrainInstance = true;
     }
-
+    // todo set random / seeds for iterators
     public void testTick() {
         int neighbourSearcherIndex = neighbourSearcherIndexIterator.next();
         NeighbourSearcher neighbourSearcher = neighbourSearchers[neighbourSearcherIndex];

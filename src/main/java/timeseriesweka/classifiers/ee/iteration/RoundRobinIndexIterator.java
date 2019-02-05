@@ -8,7 +8,7 @@ public class RoundRobinIndexIterator extends LinearIndexIterator {
     }
 
     @Override
-    public Integer next() {
+    protected int nextIndex() {
         index++;
         index %= workingRange.size();
         return index;

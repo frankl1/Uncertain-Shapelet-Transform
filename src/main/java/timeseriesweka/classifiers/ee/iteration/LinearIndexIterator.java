@@ -14,14 +14,14 @@ public class LinearIndexIterator extends AbstractIndexIterator {
         return index < workingRange.size();
     }
 
-    @Override
-    public Integer next() {
-        index++;
-        return index;
-    }
-
     public void resetPostRange() {
         index = 0;
+    }
+
+    @Override
+    protected int nextIndex() {
+        index++;
+        return index;
     }
 
     @Override
