@@ -9,6 +9,7 @@ public abstract class AbstractIndexIterator implements IndexIterator {
 
     public void setRange(Range range) {
         originalRange = new Range(range);
+
     }
 
     private Range originalRange = new Range();

@@ -2,6 +2,9 @@ package utilities;
 
 import weka.core.Instances;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ArrayUtilities {
     private ArrayUtilities() {}
 
@@ -11,6 +14,13 @@ public class ArrayUtilities {
         }
         for(int i = 0; i < b.length; i++) {
             a[i] += b[i];
+        }
+    }
+
+    public static void subtract(double[] a, double[] b) {
+        int length = Math.min(a.length, b.length);
+        for(int i = 0; i < length; i++) {
+            a[i] -= b[i];
         }
     }
 
@@ -35,17 +45,25 @@ public class ArrayUtilities {
         }
     }
 
-    public static int maxIndex(double[] array) {
-        int index = 0;
-        double max = array[index];
+    public static int[] maxIndex(double[] array) {
+        List<Integer> indices = new ArrayList<>();
+        indices.add(0);
+        double max = array[0];
         for(int i = 1; i < array.length; i++) {
             double value = array[i];
-            if(value > max) {
-                max = value;
-                index = i;
+            if(value >= max) {
+                if(value > max) {
+                    max = value;
+                    indices.clear();
+                }
+                indices.add(i);
             }
         }
-        return index;
+        int[] result = new int[indices.size()];
+        for(int i = 0; i < result.length; i++) {
+            result[i] = indices.get(i);
+        }
+        return result;
     }
 
     public static double mean(double[] array) {

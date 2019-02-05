@@ -10,7 +10,7 @@ import java.util.List;
 public class Range implements IndexedSupplier<Integer> {
 
     public Range(final Range originalRange) {
-        throw new UnsupportedOperationException();
+        ranges.addAll(originalRange.ranges);
     }
 
     public Range() {
