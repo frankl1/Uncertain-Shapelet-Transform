@@ -1,14 +1,11 @@
 package timeseriesweka.measures;
 
-import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.msm.Msm;
-import utilities.SaveParameterInfo;
-import weka.core.*;
+import timeseriesweka.classifiers.SaveParameterInfo;
+import weka.core.Instance;
+import weka.core.NormalizableDistance;
+import weka.core.TechnicalInformationHandler;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
+import static utilities.Utilities.extractTimeSeries;
 
 import static utilities.Utilities.*;
 
