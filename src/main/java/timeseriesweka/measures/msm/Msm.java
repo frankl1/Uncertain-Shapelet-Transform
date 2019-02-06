@@ -3,8 +3,6 @@ package timeseriesweka.measures.msm;
 import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
-import static utilities.Utilities.positiveCheck;
-
 public class Msm extends DistanceMeasure {
 
     public static final Mutable<Msm, Double> COST_MUTABLE = new Mutable<Msm, Double>() {
@@ -35,7 +33,6 @@ public class Msm extends DistanceMeasure {
     }
 
     public void setCost(double cost) {
-        positiveCheck(cost);
         this.cost = cost;
     }
 

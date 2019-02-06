@@ -1,6 +1,8 @@
 package utilities;
 
-public class ClassifierStats {
+import java.io.Serializable;
+
+public class ClassifierStats implements Serializable {
     private double meanAuroc;
     private double nll;
     private double balancedAccuracy;

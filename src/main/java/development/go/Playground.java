@@ -8,10 +8,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 public class Playground {
     public static void main(String[] args) throws IOException, ClassNotFoundException {
@@ -44,11 +41,30 @@ public class Playground {
 //        System.out.println(SizeOf.deepSizeOf(distances));
 //        System.out.println(SizeOf.deepSizeOf(map));
 
-        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new FileInputStream("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results3/Coffee/m=erp,n=0,f=0,s=0,p=0.25.gzip")));
-        ClassifierStats stats = (ClassifierStats) objectInputStream.readObject();
-        objectInputStream.close();
-        System.out.println(stats);
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                double[] a = new double[10000000];
+                try {
+                    writeObjectToFile(a, new File("abc.xyz"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread t1 = new Thread(runnable);
+        Thread t2 = new Thread(runnable);
+        t1.start();
+        t2.start();
+    }
 
+    private static void writeObjectToFile(Object object, File file) throws IOException {
+        ObjectOutputStream out = new ObjectOutputStream(
+//            new GZIPOutputStream(
+//                new BufferedOutputStream(
+                    new FileOutputStream(file));//));
+        out.writeObject(object);
+        out.close();
     }
 
     private static void zip(String externalPath, String zipPath, String internalPath, int compressionLevel) throws IOException {

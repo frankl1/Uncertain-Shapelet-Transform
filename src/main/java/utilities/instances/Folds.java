@@ -1,10 +1,12 @@
 package utilities.instances;
 
 import utilities.range.Range;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -91,16 +93,7 @@ public class Folds implements Iterable<TrainTestSplit>, Serializable {
 
         public Folds build() {
             if(stratify) {
-                instances.sort((instanceA, instanceB) -> {
-                    double result = instanceB.classValue() - instanceA.classValue();
-                    if (result < 0) {
-                        return -1;
-                    } else if (result > 0) {
-                        return 1;
-                    } else {
-                        return 0;
-                    }
-                });
+                instances.sort(Comparator.comparingDouble(Instance::classValue));
             } else {
                 Collections.shuffle(instances, random);
             }
