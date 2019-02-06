@@ -4,6 +4,7 @@ import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.measures.DistanceMeasure;
 import utilities.ClassifierResults;
 import utilities.ClassifierStats;
+import utilities.InstanceTools;
 import utilities.Utilities;
 import utilities.instances.Folds;
 import weka.core.Instances;
@@ -74,13 +75,10 @@ public class SamplingExperimentAnalysis {
                 parameterisedSupplier.setParameterRanges(dataset);
             }
             double datasetProgress = 0;
-            Folds datasetFolds = new Folds.Builder(dataset, numFolds)
-                .setSeed(f)
-                .stratify(true)
-                .build();
             for(Integer fold : folds) {
                 double foldProgress = 0;
-                Instances trainInstances = datasetFolds.getTrain(fold);
+                Instances[] splitInstances = InstanceTools.resampleInstances(dataset, fold, 0.5);
+                Instances trainInstances = splitInstances[0];
                 for(Integer seeding : seedings) {
                     double seedingProgress = 0;
                     for(Integer k : ks) {

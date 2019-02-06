@@ -9,6 +9,7 @@ import timeseriesweka.classifiers.ee.iteration.RandomIndexIterator;
 import timeseriesweka.measures.DistanceMeasure;
 import utilities.ClassifierResults;
 import utilities.ClassifierStats;
+import utilities.InstanceTools;
 import utilities.Utilities;
 import utilities.instances.Folds;
 import utilities.range.Range;
@@ -17,6 +18,7 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
@@ -27,12 +29,8 @@ public class SamplingExperiment {
     // todo param validation
     @Parameter(names={"-r"}, description="results dir", converter= FileConverter.class, required=true)
     private File dir;
-    @Parameter(names={"-f"}, description="number of dataset folds", required=true)
-    private int numFolds;
     @Parameter(names={"-fi"}, description="dataset fold index", required=true)
     private List<Integer> foldIndices;
-    @Parameter(names={"-s"}, description="number of train seedings", required=true)
-    private int numSeedings;
     @Parameter(names={"-si"}, description="train sample index", required=true)
     private List<Integer> seedingIndices;
     @Parameter(names={"-d"}, description="datasets", required=true)
@@ -134,12 +132,10 @@ public class SamplingExperiment {
                     File experimentResultDir = new File(dir, datasetName);
                     try {
                         Instances dataset = Utilities.loadDataset(datasetFile);
-                        Folds folds = new Folds.Builder(dataset, numFolds)
-                            .stratify(true)
-                            .build();
-                        Instances trainInstances = folds.getTrain(foldIndex);
+                        Instances[] splitInstances = InstanceTools.resampleInstances(dataset, foldIndex, 0.5);
+                        Instances trainInstances = splitInstances[0];
                         parameterisedSupplier.setParameterRanges(trainInstances);
-                        Instances testInstances = folds.getTest(foldIndex);
+                        Instances testInstances = splitInstances[1];
                         RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
                         distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
                         while(distanceMeasureParameterIterator.hasNext() && !stop[0]) {
@@ -167,7 +163,7 @@ public class SamplingExperiment {
                                 double percentageIncrement = 0.01;
                                 writeStatsToFile(testInstances, nearestNeighbour, resultsDir, index++, benchmark);
                                 nextPercentage += percentageIncrement;
-                                while (nearestNeighbour.remainingTestTicks()) {
+                                while (nearestNeighbour.remainingTestTicks()) { // todo killswitch
                                     nearestNeighbour.testTick();
                                     if(nearestNeighbour.hasSelectedNewTrainInstance()) {
                                         double percentage = (double) index / trainInstances.numInstances();
