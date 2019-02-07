@@ -23,8 +23,23 @@ public class SamplingExperimentAnalysis {
         if(index >= 0) {
             return str.substring(0, index);
         } else {
-            return str;
+            throw new IllegalArgumentException();
         }
+    }
+
+    private static String parseVariable(String str, String variableName) {
+        int index = str.indexOf(variableName + "=");
+        if(index >= 0) {
+            str = str.substring(index);
+            int nextIndex = str.indexOf(",");
+            if(nextIndex < 0) {
+                nextIndex = str.lastIndexOf(".");
+            }
+            if (nextIndex >= 0) {
+                return str.substring(1 + variableName.length(), nextIndex);
+            }
+        }
+        throw new IllegalArgumentException();
     }
 
     private static ClassifierStats loadStats(File file) throws IOException, ClassNotFoundException {
@@ -49,87 +64,43 @@ public class SamplingExperimentAnalysis {
         return datasetNames;
     }
 
-    public static void main(String[] args) throws Exception {
-        int numFolds = 10;
-        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results-tick-fix");
-        File datasetDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2018");
-        List<Integer> folds = new ArrayList<>(Collections.singletonList(0));
-        List<Integer> seedings = new ArrayList<>(Collections.singletonList(0));
-        List<Integer> ks = new ArrayList<>(Collections.singletonList(1));
-        List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
-        parameterisedSuppliers.add(new DtwParameterisedSupplier());
-        parameterisedSuppliers.add(new DdtwParameterisedSupplier());
-        parameterisedSuppliers.add(new WdtwParameterisedSupplier());
-        parameterisedSuppliers.add(new WddtwParameterisedSupplier());
-        parameterisedSuppliers.add(new LcssParameterisedSupplier());
-        parameterisedSuppliers.add(new MsmParameterisedSupplier());
-        parameterisedSuppliers.add(new TweParameterisedSupplier());
-        parameterisedSuppliers.add(new ErpParameterisedSupplier());
-        parameterisedSuppliers.add(new EuclideanParameterisedSupplier());
+    public static void main(String[] args) throws IOException {
+        int numFolds = 30;
+        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/tick-seed");
+//        File datasetsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2018");
         List<String> datasetNames = datasetNamesFromFile(new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt"));
         datasetNames.sort(String::compareToIgnoreCase);
-        double overallProgress = 0;
+        //  distM       dmParam     fold        percent  acc
+        Map<String, Map<String, Map<Integer, Map<Double, ClassifierStats>>>> results = new TreeMap<>();
         for(String datasetName : datasetNames) {
-            Instances dataset = Utilities.loadDataset(new File(datasetDir, datasetName));
-            for(ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier : parameterisedSuppliers) {
-                parameterisedSupplier.setParameterRanges(dataset);
-            }
-            double datasetProgress = 0;
-            for(Integer fold : folds) {
-                double foldProgress = 0;
-                Instances[] splitInstances = InstanceTools.resampleInstances(dataset, fold, 0.5);
-                Instances trainInstances = splitInstances[0];
-                for(Integer seeding : seedings) {
-                    double seedingProgress = 0;
-                    for(Integer k : ks) {
-                        double kProgress = 0;
-                        for(ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier : parameterisedSuppliers) {
-                            double distanceMeasureProgress = 0;
-                            if(parameterisedSupplier instanceof WdtwParameterisedSupplier) {
-                                System.out.println();
-                            }
-                            for(int distanceMeasureParameterIndex = 0;
-                                    distanceMeasureParameterIndex < parameterisedSupplier.size();
-                                    distanceMeasureParameterIndex++) {
-                                DistanceMeasure distanceMeasure = parameterisedSupplier.get(distanceMeasureParameterIndex);
-                                double distanceMeasureParameterProgress = 0;
-                                double nextPercentage = 0;
-                                int numInstances = trainInstances.numInstances();
-                                for(int i = 0; i < numInstances; i++) {
-                                    double percentage = (double) i / numInstances;
-                                    if(percentage >= nextPercentage) {
-                                        nextPercentage += 0.01;
-                                        File resultsFile = new File(resultsDir, datasetName
-                                            + "/" + fold
-                                            + "/" + seeding
-                                            + "/" + k
-                                            + "/" + distanceMeasure.toString()
-                                            + "/" + distanceMeasure.getParameters()
-                                            + "/" + percentage + ".gzip");
-                                        if(resultsFile.exists()) {
-                                            distanceMeasureParameterProgress++;
-                                        }
-                                    }
-                                }
-                                distanceMeasureParameterProgress /= parameterisedSupplier.size();
-                                distanceMeasureProgress += distanceMeasureParameterProgress;
-                            }
-                            distanceMeasureProgress /= parameterisedSupplier.size();
-                            kProgress += distanceMeasureProgress;
-                        }
-                        kProgress /= parameterisedSuppliers.size();
-                        seedingProgress += kProgress;
+            System.out.println(datasetName);
+            File dataset = new File(resultsDir, datasetName);
+            File[] resultFiles = dataset.listFiles();
+            if(resultFiles != null) {
+                int i = 0;
+                for(File resultFile : resultFiles) {
+                    try {
+                        i++;
+                        System.out.println(i);
+                        ClassifierStats stats = loadStats(resultFile);
+                        String fileName = resultFile.getName();
+//                            System.out.println(fileName);
+                        String distanceMeasureName = parseVariable(fileName, "d");
+                        String distanceMeasureParameters = parseVariable(fileName, "q");
+                        double percentageTrainSample = Double.parseDouble(parseVariable(fileName, "p"));
+                        int fold = Integer.parseInt(parseVariable(fileName, "f"));
+                        Map<String, Map<Integer, Map<Double, ClassifierStats>>> distanceMeasureResults = results.computeIfAbsent(distanceMeasureName, key -> new TreeMap<>());
+                        Map<Integer, Map<Double, ClassifierStats>> foldResults = distanceMeasureResults.computeIfAbsent(distanceMeasureParameters, key -> new TreeMap<>());
+                        Map<Double, ClassifierStats> percentageSampleResults = foldResults.computeIfAbsent(fold, key -> new TreeMap<>());
+                        percentageSampleResults.put(percentageTrainSample, stats);
+                    } catch (IOException e) {
+//                            e.printStackTrace();
+//                        System.out.println("ioe");
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
                     }
-                    seedingProgress /= ks.size();
-                    foldProgress += seedingProgress;
                 }
-                foldProgress /= seedings.size();
-                datasetProgress += foldProgress;
             }
-            datasetProgress /= folds.size();
-            overallProgress += datasetProgress;
         }
-        overallProgress /= datasetNames.size();
-        System.out.println("Overall: " + overallProgress);
     }
 }
