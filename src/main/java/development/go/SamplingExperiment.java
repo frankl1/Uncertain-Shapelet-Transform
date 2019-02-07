@@ -31,8 +31,6 @@ public class SamplingExperiment {
     private File dir;
     @Parameter(names={"-fi"}, description="dataset fold index", required=true)
     private List<Integer> foldIndices;
-    @Parameter(names={"-si"}, description="train sample index", required=true)
-    private List<Integer> seedingIndices;
     @Parameter(names={"-d"}, description="datasets", required=true)
     private List<File> datasets;
     @Parameter(names={"-k"}, description="kill switch file path", required=true)
@@ -65,8 +63,8 @@ public class SamplingExperiment {
         out.close();
     }
 
-    private static void writeStatsToFile(Instances testInstances, NearestNeighbour nearestNeighbour, File resultsDir, double index, long benchmark) throws IOException {
-        File file = new File(resultsDir, index + ".gzip");
+    private static void writeStatsToFile(Instances testInstances, NearestNeighbour nearestNeighbour, File resultsDir, String resultsFilePrefix, double index, long benchmark) throws IOException {
+        File file = new File(resultsDir, resultsFilePrefix + ",p=" + index + ".gzip");
         if(file.createNewFile()) {
             double[][] predictions = nearestNeighbour.predict();
             ClassifierResults results = new ClassifierResults();
@@ -117,77 +115,72 @@ public class SamplingExperiment {
             datasets.size(),
         };
         final int numCombinations = Utilities.numCombinations(parameterBins);
-        for(Integer seedingIndex : seedingIndices) {
-            for(Integer foldIndex : foldIndices) {
-                RandomIndexIterator combinationIndexIterator = new RandomIndexIterator();
-                combinationIndexIterator.setRange(new Range(0, numCombinations - 1));
-                while (combinationIndexIterator.hasNext() && !stop[0]) {
-                    int combination = combinationIndexIterator.next();
-                    combinationIndexIterator.remove();
-                    int[] parameters = Utilities.fromCombination(combination, parameterBins);
-                    int parameterIndex = 0;
-                    ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier = parameterisedSuppliers.get(parameters[parameterIndex++]);
-                    File datasetFile = datasets.get(parameters[parameterIndex++]);
-                    String datasetName = datasetFile.getName();
-                    File experimentResultDir = new File(dir, datasetName);
-                    try {
-                        Instances dataset = Utilities.loadDataset(datasetFile);
-                        Instances[] splitInstances = InstanceTools.resampleInstances(dataset, foldIndex, 0.5);
-                        Instances trainInstances = splitInstances[0];
-                        parameterisedSupplier.setParameterRanges(trainInstances);
-                        Instances testInstances = splitInstances[1];
-                        RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
-                        distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
-                        while(distanceMeasureParameterIterator.hasNext() && !stop[0]) {
-                            int distanceMeasureParameter = distanceMeasureParameterIterator.next();
-                            distanceMeasureParameterIterator.remove();
-                            DistanceMeasure distanceMeasure = parameterisedSupplier.get(distanceMeasureParameter);
-                            NearestNeighbour nearestNeighbour = new NearestNeighbour();
-                            nearestNeighbour.setDistanceMeasure(distanceMeasure);
-                            // check whether results exist
-                            File resultsDir = new File(experimentResultDir,
-                                foldIndex
-                                    + "/" + seedingIndex
-                                    + "/" + nearestNeighbour.getK()
-                                    + "/" + nearestNeighbour.getDistanceMeasure()
-                                    + "/" + nearestNeighbour.getDistanceMeasure().getParameters()
-                            );
-                            if(!resultsDir.exists()) {
-                                mkdir(resultsDir);
-                                nearestNeighbour.setSeed(seedingIndex);
-                                nearestNeighbour.setTrainInstances(trainInstances);
-                                nearestNeighbour.setTestInstances(testInstances);
-                                nearestNeighbour.train();
-                                int index = 0;
-                                double nextPercentage = 0;
-                                double percentageIncrement = 0.01;
-                                writeStatsToFile(testInstances, nearestNeighbour, resultsDir, index++, benchmark);
-                                nextPercentage += percentageIncrement;
-                                while (nearestNeighbour.remainingTestTicks()) { // todo killswitch
-                                    nearestNeighbour.testTick();
-                                    if(nearestNeighbour.hasSelectedNewTrainInstance()) {
-                                        double percentage = (double) index / trainInstances.numInstances();
-                                        if(percentage >= nextPercentage) {
-                                            try {
-                                                writeStatsToFile(testInstances, nearestNeighbour, resultsDir, percentage, benchmark);
-                                            } catch (Exception e) {
-                                                e.printStackTrace();
-                                            }
-                                            nextPercentage += percentageIncrement;
-                                        }
-                                        index++;
+        for(Integer foldIndex : foldIndices) {
+            RandomIndexIterator combinationIndexIterator = new RandomIndexIterator();
+            combinationIndexIterator.setRange(new Range(0, numCombinations - 1));
+            while (combinationIndexIterator.hasNext() && !stop[0]) {
+                int combination = combinationIndexIterator.next();
+                combinationIndexIterator.remove();
+                int[] parameters = Utilities.fromCombination(combination, parameterBins);
+                int parameterIndex = 0;
+                ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier = parameterisedSuppliers.get(parameters[parameterIndex++]);
+                File datasetFile = datasets.get(parameters[parameterIndex++]);
+                String datasetName = datasetFile.getName();
+                File experimentResultDir = new File(dir, datasetName);
+                mkdir(experimentResultDir);
+                try {
+                    Instances dataset = Utilities.loadDataset(datasetFile);
+                    Instances[] splitInstances = InstanceTools.resampleInstances(dataset, foldIndex, 0.5);
+                    Instances trainInstances = splitInstances[0];
+                    parameterisedSupplier.setParameterRanges(trainInstances);
+                    Instances testInstances = splitInstances[1];
+                    RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
+                    distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
+                    while(distanceMeasureParameterIterator.hasNext() && !stop[0]) {
+                        int distanceMeasureParameter = distanceMeasureParameterIterator.next();
+                        distanceMeasureParameterIterator.remove();
+                        DistanceMeasure distanceMeasure = parameterisedSupplier.get(distanceMeasureParameter);
+                        NearestNeighbour nearestNeighbour = new NearestNeighbour();
+                        nearestNeighbour.setDistanceMeasure(distanceMeasure);
+                        // check whether results exist
+                        String resultsFilePrefix = "f=" + foldIndex
+                            + ",k=" + nearestNeighbour.getK()
+                            + ",d=" + nearestNeighbour.getDistanceMeasure()
+                            + ",q={" + nearestNeighbour.getDistanceMeasure().getParameters() + "}";
+                        nearestNeighbour.setSeed(foldIndex);
+                        nearestNeighbour.setTrainInstances(trainInstances);
+                        nearestNeighbour.setTestInstances(testInstances);
+                        nearestNeighbour.train();
+                        int index = 0;
+                        double nextPercentage = 0;
+                        double percentageIncrement = 0.01;
+                        if(!stop[0]) writeStatsToFile(testInstances, nearestNeighbour, experimentResultDir, resultsFilePrefix, index++, benchmark);
+                        nextPercentage += percentageIncrement;
+                        while (nearestNeighbour.remainingTestTicks() && !stop[0]) {
+                            nearestNeighbour.testTick();
+                            if(nearestNeighbour.hasSelectedNewTrainInstance()) {
+                                double percentage = (double) index / trainInstances.numInstances();
+                                if(percentage >= nextPercentage) {
+                                    try {
+                                        writeStatsToFile(testInstances, nearestNeighbour, experimentResultDir, resultsFilePrefix, percentage, benchmark);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
                                     }
+                                    nextPercentage += percentageIncrement;
                                 }
-                                try {
-                                    writeStatsToFile(testInstances, nearestNeighbour, resultsDir, 1, benchmark);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
+                                index++;
                             }
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        if(!stop[0]) {
+                            try {
+                                writeStatsToFile(testInstances, nearestNeighbour, experimentResultDir, resultsFilePrefix, 1, benchmark);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
