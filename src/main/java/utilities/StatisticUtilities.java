@@ -11,8 +11,10 @@ public class StatisticUtilities {
         for(int i = 0; i < instances.numInstances(); i++){
             ins2array = instances.instance(i).toDoubleArray(); // todo use extract time series rather than assumption of class val index
             for(int j = 0; j < ins2array.length-1; j++){//-1 to avoid classVal
-                sumx+=ins2array[j];
-                sumx2+=ins2array[j]*ins2array[j];
+                if(!Double.isNaN(ins2array[j])) {
+                    sumx+=ins2array[j];
+                    sumx2+=ins2array[j]*ins2array[j];
+                }
             }
         }
         int n = instances.numInstances()*(instances.numAttributes()-1);
