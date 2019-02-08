@@ -106,15 +106,15 @@ public class SamplingExperiment {
         killSwitch.start();
         benchmark = ClassifierResults.benchmark();
         List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
-//        parameterisedSuppliers.add(new DtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new DdtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new WdtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new WddtwParameterisedSupplier());
+        parameterisedSuppliers.add(new DtwParameterisedSupplier());
+        parameterisedSuppliers.add(new DdtwParameterisedSupplier());
+        parameterisedSuppliers.add(new WdtwParameterisedSupplier());
+        parameterisedSuppliers.add(new WddtwParameterisedSupplier());
         parameterisedSuppliers.add(new LcssParameterisedSupplier());
-//        parameterisedSuppliers.add(new MsmParameterisedSupplier());
-//        parameterisedSuppliers.add(new TweParameterisedSupplier());
-//        parameterisedSuppliers.add(new ErpParameterisedSupplier());
-//        parameterisedSuppliers.add(new EuclideanParameterisedSupplier());
+        parameterisedSuppliers.add(new MsmParameterisedSupplier());
+        parameterisedSuppliers.add(new TweParameterisedSupplier());
+        parameterisedSuppliers.add(new ErpParameterisedSupplier());
+        parameterisedSuppliers.add(new EuclideanParameterisedSupplier());
         final int[] parameterBins = new int[] {
             parameterisedSuppliers.size(),
             datasets.size(),
