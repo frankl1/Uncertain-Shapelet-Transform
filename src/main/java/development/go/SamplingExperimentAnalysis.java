@@ -28,15 +28,26 @@ public class SamplingExperimentAnalysis {
     }
 
     private static String parseVariable(String str, String variableName) {
-        int index = str.indexOf(variableName + "=");
-        if(index >= 0) {
-            str = str.substring(index);
-            int nextIndex = str.indexOf(",");
-            if(nextIndex < 0) {
-                nextIndex = str.lastIndexOf(".");
+        if(variableName.equalsIgnoreCase("q")) {
+            int index = str.indexOf("{");
+            if(index >= 0) {
+                str = str.substring(index + 1);
+                index = str.lastIndexOf("}");
+                str = str.substring(0, index);
+                return str;
             }
-            if (nextIndex >= 0) {
-                return str.substring(1 + variableName.length(), nextIndex);
+        } else {
+            str = str.substring(0, str.indexOf("{")) + str.substring(str.lastIndexOf("}") + 1, str.length());
+            int index = str.indexOf(variableName + "=");
+            if(index >= 0) {
+                str = str.substring(index);
+                int nextIndex = str.indexOf(",");
+                if(nextIndex < 0) {
+                    nextIndex = str.lastIndexOf(".");
+                }
+                if (nextIndex >= 0) {
+                    return str.substring(1 + variableName.length(), nextIndex);
+                }
             }
         }
         throw new IllegalArgumentException();
@@ -51,6 +62,7 @@ public class SamplingExperimentAnalysis {
             )
         );
         Object object = in.readObject();
+        in.close();
         return (ClassifierStats) object;
     }
 
@@ -65,18 +77,18 @@ public class SamplingExperimentAnalysis {
     }
 
     public static void main(String[] args) throws IOException {
-        int numFolds = 30;
         long time = System.nanoTime();
-        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/tick-seed");
+        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/a");
 //        File datasetsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2018");
         List<String> datasetNames = datasetNamesFromFile(new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt"));
         datasetNames.sort(String::compareToIgnoreCase);
-        //  distM       dmParam     fold        percent  acc
-        Map<String, Map<String, Map<Integer, Map<Double, ClassifierStats>>>> results = new TreeMap<>();
+        //  dataset     distM       dmParam     fold        percent  acc
+        Map<String, Map<String, Map<String, Map<Integer, Map<Double, ClassifierStats>>>>> results = new TreeMap<>();
         for(String datasetName : datasetNames) {
             System.out.println(datasetName);
             File dataset = new File(resultsDir, datasetName);
             File[] resultFiles = dataset.listFiles();
+            Map<String, Map<String, Map<Integer, Map<Double, ClassifierStats>>>> datasetResults = results.computeIfAbsent(datasetName, key -> new TreeMap<>());
             if(resultFiles != null) {
                 for(File resultFile : resultFiles) {
                     try {
@@ -87,7 +99,7 @@ public class SamplingExperimentAnalysis {
                         String distanceMeasureParameters = parseVariable(fileName, "q");
                         double percentageTrainSample = Double.parseDouble(parseVariable(fileName, "p"));
                         int fold = Integer.parseInt(parseVariable(fileName, "f"));
-                        Map<String, Map<Integer, Map<Double, ClassifierStats>>> distanceMeasureResults = results.computeIfAbsent(distanceMeasureName, key -> new TreeMap<>());
+                        Map<String, Map<Integer, Map<Double, ClassifierStats>>> distanceMeasureResults = datasetResults.computeIfAbsent(distanceMeasureName, key -> new TreeMap<>());
                         Map<Integer, Map<Double, ClassifierStats>> foldResults = distanceMeasureResults.computeIfAbsent(distanceMeasureParameters, key -> new TreeMap<>());
                         Map<Double, ClassifierStats> percentageSampleResults = foldResults.computeIfAbsent(fold, key -> new TreeMap<>());
                         percentageSampleResults.put(percentageTrainSample, stats);
