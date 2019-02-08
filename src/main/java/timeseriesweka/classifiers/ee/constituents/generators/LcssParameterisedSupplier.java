@@ -4,8 +4,10 @@ import timeseriesweka.classifiers.ee.constituents.*;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.lcss.Lcss;
 import utilities.StatisticUtilities;
+import utilities.Utilities;
 import weka.core.Instances;
 
+import java.io.IOException;
 import java.util.List;
 
 public class LcssParameterisedSupplier extends ParameterisedSupplier<Lcss> {
@@ -31,5 +33,15 @@ public class LcssParameterisedSupplier extends ParameterisedSupplier<Lcss> {
     @Override
     protected Lcss get() {
         return new Lcss();
+    }
+
+    public static void main(String[] args) throws IOException {
+        LcssParameterisedSupplier lcssParameterisedSupplier = new LcssParameterisedSupplier();
+        Instances instances = Utilities.loadDataset("/home/vte14wgu/TSCProblems2018/AllGestureWiimoteY");
+        lcssParameterisedSupplier.setParameterRanges(instances);
+        for(int i = 0; i < lcssParameterisedSupplier.size(); i++) {
+            Lcss lcss = lcssParameterisedSupplier.get(i);
+            System.out.println(lcss.getParameters());
+        }
     }
 }
