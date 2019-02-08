@@ -31,15 +31,21 @@ public class NearestNeighbour implements AdvancedClassifier {
 
     private class NeighbourSearcher {
         private final TreeMap<Double, TreeMap<Double, Integer>> neighbourClusters = new TreeMap<>();
-        private final Instance testInstance;
+
+        public void setTestInstance(final Instance testInstance) {
+            this.testInstance = testInstance;
+            noNeighbourPrediction = random.nextInt(testInstance.numClasses());
+            reset();
+        }
+
+        private Instance testInstance;
         private int numNeighbours = 0;
-        private final int noNeighbourPrediction;
+        private int noNeighbourPrediction;
         private final RandomIndexIterator trainInstanceIndexIterator = new RandomIndexIterator();
 
         public NeighbourSearcher(Instance testInstance) {
             trainInstanceIndexIterator.setRandom(samplingRandom);
-            this.testInstance = testInstance;
-            noNeighbourPrediction = random.nextInt(testInstance.numClasses());
+            setTestInstance(testInstance);
         }
 
         public void addInstanceIndex(int index) {
@@ -91,7 +97,7 @@ public class NearestNeighbour implements AdvancedClassifier {
             List<Double> lastClusterClassValues = new ArrayList<>(lastCluster.keySet());
             while (numNeighboursToRemove > 0) {
                 numNeighboursToRemove--;
-                Double randomClassValue = lastClusterClassValues.get(random.nextInt(lastClusterClassValues.size()));
+                Double randomClassValue = lastClusterClassValues.remove(random.nextInt(lastClusterClassValues.size()));
                 Integer count = lastCluster.get(randomClassValue);
                 count--;
                 if(count <= 0) {
@@ -117,11 +123,13 @@ public class NearestNeighbour implements AdvancedClassifier {
             neighbourCluster.put(classValue, count);
             numNeighbours++;
             int kOverflow = numNeighbours - k;
-            Map.Entry<Double, TreeMap<Double, Integer>> furthestNeighbourCluster = neighbourClusters.lastEntry();
-            int furthestNeighbourClusterSize = furthestNeighbourCluster.getValue().size();
-            if(kOverflow >= furthestNeighbourClusterSize) {
-                neighbourClusters.pollLastEntry();
-                numNeighbours -= furthestNeighbourClusterSize;
+            if(kOverflow > 0) {
+                Map.Entry<Double, TreeMap<Double, Integer>> furthestNeighbourCluster = neighbourClusters.lastEntry();
+                int furthestNeighbourClusterSize = furthestNeighbourCluster.getValue().size();
+                if(kOverflow >= furthestNeighbourClusterSize) {
+                    neighbourClusters.pollLastEntry();
+                    numNeighbours -= furthestNeighbourClusterSize;
+                }
             }
         }
 
