@@ -66,6 +66,7 @@ public class SamplingExperimentAnalysis {
 
     public static void main(String[] args) throws IOException {
         int numFolds = 30;
+        long time = System.nanoTime();
         File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/tick-seed");
 //        File datasetsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2018");
         List<String> datasetNames = datasetNamesFromFile(new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt"));
@@ -77,11 +78,8 @@ public class SamplingExperimentAnalysis {
             File dataset = new File(resultsDir, datasetName);
             File[] resultFiles = dataset.listFiles();
             if(resultFiles != null) {
-                int i = 0;
                 for(File resultFile : resultFiles) {
                     try {
-                        i++;
-                        System.out.println(i);
                         ClassifierStats stats = loadStats(resultFile);
                         String fileName = resultFile.getName();
 //                            System.out.println(fileName);
@@ -95,12 +93,16 @@ public class SamplingExperimentAnalysis {
                         percentageSampleResults.put(percentageTrainSample, stats);
                     } catch (IOException e) {
 //                            e.printStackTrace();
-//                        System.out.println("ioe");
+                        System.out.println("ioe");
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
                 }
             }
         }
+        System.out.println(System.nanoTime() - time);
+        System.out.println(Runtime.getRuntime().totalMemory());
+        System.out.println(Runtime.getRuntime().maxMemory());
+        System.out.println(Runtime.getRuntime().freeMemory());
     }
 }
