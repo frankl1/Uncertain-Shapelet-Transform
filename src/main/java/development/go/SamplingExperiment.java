@@ -18,6 +18,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class SamplingExperiment {
@@ -51,6 +52,21 @@ public class SamplingExperiment {
             dir.setExecutable(true, false);
         }
     }
+    
+    private static boolean statsCorrupt(File file) {
+        try {
+            ObjectInputStream in = new ObjectInputStream(
+                new GZIPInputStream(
+                    new BufferedInputStream(
+                        new FileInputStream(file))));
+            Object object = in.readObject();
+            in.close();
+            ClassifierStats stats = (ClassifierStats) object;
+            return false;
+        } catch (IOException | ClassNotFoundException e) {
+            return true;
+        }
+    }
 
     private static void writeObjectToFile(Object object, File file) throws IOException {
         ObjectOutputStream out = new ObjectOutputStream(
@@ -61,29 +77,23 @@ public class SamplingExperiment {
         out.close();
     }
 
-    private boolean writeStatsToFile(String resultsFilePrefix, double percentage) throws IOException {
-        File file = new File(resultsDir, resultsFilePrefix + ",p=" + percentage + ".gzip");
-        if(file.createNewFile()) {
-            double[][] predictions = nearestNeighbour.predict();
-            ClassifierResults results = new ClassifierResults();
-            for(int i = 0; i < testInstances.numInstances(); i++) {
-                results.storeSingleResult(testInstances.get(i).classValue(), predictions[i]);
-            }
-            results.setNumInstances(testInstances.numInstances());
-            results.setNumClasses(testInstances.numClasses());
-            results.findAllStatsOnce();
-            results.setTrainTime(nearestNeighbour.getTrainTime());
-            results.setTestTime(nearestNeighbour.getTestTime());
-            results.setBenchmark(benchmark);
-            ClassifierStats stats = new ClassifierStats(results);
-            writeObjectToFile(stats, file);
-            return true;
+    private void writeStatsToFile(File file) throws IOException {
+        double[][] predictions = nearestNeighbour.predict();
+        ClassifierResults results = new ClassifierResults();
+        for(int i = 0; i < testInstances.numInstances(); i++) {
+            results.storeSingleResult(testInstances.get(i).classValue(), predictions[i]);
         }
-        return false;
+        results.setNumInstances(testInstances.numInstances());
+        results.setNumClasses(testInstances.numClasses());
+        results.findAllStatsOnce();
+        results.setTrainTime(nearestNeighbour.getTrainTime());
+        results.setTestTime(nearestNeighbour.getTestTime());
+        results.setBenchmark(benchmark);
+        ClassifierStats stats = new ClassifierStats(results);
+        writeObjectToFile(stats, file);
     }
 
     private long benchmark;
-    private File resultsDir;
     private NearestNeighbour nearestNeighbour;
     private Instances testInstances;
 
@@ -132,7 +142,7 @@ public class SamplingExperiment {
                 ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier = parameterisedSuppliers.get(parameters[parameterIndex++]);
                 File datasetFile = datasets.get(parameters[parameterIndex++]);
                 String datasetName = datasetFile.getName();
-                resultsDir = new File(globalResultsDir, datasetName);
+                final File resultsDir = new File(globalResultsDir, datasetName);
                 mkdir(resultsDir);
                 try {
                     Instances dataset = Utilities.loadDataset(datasetFile);
@@ -149,50 +159,41 @@ public class SamplingExperiment {
                         DistanceMeasure distanceMeasure = parameterisedSupplier.get(distanceMeasureParameter);
                         nearestNeighbour = new NearestNeighbour();
                         nearestNeighbour.setDistanceMeasure(distanceMeasure);
-                        String resultsFilePrefix = "f=" + foldIndex
-                            + ",k=" + nearestNeighbour.getK()
-                            + ",d=" + nearestNeighbour.getDistanceMeasure()
-                            + ",q={" + nearestNeighbour.getDistanceMeasure().getParameters() + "}";
-//                        System.out.println(resultsFilePrefix);
                         nearestNeighbour.setSeed(foldIndex);
                         nearestNeighbour.setTrainInstances(trainInstances);
                         nearestNeighbour.setTestInstances(testInstances);
                         nearestNeighbour.train();
-                        int index = 0;
-                        double percentage = 0;
+                        String resultsFilePrefix = "f=" + foldIndex
+                            + ",k=" + nearestNeighbour.getK()
+                            + ",d=" + nearestNeighbour.getDistanceMeasure()
+                            + ",q={" + nearestNeighbour.getDistanceMeasure().getParameters() + "}";
+                        int numTrainInstances = trainInstances.numInstances();
                         double nextPercentage = 0;
-                        double percentageIncrement = 0.01;
-                        boolean noExistingResults = true;
-                        if(!stop[0]) {
-                            noExistingResults = writeStatsToFile(resultsFilePrefix, percentage);
-                        }
-                        index++;
-                        nextPercentage += percentageIncrement;
-                        while (nearestNeighbour.remainingTestTicks() && !stop[0] && noExistingResults) {
-                            nearestNeighbour.testTick();
-                            if(nearestNeighbour.hasSelectedNewTrainInstance()) {
-                                percentage = (double) index / trainInstances.numInstances();
-                                if(percentage >= nextPercentage) {
+                        int numTestTickInstances = 0;
+                        for(int i = 0, j = 0; i <= numTrainInstances && !stop[0]; i++) {
+                            double percentage = (double) i / numTrainInstances;
+                            if(percentage >= nextPercentage) {
+                                j++;
+                                if(i == numTrainInstances) {
+                                    System.out.println();
+                                }
+                                nextPercentage = (double) j / 100;
+                                File file = new File(resultsDir, resultsFilePrefix + ",p=" + percentage + ".gzip");
+                                if(file.createNewFile() || statsCorrupt(file)) {
+                                    while (numTestTickInstances < i && !stop[0]) {
+                                        nearestNeighbour.testTick();
+                                        if(nearestNeighbour.hasSelectedNewTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
+                                            numTestTickInstances++;
+                                        }
+                                    }
                                     try {
-                                        noExistingResults = writeStatsToFile(resultsFilePrefix, percentage);
+                                        writeStatsToFile(file);
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
-                                    nextPercentage += percentageIncrement;
                                 }
-                                index++;
                             }
                         }
-                        if(!stop[0] && noExistingResults) {
-                            try {
-                                noExistingResults = writeStatsToFile(resultsFilePrefix, 1);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-//                        if(!noExistingResults) {
-//                            System.out.println("skip");
-//                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
