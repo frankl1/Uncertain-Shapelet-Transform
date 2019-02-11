@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ee;
 
 import timeseriesweka.classifiers.AdvancedClassifier;
+import timeseriesweka.classifiers.Tickable;
 import timeseriesweka.classifiers.ee.constituents.Constituent;
 import timeseriesweka.classifiers.ee.iteration.AbstractIndexIterator;
 import timeseriesweka.classifiers.ee.iteration.ElementIterator;
@@ -18,13 +19,16 @@ import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-public class Ee implements AdvancedClassifier {
+public class Ee implements AdvancedClassifier, Tickable {
     private final List<Constituent> constituents = new ArrayList<>();
     private final List<Classifier> selectedCandidates = null;
     private Long seed = null;
     private Selector<Classifier> candidateSelector = new BestPerTypeSelector<>();
     private final ElementIterator<Constituent> constituentIterator = new ElementIterator<>(constituents);
+    private final Map<Constituent, List<TickableClassifier>> candidateClassifiers = new TreeMap<>();
 
     public void setConstituentIndexIterator(final AbstractIndexIterator constituentIndexIterator) {
         constituentIterator.setIndexIterator(constituentIndexIterator);
@@ -110,5 +114,59 @@ public class Ee implements AdvancedClassifier {
     @Override
     public String getParameters() {
         return null;
+    }
+
+    @Override
+    public boolean remainingTrainTicks() {
+        return false;
+    }
+
+    @Override
+    public void trainTick() {
+
+    }
+
+    private Instances trainInstances;
+    private Instances testInstances;
+    private long trainTime;
+    private long testTime;
+
+    @Override
+    public void setTrainInstances(final Instances trainInstances) {
+        long time = System.nanoTime();
+        this.trainInstances = trainInstances;
+        for(Constituent constituent : constituents) {
+            constituent.getIndexedSupplier().setParameterRanges(trainInstances);
+            List<TickableClassifier> classifierList = candidateClassifiers.computeIfAbsent(constituent, key -> new ArrayList<>());
+            while (constituent.hasNext()) {
+                TickableClassifier tickableClassifier = constituent.next();
+                tickableClassifier.setTrainInstances(trainInstances);
+                classifierList.add(tickableClassifier);
+            }
+        }
+        trainTime = System.nanoTime() - time;
+    }
+
+    @Override
+    public boolean remainingTestTicks() {
+        return false;
+    }
+
+    @Override
+    public void testTick() {
+
+    }
+
+    @Override
+    public void setTestInstances(final Instances testInstances) {
+        long time = System.nanoTime();
+        this.testInstances = testInstances;
+
+        testTime = System.nanoTime() - time;
+    }
+
+    @Override
+    public double[][] predict() {
+        return new double[0][];
     }
 }

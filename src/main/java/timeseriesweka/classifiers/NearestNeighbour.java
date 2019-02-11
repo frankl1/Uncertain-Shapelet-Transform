@@ -11,7 +11,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class NearestNeighbour implements AdvancedClassifier {
+public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     @Override
     public void setSavePath(String path) {
