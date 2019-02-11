@@ -16,7 +16,9 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -133,7 +135,7 @@ public class SamplingExperiment {
         for(Integer foldIndex : foldIndices) {
             RandomIndexIterator combinationIndexIterator = new RandomIndexIterator();
             combinationIndexIterator.setRange(new Range(0, numCombinations - 1));
-            combinationIndexIterator.setSeed(0);
+//            combinationIndexIterator.setSeed(0);
             while (combinationIndexIterator.hasNext() && !stop[0]) {
                 int combination = combinationIndexIterator.next();
                 combinationIndexIterator.remove();
@@ -152,7 +154,7 @@ public class SamplingExperiment {
                     testInstances = splitInstances[1];
                     RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
                     distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
-                    distanceMeasureParameterIterator.setSeed(0);
+//                    distanceMeasureParameterIterator.setSeed(0);
                     while(distanceMeasureParameterIterator.hasNext() && !stop[0]) {
                         int distanceMeasureParameter = distanceMeasureParameterIterator.next();
                         distanceMeasureParameterIterator.remove();
@@ -174,12 +176,9 @@ public class SamplingExperiment {
                             double percentage = (double) i / numTrainInstances;
                             if(percentage >= nextPercentage) {
                                 j++;
-                                if(i == numTrainInstances) {
-                                    System.out.println();
-                                }
                                 nextPercentage = (double) j / 100;
                                 File file = new File(resultsDir, resultsFilePrefix + ",p=" + percentage + ".gzip");
-                                if(file.createNewFile() || statsCorrupt(file)) {
+                                if(file.createNewFile()/* || statsCorrupt(file)*/) {
                                     while (numTestTickInstances < i && !stop[0]) {
                                         nearestNeighbour.testTick();
                                         if(nearestNeighbour.hasSelectedNewTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
