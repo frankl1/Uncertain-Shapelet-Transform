@@ -3,6 +3,8 @@ package development.go;
 import net.sourceforge.sizeof.SizeOf;
 import utilities.ClassifierResults;
 import utilities.ClassifierStats;
+import utilities.Utilities;
+import weka.core.Instances;
 
 import java.io.*;
 import java.net.URI;
@@ -41,21 +43,30 @@ public class Playground {
 //        System.out.println(SizeOf.deepSizeOf(distances));
 //        System.out.println(SizeOf.deepSizeOf(map));
 
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                double[] a = new double[10000000];
-                try {
-                    writeObjectToFile(a, new File("abc.xyz"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        Thread t1 = new Thread(runnable);
-        Thread t2 = new Thread(runnable);
-        t1.start();
-        t2.start();
+//        Runnable runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                double[] a = new double[10000000];
+//                try {
+//                    writeObjectToFile(a, new File("abc.xyz"));
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        Thread t1 = new Thread(runnable);
+//        Thread t2 = new Thread(runnable);
+//        t1.start();
+//        t2.start();
+
+        File datasetList = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt");
+        File datasetDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2019");
+        BufferedReader reader = new BufferedReader(new FileReader(datasetList));
+        String dataset;
+        while ((dataset = reader.readLine()) != null) {
+            System.out.println(dataset);
+            Instances instances = Utilities.loadDataset(new File(datasetDir, dataset));
+        }
     }
 
     private static void writeObjectToFile(Object object, File file) throws IOException {

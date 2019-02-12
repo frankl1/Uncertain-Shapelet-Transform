@@ -27,7 +27,7 @@ public class SamplingExperimentAnalysis {
         }
     }
 
-    private static String parseVariable(String str, String variableName) {
+    public static String parseVariable(String str, String variableName) {
         if(variableName.equalsIgnoreCase("q")) {
             int index = str.indexOf("{");
             if(index >= 0) {

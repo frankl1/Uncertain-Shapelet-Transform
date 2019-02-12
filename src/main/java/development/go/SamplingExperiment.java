@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -48,13 +49,18 @@ public class SamplingExperiment {
         if (parentFile != null) {
             mkdir(parentFile);
         }
-        if(dir.mkdirs()) {
-            dir.setReadable(true, false);
-            dir.setWritable(true, false);
-            dir.setExecutable(true, false);
+        while (!dir.exists()) {
+            dir.mkdirs();
         }
+        setPermissions(dir);
     }
-    
+
+    private static void setPermissions(File file) {
+        file.setReadable(true, false);
+        file.setWritable(true, false);
+        file.setExecutable(true, false);
+    }
+
     private static boolean statsCorrupt(File file) {
         try {
             ObjectInputStream in = new ObjectInputStream(
@@ -100,23 +106,25 @@ public class SamplingExperiment {
     private Instances testInstances;
 
     public void run() {
-        final boolean[] stop = {false};
+        final AtomicBoolean stop = new AtomicBoolean(false);
         File killSwitchFile = new File(killSwitchFilePath);
         Thread killSwitch = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!stop.get()) {
                 if(!killSwitchFile.exists()) {
-                    stop[0] = true;
+                    stop.lazySet(true);
                     System.out.println("killing");
                 }
                 try {
                     Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+
                 }
             }
         });
         killSwitch.start();
-        benchmark = ClassifierResults.benchmark();
+        if(!stop.get()) {
+            benchmark = ClassifierResults.benchmark();
+        }
         List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
         parameterisedSuppliers.add(new DtwParameterisedSupplier());
         parameterisedSuppliers.add(new DdtwParameterisedSupplier());
@@ -132,11 +140,12 @@ public class SamplingExperiment {
             datasets.size(),
         };
         final int numCombinations = Utilities.numCombinations(parameterBins);
+        mkdir(globalResultsDir);
         for(Integer foldIndex : foldIndices) {
             RandomIndexIterator combinationIndexIterator = new RandomIndexIterator();
             combinationIndexIterator.setRange(new Range(0, numCombinations - 1));
 //            combinationIndexIterator.setSeed(0);
-            while (combinationIndexIterator.hasNext() && !stop[0]) {
+            while (combinationIndexIterator.hasNext() && !stop.get()) {
                 int combination = combinationIndexIterator.next();
                 combinationIndexIterator.remove();
                 int[] parameters = Utilities.fromCombination(combination, parameterBins);
@@ -155,7 +164,7 @@ public class SamplingExperiment {
                     RandomIndexIterator distanceMeasureParameterIterator = new RandomIndexIterator();
                     distanceMeasureParameterIterator.setRange(new Range(0, parameterisedSupplier.size() - 1));
 //                    distanceMeasureParameterIterator.setSeed(0);
-                    while(distanceMeasureParameterIterator.hasNext() && !stop[0]) {
+                    while(distanceMeasureParameterIterator.hasNext() && !stop.get()) {
                         int distanceMeasureParameter = distanceMeasureParameterIterator.next();
                         distanceMeasureParameterIterator.remove();
                         DistanceMeasure distanceMeasure = parameterisedSupplier.get(distanceMeasureParameter);
@@ -165,40 +174,46 @@ public class SamplingExperiment {
                         nearestNeighbour.setTrainInstances(trainInstances);
                         nearestNeighbour.setTestInstances(testInstances);
                         nearestNeighbour.train();
-                        String resultsFilePrefix = "f=" + foldIndex
-                            + ",k=" + nearestNeighbour.getK()
-                            + ",d=" + nearestNeighbour.getDistanceMeasure()
-                            + ",q={" + nearestNeighbour.getDistanceMeasure().getParameters() + "}";
+                        String resultsFilePrefix = resultsDir
+                            + "/" + foldIndex
+                            + "/" + nearestNeighbour.getDistanceMeasure()
+                            + "/" + nearestNeighbour.getDistanceMeasure().getParameters();
+                        File parent = new File(resultsFilePrefix);
+                        mkdir(parent);
                         int numTrainInstances = trainInstances.numInstances();
                         double nextPercentage = 0;
                         int numTestTickInstances = 0;
-                        for(int i = 0, j = 0; i <= numTrainInstances && !stop[0]; i++) {
+                        for(int i = 0, j = 0; i <= numTrainInstances && !stop.get(); i++) {
                             double percentage = (double) i / numTrainInstances;
                             if(percentage >= nextPercentage) {
                                 j++;
                                 nextPercentage = (double) j / 100;
-                                File file = new File(resultsDir, resultsFilePrefix + ",p=" + percentage + ".gzip");
-                                if(file.createNewFile()/* || statsCorrupt(file)*/) {
-                                    while (numTestTickInstances < i && !stop[0]) {
-                                        nearestNeighbour.testTick();
-                                        if(nearestNeighbour.hasSelectedNewTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
-                                            numTestTickInstances++;
+                                File file = new File(parent, percentage + ".gzip");
+                                try {
+                                    if(file.createNewFile()/* || statsCorrupt(file)*/) {
+                                        while (numTestTickInstances < i && !stop.get()) {
+                                            nearestNeighbour.testTick();
+                                            if(nearestNeighbour.hasSelectedNewTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
+                                                numTestTickInstances++;
+                                            }
                                         }
                                     }
-                                    try {
-                                        writeStatsToFile(file);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
+                                    setPermissions(file);
+                                    writeStatsToFile(file);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
                             }
                         }
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
+                    stop.lazySet(true);
+                    killSwitch.interrupt();
                 }
             }
         }
+        stop.lazySet(true);
         killSwitch.interrupt();
     }
 
