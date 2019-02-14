@@ -1,14 +1,27 @@
 package development.go;
 
 import net.sourceforge.sizeof.SizeOf;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.client.scp.ScpClient;
+import org.apache.sshd.client.scp.ScpClientCreator;
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
+import org.apache.sshd.common.scp.ScpTimestamp;
+import timeseriesweka.classifiers.ee.constituents.generators.ParameterisedSupplier;
 import utilities.ClassifierResults;
 import utilities.ClassifierStats;
 import utilities.Utilities;
 import weka.core.Instances;
 
 import java.io.*;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.security.PublicKey;
 import java.util.*;
 import java.util.zip.*;
 
@@ -59,14 +72,46 @@ public class Playground {
 //        t1.start();
 //        t2.start();
 
-        File datasetList = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt");
-        File datasetDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2019");
-        BufferedReader reader = new BufferedReader(new FileReader(datasetList));
-        String dataset;
-        while ((dataset = reader.readLine()) != null) {
-            System.out.println(dataset);
-            Instances instances = Utilities.loadDataset(new File(datasetDir, dataset));
+//        File datasetList = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt");
+//        File datasetDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2019");
+//        BufferedReader reader = new BufferedReader(new FileReader(datasetList));
+//        String dataset;
+//        while ((dataset = reader.readLine()) != null) {
+//            System.out.println(dataset);
+//            Instances instances = Utilities.loadDataset(new File(datasetDir, dataset));
+//        }
+
+        String user = "vte14wgu";
+        int port = 22;
+        String host = "localhost";
+        BufferedReader reader = new BufferedReader(new FileReader("password"));
+        String password = reader.readLine().trim();
+        SshClient client = SshClient.setUpDefaultClient();
+        // override any default configuration...
+        client.setServerKeyVerifier((clientSession, socketAddress, publicKey) -> true);
+        client.start();
+        // using the client for multiple sessions...
+        try (ClientSession session = client.connect(user, host, port)
+            .verify().getSession()) {
+            session.addPasswordIdentity(password); // for password-based authentication
+            session.auth().verify();
+            ScpClient scpClient = ScpClientCreator.instance().createScpClient(session);
+            String str = "hello";
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(byteArrayOutputStream)));
+            objectOutputStream.writeObject(str);
+            objectOutputStream.close();
+            scpClient.upload(str.getBytes(), "/scratch/abc.txt", PosixFilePermissions.fromString("rwxrwxr-x"), new ScpTimestamp(0,0));
+
+
+                //byteArrayInputStream, "/scratch/abc.text", Collections.singletonList(PosixFilePermission.OWNER_WRITE), new ScpTimestamp(System.currentTimeMillis(), System.currentTimeMillis()));
+            // start using the session to run commands, do SCP/SFTP, create local/remote port forwarding, etc...
+            String ls = session.executeRemoteCommand("ls");
+            System.out.println(ls);
         }
+        // exiting in an orderly fashion once the code no longer needs to establish SSH session
+        // NOTE: this can/should be done when the application exits.
+        client.stop();
     }
 
     private static void writeObjectToFile(Object object, File file) throws IOException {

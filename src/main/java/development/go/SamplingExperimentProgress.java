@@ -15,7 +15,7 @@ public class SamplingExperimentProgress {
     public static void main(String[] args) throws IOException {
         File datasetList = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt");
         File globalResultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nns");
-        File datasetDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/ajb/TSCProblems2019");
+        File datasetDir = new File("/scratch/TSCProblems2018");
         BufferedReader reader = new BufferedReader(new FileReader(datasetList));
         String dataset;
         int[] seeds = new int[1];

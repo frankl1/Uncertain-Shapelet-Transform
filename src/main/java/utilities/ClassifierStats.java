@@ -15,6 +15,16 @@ public class ClassifierStats implements Serializable {
     private double recall;
     private long trainTime;
 
+    public long getMemory() {
+        return memory;
+    }
+
+    private void setMemory(final long memory) {
+        this.memory = memory;
+    }
+
+    private long memory;
+
     public long getBenchmark() {
         return benchmark;
     }
@@ -138,5 +148,6 @@ public class ClassifierStats implements Serializable {
         setTestTime(results.getTestTime());
         setTrainTime(results.getTrainTime());
         setBenchmark(results.getBenchmark());
+        setMemory(results.memory);
     }
 }
