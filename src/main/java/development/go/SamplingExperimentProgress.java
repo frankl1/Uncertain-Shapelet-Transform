@@ -13,8 +13,8 @@ import java.util.List;
 
 public class SamplingExperimentProgress {
     public static void main(String[] args) throws IOException {
-        File datasetList = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/datasetList.txt");
-        File globalResultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nns");
+        File datasetList = new File("/scratch/datasetList.txt");
+        File globalResultsDir = new File("/scratch/results/nns");
         File datasetDir = new File("/scratch/TSCProblems2018");
         BufferedReader reader = new BufferedReader(new FileReader(datasetList));
         String dataset;
@@ -75,10 +75,13 @@ public class SamplingExperimentProgress {
                 datasetProgress += seedProgress;
                 datasetMaxProgress += seedMaxProgress;
             }
-            System.out.print(" ");
-            System.out.println(String.format("%3.2f", (double) datasetProgress / datasetMaxProgress * 100));
+            if(seeds.length > 1) {
+                System.out.print(" ");
+                System.out.print(String.format("%3.2f", (double) datasetProgress / datasetMaxProgress * 100));
+            }
             overallMaxProgress += datasetMaxProgress;
             overallProgress += datasetProgress;
+            System.out.println();
         }
         reader.close();
         System.out.println(String.format("%3.2f", (double) (double) overallProgress / overallMaxProgress * 100));

@@ -151,8 +151,10 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     private Instances originalTrainInstances;
     private Instances originalTestInstances;
     private Instances trainInstances;
-    private NeighbourSearcher[] neighbourSearchers;
-    private AbstractIndexIterator neighbourSearcherIndexIterator = new RoundRobinIndexIterator();
+    private final List<NeighbourSearcher> testNeighbourSearchers = new ArrayList<>();
+    private final List<NeighbourSearcher> trainNeighbourSearchers = new ArrayList<>();
+    private AbstractIndexIterator testNeighbourSearcherIndexIterator = new RoundRobinIndexIterator();
+    private AbstractIndexIterator trainNeighbourSearcherIndexIterator = new RoundRobinIndexIterator();
     private Instances[] instancesByClass;
     private double[] classDistribution;
     private final TreeMap<Integer, Double> classSamplingProbabilities = new TreeMap<>();
@@ -179,7 +181,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     }
 
     public boolean remainingTestTicks() {
-        return hasNextTrainInstance() || neighbourSearcherIndexIterator.hasNext();
+        return hasNextTrainInstance() || testNeighbourSearcherIndexIterator.hasNext();
     }
 
     public void train() {
@@ -194,8 +196,25 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         }
     }
 
+    private void tickSearcher(List<NeighbourSearcher> neighbourSearchers, AbstractIndexIterator iterator) {
+        NeighbourSearcher searcher = neighbourSearchers.get(iterator.next());
+        searcher.tick();
+        if(!searcher.remainingTicks()) {
+            iterator.remove();
+            if(!iterator.hasNext() && hasNextTrainInstance()) {
+                addNextTrainInstance();
+                iterator.reset();
+            } else {
+                selectedNextTrainInstance = false;
+            }
+        }
+    }
+
     public void trainTick() {
+        long time = System.nanoTime();
         numTrainTicks++;
+        tickSearcher(trainNeighbourSearchers, trainNeighbourSearcherIndexIterator);
+        trainTime += System.nanoTime() - time;
     }
 
     public void setTrainInstances(Instances trainInstances) {
@@ -220,13 +239,12 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         long time = System.nanoTime();
         numTestTicks = 0;
         originalTestInstances = testInstances;
-        neighbourSearchers = new NeighbourSearcher[testInstances.numInstances()];
-        for(int i = 0; i < neighbourSearchers.length; i++) {
-            neighbourSearchers[i] = new NeighbourSearcher(testInstances.get(i));
+        for(Instance testInstance : testInstances) {
+            testNeighbourSearchers.add(new NeighbourSearcher(testInstance));
         }
-        findNextTrainInstance();
+        testNeighbourSearcherIndexIterator.setRange(new Range(0, testInstances.numInstances() - 1));
+        addNextTrainInstance();
         numTestTicks++;
-        neighbourSearcherIndexIterator.setRange(new Range(0, neighbourSearchers.length - 1)); // todo edge case when test instances is empty, same with train
         testTime += System.nanoTime() - time;
     }
 
@@ -234,7 +252,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         return trainInstances.size() < originalTrainInstances.size();
     }
 
-    private void findNextTrainInstance() {
+    private Instance sampleTrainInstanceA() {
         double maxClassProbability = Double.NEGATIVE_INFINITY;
         List<Integer> sampleClasses = new ArrayList<>();
         for(Integer classValue : classSamplingProbabilities.keySet()) {
@@ -252,32 +270,31 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         classSamplingProbabilities.put(sampleClass, maxClassProbability - 1);
         Instances homogeneousInstances = instancesByClass[sampleClass];
         Instance sampledInstance = homogeneousInstances.remove(samplingRandom.nextInt(homogeneousInstances.size()));
-        trainInstances.add(sampledInstance);
-        int index = trainInstances.size() - 1;
-        for(NeighbourSearcher searcher : neighbourSearchers) {
-            searcher.addInstanceIndex(index);
-        }
-        selectedNextTrainInstance = true;
         if(homogeneousInstances.isEmpty()) {
             classSamplingProbabilities.remove(sampleClass);
         }
+        return sampledInstance;
+    }
+
+    private void addNextTrainInstance() {
+        Instance sampledTrainInstance = sampleTrainInstanceA();
+        trainInstances.add(sampledTrainInstance);
+        trainNeighbourSearchers.add(new NeighbourSearcher(sampledTrainInstance));
+        int index = trainInstances.size() - 1;
+        trainNeighbourSearcherIndexIterator.add(index);
+        for(NeighbourSearcher searcher : trainNeighbourSearchers) {
+            searcher.addInstanceIndex(index);
+        }
+        for(NeighbourSearcher searcher : testNeighbourSearchers) {
+            searcher.addInstanceIndex(index);
+        }
+        selectedNextTrainInstance = true;
     }
 
     public void testTick() {
         long time = System.nanoTime();
         numTestTicks++;
-        int neighbourSearcherIndex = neighbourSearcherIndexIterator.next();
-        NeighbourSearcher neighbourSearcher = neighbourSearchers[neighbourSearcherIndex];
-        neighbourSearcher.tick();
-        if(!neighbourSearcher.remainingTicks()) {
-            neighbourSearcherIndexIterator.remove();
-            if(!neighbourSearcherIndexIterator.hasNext() && hasNextTrainInstance()) {
-                findNextTrainInstance();
-                neighbourSearcherIndexIterator.reset();
-            } else {
-                selectedNextTrainInstance = false;
-            }
-        }
+        tickSearcher(testNeighbourSearchers, testNeighbourSearcherIndexIterator);
         testTime += System.nanoTime() - time;
     }
 
@@ -288,9 +305,9 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     }
 
     public double[][] predict() {
-        double[][] predictions = new double[neighbourSearchers.length][];
+        double[][] predictions = new double[testNeighbourSearchers.size()][];
         for(int i = 0; i < predictions.length; i++) {
-            predictions[i] = neighbourSearchers[i].predict();
+            predictions[i] = testNeighbourSearchers.get(i).predict();
         }
         return predictions;
     }
