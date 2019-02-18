@@ -19,5 +19,5 @@ public interface Tickable {
         }
     }
     void setTestInstances(Instances testInstances);
-    double[][] predict();
+//    double[][] predict(); todo change this to return classifier results + diff version for cv
 }

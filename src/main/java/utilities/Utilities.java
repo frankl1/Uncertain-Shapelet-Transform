@@ -5,6 +5,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class Utilities {
@@ -224,6 +227,28 @@ public class Utilities {
         return instancesByClass;
     }
 
+    public static List<List<Integer>> instanceIndicesByClass(Instances instances) {
+        List<List<Integer>> instanceIndicesByClass = new ArrayList<>();
+        for(int i = 0; i < instances.numClasses(); i++) {
+            instanceIndicesByClass.add(new ArrayList<>());
+        }
+        for(int i = 0; i < instances.numInstances(); i++) {
+            Instance instance = instances.get(i);
+            int index = (int) instance.classValue();
+            instanceIndicesByClass.get(index).add(i).
+        }
+        return instanceIndicesByClass;
+//        int[][] instanceIndicesByClassResult = new int[instanceIndicesByClass.size()][];
+//        for(int i = 0; i < instanceIndicesByClass.size(); i++) {
+//            List<Integer> indices = instanceIndicesByClass.get(i);
+//            instanceIndicesByClassResult[i] = new int[indices.size()];
+//            for(int j = 0; j < indices.size(); j++) {
+//                instanceIndicesByClassResult[i][j] = indices.get(j);
+//            }
+//        }
+//        return instanceIndicesByClassResult;
+    }
+
     public static Instances loadDataset(File datasetDir) throws IOException {
         File datasetFile = new File(datasetDir, datasetDir.getName() + ".arff");
         if(datasetFile.exists()) {
@@ -252,4 +277,5 @@ public class Utilities {
     public static Instances instancesFromFile(String path) throws IOException {
         return instancesFromFile(new File(path));
     }
+
 }

@@ -9,7 +9,6 @@ import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.scp.ScpTimestamp;
-import org.slf4j.LoggerFactory;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.classifiers.ee.iteration.RandomIndexIterator;
@@ -57,8 +56,8 @@ public class SamplingExperiment {
         results.setNumInstances(testInstances.numInstances());
         results.setNumClasses(testInstances.numClasses());
         results.findAllStatsOnce();
-        results.setTrainTime(nearestNeighbour.getTrainTime());
-        results.setTestTime(nearestNeighbour.getTestTime());
+        results.setTrainTime(nearestNeighbour.getTrainDuration());
+        results.setTestTime(nearestNeighbour.getTestDuration());
         results.setBenchmark(benchmark);
         results.memory = SizeOf.deepSizeOf(nearestNeighbour);
         ClassifierStats stats = new ClassifierStats(results);
@@ -158,7 +157,7 @@ public class SamplingExperiment {
 
     public void experiment() throws IOException {
         System.out.println("benchmarking");
-        benchmark = ClassifierResults.benchmark(); //todo change
+//        benchmark = ClassifierResults.benchmark(); //todo change
         System.out.println("experimenting");
         List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
         parameterisedSuppliers.add(new DtwParameterisedSupplier());
@@ -205,7 +204,6 @@ public class SamplingExperiment {
                     nearestNeighbour.setSeed(foldIndex);
                     nearestNeighbour.setTrainInstances(trainInstances);
                     nearestNeighbour.setTestInstances(testInstances);
-                    nearestNeighbour.train();
                     int numTrainInstances = trainInstances.numInstances();
                     double nextPercentage = 0;
                     int numTestTickInstances = 0;
@@ -221,11 +219,12 @@ public class SamplingExperiment {
                                 + "/" + percentage + ".gzip";
                             if(!resultsExist(path)) {
                                 while (numTestTickInstances < i) {
-                                    nearestNeighbour.testTick();
-                                    if(nearestNeighbour.hasSelectedNewTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
+                                    nearestNeighbour.trainTick();
+                                    if(nearestNeighbour.hasSampledTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
                                         numTestTickInstances++;
                                     }
                                 }
+                                nearestNeighbour.test();
                                 ClassifierStats stats = getStats();
                                 write(path, stats);
                             }
