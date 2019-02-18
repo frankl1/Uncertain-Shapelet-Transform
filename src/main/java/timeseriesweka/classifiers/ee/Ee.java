@@ -91,10 +91,10 @@ public class Ee implements AdvancedClassifier, Tickable {
 
     }
 
-    @Override
-    public ClassifierResults predict(Instances testFold) throws Exception {
-        return null;
-    }
+//    @Override
+//    public ClassifierResults predict(Instances testFold) throws Exception {
+//        return null;
+//    }
 
     @Override
     public void setSavePath(String path) {
@@ -165,8 +165,8 @@ public class Ee implements AdvancedClassifier, Tickable {
         testTime = System.nanoTime() - time;
     }
 
-    @Override
-    public double[][] predict() {
-        return new double[0][];
-    }
+//    @Override
+//    public double[][] predict() {
+//        return new double[0][];
+//    }
 }

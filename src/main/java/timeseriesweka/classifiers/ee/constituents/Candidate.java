@@ -42,8 +42,8 @@ public class Candidate implements Tickable {
 
     }
 
-    @Override
-    public double[][] predict() {
-        return new double[0][];
-    }
+//    @Override
+//    public double[][] predict() {
+//        return new double[0][];
+//    }
 }

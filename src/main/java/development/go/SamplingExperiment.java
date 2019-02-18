@@ -8,6 +8,8 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.compression.CompressionZlib;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.constituents.generators.*;
@@ -24,6 +26,7 @@ import java.io.*;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -40,6 +43,8 @@ public class SamplingExperiment {
     private List<File> datasets;
     @Parameter(names={"-l"}, description="if running locally")
     private boolean local = false;
+    @Parameter(names={"-k"}, description="killswitch")
+    private String killSwitchPath;
 
     public static void main(String[] args) {
         SamplingExperiment samplingExperiment = new SamplingExperiment();
@@ -47,30 +52,60 @@ public class SamplingExperiment {
         samplingExperiment.run();
     }
 
-    private ClassifierStats getStats() {
-        double[][] predictions = nearestNeighbour.predict();
+    private ClassifierResults getResults() {
         ClassifierResults results = new ClassifierResults();
-        for(int i = 0; i < testInstances.numInstances(); i++) {
+        double[][] predictions = nearestNeighbour.predictTest();
+        for(int i = 0; i < predictions.length; i++) {
             results.storeSingleResult(testInstances.get(i).classValue(), predictions[i]);
         }
-        results.setNumInstances(testInstances.numInstances());
         results.setNumClasses(testInstances.numClasses());
+        results.setNumInstances(predictions.length);
         results.findAllStatsOnce();
-        results.setTrainTime(nearestNeighbour.getTrainDuration());
-        results.setTestTime(nearestNeighbour.getTestDuration());
         results.setBenchmark(benchmark);
         results.memory = SizeOf.deepSizeOf(nearestNeighbour);
-        ClassifierStats stats = new ClassifierStats(results);
-        return stats;
+        return results;
     }
 
-    private long benchmark;
+    private long benchmark = -1;
     private NearestNeighbour nearestNeighbour;
     private Instances testInstances;
     private ScpClient scpClient;
     private ClientSession clientSession;
 
+    private static void setPermissions(File file) {
+        file.setReadable(true, false);
+        file.setWritable(true, false);
+        file.setExecutable(true, false);
+    }
+
+    private static void mkdir(File dir) {
+        File parentFile = dir.getParentFile();
+        if (parentFile != null) {
+            mkdir(parentFile);
+        }
+        if(dir.mkdirs()) {
+            setPermissions(dir);
+        }
+    }
+
     public void run() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                File killswitch = new File(killSwitchPath);
+                boolean stop = false;
+                while (!stop) {
+                    stop = !killswitch.exists();
+                    try {
+                        Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+                    } catch (InterruptedException e) {
+                        stop = true;
+                    }
+                }
+                System.out.println("killing");
+                System.exit(2);
+            }
+        }).start();
         if(!local) {
             String user = "vte14wgu";
             int port = 22;
@@ -86,17 +121,20 @@ public class SamplingExperiment {
                 String password = reader.readLine().trim();
                 clientSession.addPasswordIdentity(password); // for password-based authentication
                 clientSession.auth().verify();
+                clientSession.setCompressionFactoriesNameList(new CompressionZlib().getName());
                 System.out.println("connected");
                 scpClient = ScpClientCreator.instance().createScpClient(clientSession);
                 System.out.println("obtained scp client");
-                experiment();
+                experiment(true);
+                experiment(false);
             } catch (IOException e) {
                 e.printStackTrace();
             }
             sshClient.stop();
         } else {
             try {
-                experiment();
+                experiment(true);
+                experiment(false);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -105,29 +143,27 @@ public class SamplingExperiment {
 
     private boolean resultsExist(String path) {
         try {
-            ClassifierStats stats = (ClassifierStats) read(path);
+            ClassifierResults results = (ClassifierResults) readResults(path);
             return true;
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             return false;
         }
     }
 
-    private Object read(String path) throws IOException, ClassNotFoundException {
+    private ClassifierResults readResults(String path) throws IOException {
         InputStream inputStream;
         if(local) {
             inputStream = new FileInputStream(path);
         } else {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             OutputStream outputStream = new BufferedOutputStream(byteArrayOutputStream);
+            path = path.replaceAll(" ", "\\\\ ");
             scpClient.download(path, outputStream);
             outputStream.close();
             byte[] bytes = byteArrayOutputStream.toByteArray();
             inputStream = new ByteArrayInputStream(bytes);
         }
-        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(inputStream)));
-        Object object = objectInputStream.readObject();
-        objectInputStream.close();
-        return object;
+        return readResults(inputStream);
     }
 
     private void writeObject(OutputStream outputStream, Object object) throws IOException {
@@ -136,28 +172,73 @@ public class SamplingExperiment {
         objectOutputStream.close();
     }
 
-    private void write(String path, Object object) throws IOException {
+    private void writeResults(OutputStream objectOutputStream, ClassifierResults results) throws IOException {
+        ObjectOutputStream outputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(objectOutputStream)));
+        results.findAllStatsOnce();
+        outputStream.writeDouble(results.acc);
+        outputStream.writeDouble(results.balancedAcc);
+        outputStream.writeDouble(results.nll);
+        outputStream.writeDouble(results.mcc);
+        outputStream.writeDouble(results.meanAUROC);
+        outputStream.writeDouble(results.f1);
+        outputStream.writeDouble(results.precision);
+        outputStream.writeDouble(results.recall);
+        outputStream.writeDouble(results.sensitivity);
+        outputStream.writeDouble(results.specificity);
+        outputStream.writeLong(results.getTestTime());
+        outputStream.writeLong(results.getTrainTime());
+        outputStream.writeLong(results.getBenchmark());
+        outputStream.writeLong(results.memory);
+        outputStream.close();
+    }
+
+    private ClassifierResults readResults(InputStream inputStream) throws IOException {
+        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(inputStream)));
+        ClassifierResults results = new ClassifierResults();
+        results.acc = objectInputStream.readDouble();
+        results.balancedAcc = objectInputStream.readDouble();
+        results.nll = objectInputStream.readDouble();
+        results.mcc = objectInputStream.readDouble();
+        results.meanAUROC = objectInputStream.readDouble();
+        results.f1 = objectInputStream.readDouble();
+        results.precision = objectInputStream.readDouble();
+        results.recall = objectInputStream.readDouble();
+        results.sensitivity = objectInputStream.readDouble();
+        results.specificity = objectInputStream.readDouble();
+        results.setTestTime(objectInputStream.readLong());
+        results.setTrainTime(objectInputStream.readLong());
+        results.setBenchmark(objectInputStream.readLong());
+        results.memory = objectInputStream.readLong();
+        objectInputStream.close();
+        return results;
+    }
+
+    private void write(String path, ClassifierResults results) throws IOException {
         if(local) {
             File parentFile = new File(path).getParentFile();
             if(parentFile != null) {
-                parentFile.mkdirs();
+                mkdir(parentFile);
             }
-            writeObject(new FileOutputStream(path), object);
+            FileOutputStream outputStream = new FileOutputStream(path);
+            writeResults(outputStream, results);
+            setPermissions(new File(path));
         } else {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            writeObject(outputStream, object);
+            writeResults(outputStream, results);
             byte[] bytes = outputStream.toByteArray();
-            path = "/scratch/" + path;
+//            path = "/scratch/" + path;
             String cmd = "mkdir -p \"" + new File(path).getParent() + "\"";
             clientSession.executeRemoteCommand(cmd);
-           long time = System.currentTimeMillis();
+            long time = System.currentTimeMillis();
             scpClient.upload(bytes, "\"" + path + "\"", PosixFilePermissions.fromString("rwxrwxr-x"), new ScpTimestamp(time, time));
         }
     }
 
-    public void experiment() throws IOException {
-        System.out.println("benchmarking");
-//        benchmark = ClassifierResults.benchmark(); //todo change
+    public void experiment(boolean skip) throws IOException {
+        if(benchmark < 0) {
+            System.out.println("benchmarking");
+            benchmark = ClassifierResults.benchmark(); //todo change
+        }
         System.out.println("experimenting");
         List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
         parameterisedSuppliers.add(new DtwParameterisedSupplier());
@@ -186,7 +267,6 @@ public class SamplingExperiment {
                 ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier = parameterisedSuppliers.get(parameters[parameterIndex++]);
                 File datasetFile = datasets.get(parameters[parameterIndex++]);
                 String datasetName = datasetFile.getName();
-                final File resultsDir = new File(globalResultsDir, datasetName);
                 Instances dataset = Utilities.loadDataset(datasetFile);
                 Instances[] splitInstances = InstanceTools.resampleInstances(dataset, foldIndex, 0.5);
                 Instances trainInstances = splitInstances[0];
@@ -207,6 +287,7 @@ public class SamplingExperiment {
                     int numTrainInstances = trainInstances.numInstances();
                     double nextPercentage = 0;
                     int numTestTickInstances = 0;
+                    boolean printed = false;
                     for(int i = 0, j = 0; i <= numTrainInstances; i++) {
                         double percentage = (double) i / numTrainInstances;
                         if(percentage >= nextPercentage) {
@@ -218,15 +299,22 @@ public class SamplingExperiment {
                                 + "/" + nearestNeighbour.getDistanceMeasure().getParameters()
                                 + "/" + percentage + ".gzip";
                             if(!resultsExist(path)) {
-                                while (numTestTickInstances < i) {
+                                if(!printed) {
+                                    printed = true;
+                                    System.out.println(datasetName + "/" + foldIndex
+                                        + "/" + nearestNeighbour.getDistanceMeasure()
+                                        + "/" + nearestNeighbour.getDistanceMeasure().getParameters());
+                                }
+                                while (numTestTickInstances < i && nearestNeighbour.remainingTrainTicks()) {
                                     nearestNeighbour.trainTick();
-                                    if(nearestNeighbour.hasSampledTrainInstance() || !nearestNeighbour.remainingTestTicks()) {
+                                    if(nearestNeighbour.willSampleTrain()) {
                                         numTestTickInstances++;
                                     }
                                 }
                                 nearestNeighbour.test();
-                                ClassifierStats stats = getStats();
-                                write(path, stats);
+                                write(path, getResults());
+                            } else if(skip) {
+                                break;
                             }
                         }
                     }

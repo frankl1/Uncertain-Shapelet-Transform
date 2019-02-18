@@ -207,34 +207,38 @@ public class Range implements IndexedSupplier<Integer> {
             return;
         }
         int index = binarySearch(ranges, rangeToAdd);
-        FixedRange range = ranges.get(index);
-        if(range.overlaps(rangeToAdd)) {
-            range.join(rangeToAdd);
-            boolean overlaps = true;
-            index++;
-            while (overlaps && index < ranges.size()) {
-                rangeToAdd = ranges.get(index);
-                if(range.overlaps(rangeToAdd)) {
-                    range.join(rangeToAdd);
-                    ranges.remove(index);
-                } else {
-                    overlaps = false;
-                }
-            }
-            overlaps = true;
-            index -= 2;
-            while (overlaps && index >= 0) {
-                rangeToAdd = ranges.get(index);
-                if(range.overlaps(rangeToAdd)) {
-                    range.join(rangeToAdd);
-                    ranges.remove(index);
-                    index--;
-                } else {
-                    overlaps = false;
-                }
-            }
+        if(index < 0) {
+            ranges.add(0, rangeToAdd);
         } else {
-            ranges.add(index + 1, rangeToAdd);
+            FixedRange range = ranges.get(index);
+            if(range.overlaps(rangeToAdd)) {
+                range.join(rangeToAdd);
+                boolean overlaps = true;
+                index++;
+                while (overlaps && index < ranges.size()) {
+                    rangeToAdd = ranges.get(index);
+                    if(range.overlaps(rangeToAdd)) {
+                        range.join(rangeToAdd);
+                        ranges.remove(index);
+                    } else {
+                        overlaps = false;
+                    }
+                }
+                overlaps = true;
+                index -= 2;
+                while (overlaps && index >= 0) {
+                    rangeToAdd = ranges.get(index);
+                    if(range.overlaps(rangeToAdd)) {
+                        range.join(rangeToAdd);
+                        ranges.remove(index);
+                        index--;
+                    } else {
+                        overlaps = false;
+                    }
+                }
+            } else {
+                ranges.add(index + 1, rangeToAdd);
+            }
         }
     }
 

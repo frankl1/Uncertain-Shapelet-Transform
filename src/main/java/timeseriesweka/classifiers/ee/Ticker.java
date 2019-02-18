@@ -46,9 +46,4 @@ public class Ticker implements Tickable {
             tickable.setTestInstances(testInstances);
         }
     }
-
-    @Override
-    public double[][] predict() {
-        throw new UnsupportedOperationException();
-    }
 }

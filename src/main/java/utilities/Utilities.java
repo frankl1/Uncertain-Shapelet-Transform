@@ -235,7 +235,7 @@ public class Utilities {
         for(int i = 0; i < instances.numInstances(); i++) {
             Instance instance = instances.get(i);
             int index = (int) instance.classValue();
-            instanceIndicesByClass.get(index).add(i).
+            instanceIndicesByClass.get(index).add(i);
         }
         return instanceIndicesByClass;
 //        int[][] instanceIndicesByClassResult = new int[instanceIndicesByClass.size()][];

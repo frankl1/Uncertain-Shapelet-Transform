@@ -3,6 +3,7 @@ package timeseriesweka.classifiers.ee;
 import org.junit.Test;
 import utilities.range.Range;
 
+
 import static org.junit.Assert.*;
 
 public class RangeTest {
@@ -124,11 +125,20 @@ public class RangeTest {
     }
 
     @Test
-    public void discontinuityTest() {
+    public void discontinuityTestMax() {
         Range range = new Range();
         range.add(1, 2);
         range.add(8, 10);
         assertEquals("(1, 2)" + ", " +
                 "(8, 10)", range.toString());
+    }
+
+    @Test
+    public void discontinuityTestMin() {
+        Range range = new Range();
+        range.add(1, 2);
+        range.add(8, 10);
+        range.add(-1,-1);
+        assertEquals("(-1, -1), (1, 2), (8, 10)", range.toString());
     }
 }

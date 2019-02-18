@@ -9,7 +9,6 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class NearestNeighbour implements AdvancedClassifier, Tickable {
@@ -32,56 +31,39 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     private class Searchers {
         private final List<Searcher> searchers = new ArrayList<>();
-        private final AbstractIndexIterator indexIterator = new RandomIndexIterator();// todo set seed
+        private final AbstractIndexIterator indexIterator = new RoundRobinIndexIterator();
         // todo reset func
-        private Box<Long> trainDuration = new Box<>(0L);
-        private Box<Long> testDuration = new Box<>(0L);
 
         public void add(Instance instance) {
-            time(() -> {
-                indexIterator.add(searchers.size());
-                searchers.add(new Searcher(instance));
-            }, trainDuration);
+            searchers.add(new Searcher(instance));
         }
 
         public void testTick() {
-            time(() -> {
-                Searcher searcher = searchers.get(indexIterator.next());
-                searcher.tick();
-                if(!searcher.remainingTicks()) {
-                    indexIterator.remove();
-                }
-            }, testDuration);
+            Searcher searcher = searchers.get(indexIterator.next());
+            searcher.tick();
+            if(!searcher.remainingTicks()) {
+                indexIterator.remove();
+            }
         }
 
         public boolean remainingTestTicks() {
-            return time(() -> {
-                boolean result = indexIterator.hasNext();
-                return result;
-            }, testDuration);
+            return indexIterator.hasNext();
         }
 
         public void addInstanceIndex(final int index) {
-            time(() -> {
-                for(Searcher searcher : searchers) {
-                    searcher.addInstanceIndex(index);
-                }
-            }, trainDuration);
+            for(int i = 0; i < searchers.size(); i++) {
+                Searcher searcher = searchers.get(i);
+                searcher.addInstanceIndex(index);
+                indexIterator.add(i);
+            }
         }
 
-        public ClassifierResults predict() {
-            Box<Long> predictionDuration = new Box<>(0L);
-            ClassifierResults results = new ClassifierResults();
-            time(() -> {
-                for (Searcher searcher : searchers) {
-                    results.storeSingleResult(searcher.classValue(), searcher.predict());
-                }
-            }, predictionDuration);
-            results.setNumInstances(searchers.size());
-            results.setNumClasses(originalTrainInstances.numClasses());
-            results.setTrainTime(trainDuration.get());
-            results.setTestTime(testDuration.get() + predictionDuration.get());
-            return results;
+        public double[][] predict() {
+            double[][] predictions = new double[searchers.size()][];
+            for(int i = 0; i < predictions.length; i++) {
+                predictions[i] = searchers.get(i).predict();
+            }
+            return predictions;
         }
 
 //        public int size() {
@@ -220,10 +202,14 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     private List<Double> classDistribution;
     private final TreeMap<Integer, Double> classSamplingProbabilities = new TreeMap<>();
     private Random samplingRandom = new Random();
-    private boolean hasSampledTrainInstance = true;
+    private boolean willSampleTrain = true;
+    private final Box<Long> trainDuration = new Box<>();
+    private final Box<Long> testDuration = new Box<>();
+    private final Box<Long> trainPredictionDuration = new Box<>(0L);
+    private final Box<Long> testPredictionDuration = new Box<>(0L);
 
-    public boolean hasSampledTrainInstance() {
-        return hasSampledTrainInstance;
+    public boolean willSampleTrain() {
+        return willSampleTrain;
     }
 
     private static <A> A time(Supplier<A> function, Box<Long> box) {
@@ -242,11 +228,11 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     }
 
     public boolean remainingTrainTicks() {
-        return time(trainSearchers::remainingTestTicks, trainDuration);
+        return trainSearchers.remainingTestTicks() || hasRemainingSampling();
     }
 
     public boolean remainingTestTicks() {
-        return time(testSearchers::remainingTestTicks, testDuration);
+        return testSearchers.remainingTestTicks();
     }
 
     public void train() {
@@ -263,11 +249,18 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     public void trainTick() {
         time(() -> {
-            trainSearchers.testTick();
-            if(!trainSearchers.remainingTestTicks() && hasRemainingSampling()) {
+            if(willSampleTrain) {
                 addNextTrainInstance();
+                if(trainSearchers.remainingTestTicks()) {
+                    trainSearchers.testTick();
+                }
             } else {
-                hasSampledTrainInstance = false;
+                trainSearchers.testTick();
+            }
+            if(!trainSearchers.remainingTestTicks() && hasRemainingSampling()) {
+                willSampleTrain = true;
+            } else {
+                willSampleTrain = false;
             }
         }, trainDuration);
 
@@ -284,6 +277,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
                 classDistribution.add(proportion);
                 classSamplingProbabilities.put(i, proportion);
             }
+            willSampleTrain = true;
         }, trainDuration);
     }
 
@@ -294,7 +288,6 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             for(Instance testInstance : testInstances) {
                 testSearchers.add(testInstance);
             }
-            addNextTrainInstance();
         }, testDuration);
     }
 
@@ -317,7 +310,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             classSamplingProbabilities.put(classValue, classProbability + classDistribution.get(classValue));
         }
         Integer sampleClass = sampleClasses.get(samplingRandom.nextInt(sampleClasses.size()));
-        classSamplingProbabilities.put(sampleClass, maxClassProbability - 1);
+        classSamplingProbabilities.put(sampleClass, classSamplingProbabilities.get(sampleClass) - 1);
         List<Integer> homogeneousInstancesIndices = instanceIndicesByClass.get(sampleClass);
         int sampledInstanceIndex = homogeneousInstancesIndices.remove(samplingRandom.nextInt(homogeneousInstancesIndices.size()));
         if(homogeneousInstancesIndices.isEmpty()) {
@@ -328,10 +321,9 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     private void addNextTrainInstance() {
         int instanceIndex = sampleTrainInstanceIndex();
-        trainSearchers.add(originalTrainInstances.get(instanceIndex));
         trainSearchers.addInstanceIndex(instanceIndex);
+        trainSearchers.add(originalTrainInstances.get(instanceIndex));
         testSearchers.addInstanceIndex(instanceIndex);
-        hasSampledTrainInstance = true;
     }
 
     public void testTick() {
@@ -344,13 +336,15 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         setTestInstances(originalTestInstances);
     }
 
-    public ClassifierResults predictTrain() {
-        return trainSearchers.predict();
+    public double[][] predictTrain() {
+        trainPredictionDuration.setContents(0L);
+        return time(trainSearchers::predict, trainPredictionDuration);
         // todo make distance measures not copy the array
     }
 
-    public ClassifierResults predictTest() {
-        return testSearchers.predict();
+    public double[][] predictTest() {
+        testPredictionDuration.setContents(0L);
+        return time(testSearchers::predict, testPredictionDuration);
     }
 
     public NearestNeighbour() {
@@ -370,15 +364,13 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     private DistanceMeasure distanceMeasure = new Dtw();
     private final Random random = new Random(); // generic random for tied breaks, etc
     private Long seed = null;
-    private Box<Long> trainDuration = new Box<>(-1L);
-    private Box<Long> testDuration = new Box<>(-1L);
 
     public long getTrainDuration() {
-        return trainDuration + trainSearchers.getDuration();
+        return trainDuration.get() + trainPredictionDuration.get();
     }
 
     public long getTestDuration() {
-        return testDuration + testSearchers.getDuration();
+        return testDuration.get() + testPredictionDuration.get();
     }
 
     @Override
@@ -410,36 +402,11 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     @Override
     public double[] distributionForInstance(Instance testInstance) throws Exception {// todo use ticks
         // majority vote // todo k voting scheme
-        double[] distribution = new double[testInstance.numClasses()];
-        if(trainInstances.size() == 0) {
-            distribution[random.nextInt(distribution.length)]++;
-        } else {
-            TreeMap<Double, Map<Integer, Integer>> neighbours = findNeighbours(testInstance);
-            for(Map<Integer, Integer> neighbourMap : neighbours.values()) {
-                for(Integer classValue : neighbourMap.keySet()) {
-                    distribution[classValue] += neighbourMap.get(classValue);
-                }
-            }
-        }
-        ArrayUtilities.normalise(distribution);
-        return distribution;
-    }
-
-    public ClassifierResults predict(Instances testInstances) throws Exception {
-        ClassifierResults results = new ClassifierResults();
-        results.setNumClasses(testInstances.numClasses());
-        results.setNumInstances(testInstances.numInstances());
-        results.setTrainTime(trainDuration);
-        long startTime = System.nanoTime();
-        for(Instance testInstance : testInstances) {
-            results.storeSingleResult(testInstance.classValue(), distributionForInstance(testInstance));
-        }
-        long stopTime = System.nanoTime();
-        results.setName(toString());
-        results.setParas(getParameters());
-        results.setTrainTime(trainDuration);
-        results.setTestTime(stopTime - startTime);
-        return results;
+        Instances testInstances = new Instances(testInstance.dataset(), 0);
+        testInstances.add(testInstance);
+        setTestInstances(testInstances);
+        double[][] predictions = predictTest();
+        return predictions[0];
     }
 
     @Override

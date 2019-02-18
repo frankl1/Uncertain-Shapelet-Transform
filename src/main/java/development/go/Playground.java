@@ -81,6 +81,9 @@ public class Playground {
 //            Instances instances = Utilities.loadDataset(new File(datasetDir, dataset));
 //        }
 
+        String test = "hello goodbye";
+        System.out.println(test.replaceAll(" ", "\\\\ "));
+
         String user = "vte14wgu";
         int port = 22;
         String host = "localhost";
