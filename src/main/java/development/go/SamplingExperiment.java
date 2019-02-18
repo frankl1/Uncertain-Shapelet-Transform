@@ -52,9 +52,8 @@ public class SamplingExperiment {
         samplingExperiment.run();
     }
 
-    private ClassifierResults getResults() {
+    private ClassifierResults getResults(double[][] predictions) {
         ClassifierResults results = new ClassifierResults();
-        double[][] predictions = nearestNeighbour.predictTest();
         for(int i = 0; i < predictions.length; i++) {
             results.storeSingleResult(testInstances.get(i).classValue(), predictions[i]);
         }
@@ -297,8 +296,10 @@ public class SamplingExperiment {
                                 + "/" + datasetName + "/" + foldIndex
                                 + "/" + nearestNeighbour.getDistanceMeasure()
                                 + "/" + nearestNeighbour.getDistanceMeasure().getParameters()
-                                + "/" + percentage + ".gzip";
-                            if(!resultsExist(path)) {
+                                + "/" + percentage + "/";
+                            String trainPath = path + "train.gzip";
+                            String testPath = path + "test.gzip";
+                            if(!resultsExist(testPath) || !resultsExist(trainPath)) {
                                 if(!printed) {
                                     printed = true;
                                     System.out.println(datasetName + "/" + foldIndex
@@ -312,7 +313,8 @@ public class SamplingExperiment {
                                     }
                                 }
                                 nearestNeighbour.test();
-                                write(path, getResults());
+                                if(!resultsExist(trainPath)) write(trainPath, getResults(nearestNeighbour.predictTrain()));
+                                if(!resultsExist(testPath)) write(testPath, getResults(nearestNeighbour.predictTest()));
                             } else if(skip) {
                                 break;
                             }

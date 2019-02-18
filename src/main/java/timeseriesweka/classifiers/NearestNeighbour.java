@@ -84,13 +84,15 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             return instance.classValue();
         }
 
+        // todo make sure randomness is reproducible
+
         private Instance instance;
         private int numNeighbours = 0;
         private int noNeighbourPrediction;
         private final RandomIndexIterator uncheckedInstanceIndexIterator = new RandomIndexIterator();
 
         public Searcher(Instance instance) {
-            uncheckedInstanceIndexIterator.setRandom(samplingRandom);
+            uncheckedInstanceIndexIterator.setRandom(random);
             setInstance(instance);
         }
 
@@ -201,7 +203,6 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     private List<List<Integer>> instanceIndicesByClass;
     private List<Double> classDistribution;
     private final TreeMap<Integer, Double> classSamplingProbabilities = new TreeMap<>();
-    private Random samplingRandom = new Random();
     private boolean willSampleTrain = true;
     private final Box<Long> trainDuration = new Box<>();
     private final Box<Long> testDuration = new Box<>();
@@ -309,10 +310,10 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             }
             classSamplingProbabilities.put(classValue, classProbability + classDistribution.get(classValue));
         }
-        Integer sampleClass = sampleClasses.get(samplingRandom.nextInt(sampleClasses.size()));
+        Integer sampleClass = sampleClasses.get(random.nextInt(sampleClasses.size()));
         classSamplingProbabilities.put(sampleClass, classSamplingProbabilities.get(sampleClass) - 1);
         List<Integer> homogeneousInstancesIndices = instanceIndicesByClass.get(sampleClass);
-        int sampledInstanceIndex = homogeneousInstancesIndices.remove(samplingRandom.nextInt(homogeneousInstancesIndices.size()));
+        int sampledInstanceIndex = homogeneousInstancesIndices.remove(random.nextInt(homogeneousInstancesIndices.size()));
         if(homogeneousInstancesIndices.isEmpty()) {
             classSamplingProbabilities.remove(sampleClass);
         }
@@ -425,7 +426,6 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     @Override
     public void setSeed(long seed) {
         random.setSeed(seed);
-        samplingRandom.setSeed(seed);
         this.seed = seed;
     }
 
