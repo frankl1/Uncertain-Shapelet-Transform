@@ -3,7 +3,7 @@
 //import com.beust.jcommander.JCommander;
 //import com.beust.jcommander.Parameter;
 //import com.beust.jcommander.converters.FileConverter;
-//import timeseriesweka.classifiers.NearestNeighbour;
+//import timeseriesweka.classifiers.nearest_neighbour.NearestNeighbour;
 //import timeseriesweka.classifiers.ee.constituents.generators.*;
 //import timeseriesweka.measures.DistanceMeasure;
 //import utilities.Utilities;

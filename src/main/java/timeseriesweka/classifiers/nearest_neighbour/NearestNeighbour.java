@@ -1,15 +1,19 @@
-package timeseriesweka.classifiers;
+package timeseriesweka.classifiers.nearest_neighbour;
 
+import timeseriesweka.classifiers.AdvancedClassifier;
+import timeseriesweka.classifiers.Tickable;
 import timeseriesweka.classifiers.ee.iteration.*;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
+import utilities.range.Range;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.*;
-import java.util.function.Supplier;
+
+import static utilities.Utilities.time;
 
 public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
@@ -35,7 +39,15 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         // todo reset func
 
         public void add(Instance instance) {
-            searchers.add(new Searcher(instance));
+            Searcher searcher = new Searcher(instance);
+            int numSampledTrainInstances = sampledTrainInstanceIndices.size();
+            if(numSampledTrainInstances > 0) {
+                indexIterator.add(searchers.size());
+            }
+            for(int i = 0; i < numSampledTrainInstances; i++) {
+                searcher.addInstanceIndex(sampledTrainInstanceIndices.get(i));
+            }
+            searchers.add(searcher);
         }
 
         public void testTick() {
@@ -65,10 +77,6 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             }
             return predictions;
         }
-
-//        public int size() {
-//            return time(searchers::size, trainDuration);
-//        }
     }
 
     private class Searcher {
@@ -107,7 +115,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         public void tick() {
             int trainInstanceIndex = uncheckedInstanceIndexIterator.next();
             uncheckedInstanceIndexIterator.remove();
-            Instance trainInstance = originalTrainInstances.get(trainInstanceIndex);
+            Instance trainInstance = trainInstances.get(trainInstanceIndex);
             double cutOff = getCutOff();
             double distance = distanceMeasure.distance(trainInstance, instance, cutOff);
             if(distance <= cutOff) {
@@ -194,10 +202,15 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
             uncheckedInstanceIndexIterator.reset();
         }
 
+        public void setSeed(long seed) {
+            // todo
+        }
+
     }
 
-    private Instances originalTrainInstances;
-    private Instances originalTestInstances;
+    private Instances trainInstances;
+    private Instances testInstances;
+    private final Range sampledTrainInstanceIndices = new Range();
     private Searchers trainSearchers = new Searchers();
     private Searchers testSearchers = new Searchers();
     private List<List<Integer>> instanceIndicesByClass;
@@ -213,37 +226,22 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         return willSampleTrain;
     }
 
-    private static <A> A time(Supplier<A> function, Box<Long> box) {
-        long timeStamp = System.nanoTime();
-        A result = function.get();
-        long duration = System.nanoTime() - timeStamp;
-        box.setContents(duration + box.getContents());
-        return result;
+    public boolean hasNextTrainTick() {
+        return trainSearchers.remainingTestTicks() || hasNextSampling();
     }
 
-    private static void time(Runnable function, Box<Long> box) {
-        long timeStamp = System.nanoTime();
-        function.run();
-        long duration = System.nanoTime() - timeStamp;
-        box.setContents(duration + box.getContents());
-    }
-
-    public boolean remainingTrainTicks() {
-        return trainSearchers.remainingTestTicks() || hasRemainingSampling();
-    }
-
-    public boolean remainingTestTicks() {
+    public boolean hasNextTestTick() {
         return testSearchers.remainingTestTicks();
     }
 
     public void train() {
-        while (remainingTrainTicks()) {
+        while (hasNextTrainTick()) {
             trainTick();
         }
     }
 
     public void test() {
-        while (remainingTestTicks()) {
+        while (hasNextTestTick()) {
             testTick();
         }
     }
@@ -252,13 +250,10 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         time(() -> {
             if(willSampleTrain) {
                 addNextTrainInstance();
-                if(trainSearchers.remainingTestTicks()) {
-                    trainSearchers.testTick();
-                }
             } else {
                 trainSearchers.testTick();
             }
-            if(!trainSearchers.remainingTestTicks() && hasRemainingSampling()) {
+            if(!trainSearchers.remainingTestTicks()) {
                 willSampleTrain = true;
             } else {
                 willSampleTrain = false;
@@ -267,10 +262,10 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     }
 
-    public void setTrainInstances(Instances trainInstances) {
+    public void setTrain(Instances trainInstances) {
         trainDuration.setContents(0L);
         time(() -> {
-            originalTrainInstances = trainInstances;
+            this.trainInstances = trainInstances;
             instanceIndicesByClass = Utilities.instanceIndicesByClass(trainInstances);
             classDistribution = new ArrayList<>();
             for(int i = 0; i < instanceIndicesByClass.size(); i++) {
@@ -282,17 +277,17 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         }, trainDuration);
     }
 
-    public void setTestInstances(Instances testInstances) {
+    public void setTest(Instances testInstances) {
         testDuration.setContents(0L);
         time(() -> {
-            originalTestInstances = testInstances;
+            this.testInstances = testInstances;
             for(Instance testInstance : testInstances) {
                 testSearchers.add(testInstance);
             }
         }, testDuration);
     }
 
-    private boolean hasRemainingSampling() {
+    private boolean hasNextSampling() {
         return !classSamplingProbabilities.isEmpty();
     }
 
@@ -323,7 +318,8 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
     private void addNextTrainInstance() {
         int instanceIndex = sampleTrainInstanceIndex();
         trainSearchers.addInstanceIndex(instanceIndex);
-        trainSearchers.add(originalTrainInstances.get(instanceIndex));
+        trainSearchers.add(trainInstances.get(instanceIndex));
+        sampledTrainInstanceIndices.add(instanceIndex);
         testSearchers.addInstanceIndex(instanceIndex);
     }
 
@@ -333,19 +329,40 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     public void reset() {
         setSeed(seed);
-        setTrainInstances(originalTrainInstances);
-        setTestInstances(originalTestInstances);
+        setTrain(trainInstances);
+        setTest(testInstances);
     }
 
     public double[][] predictTrain() {
         trainPredictionDuration.setContents(0L);
-        return time(trainSearchers::predict, trainPredictionDuration);
-        // todo make distance measures not copy the array
+        return Utilities.time(trainSearchers::predict, trainPredictionDuration);
     }
 
     public double[][] predictTest() {
         testPredictionDuration.setContents(0L);
         return time(testSearchers::predict, testPredictionDuration);
+    }
+
+    public static ClassifierResults produceResults(Instances instances, double[][] predictions) {
+        ClassifierResults results = new ClassifierResults();
+        for(int i = 0; i < predictions.length; i++) {
+            results.storeSingleResult(instances.get(i).classValue(), predictions[i]);
+        }
+        results.setNumInstances(instances.numInstances());
+        results.setNumClasses(instances.numClasses());
+        return results;
+    }
+
+    public ClassifierResults findTrainResults() {
+        ClassifierResults results = produceResults(trainInstances, predictTrain());
+        results.setTrainTime(getTrainDuration());
+        return results;
+    }
+
+    public ClassifierResults findTestResults() {
+        ClassifierResults results = produceResults(testInstances, predictTest());
+        results.setTrainTime(getTestDuration());
+        return results;
     }
 
     public NearestNeighbour() {
@@ -376,7 +393,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        setTrainInstances(trainInstances);
+        setTrain(trainInstances);
         train();
     }
 
@@ -405,7 +422,7 @@ public class NearestNeighbour implements AdvancedClassifier, Tickable {
         // majority vote // todo k voting scheme
         Instances testInstances = new Instances(testInstance.dataset(), 0);
         testInstances.add(testInstance);
-        setTestInstances(testInstances);
+        setTest(testInstances);
         double[][] predictions = predictTest();
         return predictions[0];
     }

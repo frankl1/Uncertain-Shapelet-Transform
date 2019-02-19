@@ -1,8 +1,6 @@
 package utilities.range;
 
-import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.index.IndexedSupplier;
-import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
 public class Utilities {
@@ -276,6 +277,21 @@ public class Utilities {
 
     public static Instances instancesFromFile(String path) throws IOException {
         return instancesFromFile(new File(path));
+    }
+
+    public static <A> A time(Supplier<A> function, Box<Long> box) {
+        long timeStamp = System.nanoTime();
+        A result = function.get();
+        long duration = System.nanoTime() - timeStamp;
+        box.setContents(duration + box.getContents());
+        return result;
+    }
+
+    public static void time(Runnable function, Box<Long> box) {
+        long timeStamp = System.nanoTime();
+        function.run();
+        long duration = System.nanoTime() - timeStamp;
+        box.setContents(duration + box.getContents());
     }
 
 }

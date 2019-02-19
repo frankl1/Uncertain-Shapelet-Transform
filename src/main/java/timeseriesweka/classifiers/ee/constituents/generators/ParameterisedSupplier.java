@@ -1,10 +1,7 @@
 package timeseriesweka.classifiers.ee.constituents.generators;
 
-import timeseriesweka.classifiers.NearestNeighbour;
 import timeseriesweka.classifiers.ee.constituents.CombinedIndexed;
 import timeseriesweka.classifiers.ee.index.IndexedSupplier;
-import timeseriesweka.measures.DistanceMeasure;
-import timeseriesweka.measures.lcss.Lcss;
 import utilities.Box;
 import weka.core.Instances;
 

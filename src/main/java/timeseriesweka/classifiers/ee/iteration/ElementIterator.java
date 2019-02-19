@@ -1,5 +1,7 @@
 package timeseriesweka.classifiers.ee.iteration;
 
+import utilities.range.Range;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,12 +25,13 @@ public class ElementIterator<E> implements Iterator<E> {
 
     public void setIndexIterator(final AbstractIndexIterator indexIterator) {
         this.indexIterator = indexIterator;
+        indexIterator.setRange(new Range(this.list));
     }
 
     public void setList(final List<E> list) {
         this.list.clear();
         this.list.addAll(list);
-        indexIterator.getRange().add(this.list);
+        indexIterator.setRange(new Range(this.list));
     }
 
     private AbstractIndexIterator indexIterator = new LinearIndexIterator();
