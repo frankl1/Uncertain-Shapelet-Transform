@@ -13,9 +13,9 @@ import java.util.List;
 
 public class SamplingExperimentProgress {
     public static void main(String[] args) throws IOException {
-        File datasetList = new File("datasetList.txt");
-        File globalResultsDir = new File("results/nnscv");
-        File datasetDir = new File("/gpfs/home/ajb/TSCProblems2019");
+        File datasetList = new File("/scratch/datasetList.txt");
+        File globalResultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nnscv2");
+        File datasetDir = new File("/scratch/TSCProblems2018");
         int[] seeds = new int[1];
         for (int i = 0; i < seeds.length; i++) {
             seeds[i] = i;
@@ -57,23 +57,17 @@ public class SamplingExperimentProgress {
                             String resultsFilePrefix = seed
                                 + "/" + nearestNeighbour.getDistanceMeasure()
                                 + "/" + nearestNeighbour.getDistanceMeasure().getParameters();
-                            double nextPercentage = 0;
                             for (int i = 0, j = 0; i <= numTrainInstances; i++) {
-                                double percentage = (double) i / numTrainInstances;
-                                if (percentage >= nextPercentage) {
-                                    j++;
-                                    nextPercentage = (double) j / 100;
-                                    File file = new File(resultsDir, resultsFilePrefix + "/" + percentage);
-                                    File train = new File(file, "train.gzip");
-                                    File test = new File(file, "test.gzip");
-                                    if (train.exists()) {
-                                        seedProgress++;
-                                    }
-                                    if (test.exists()) {
-                                        seedProgress++;
-                                    }
-                                    seedMaxProgress += 2;
+                                File file = new File(resultsDir, resultsFilePrefix + "/" + i);
+                                File train = new File(file, "train.gzip");
+                                File test = new File(file, "test.gzip");
+                                if (train.exists()) {
+                                    seedProgress++;
                                 }
+                                if (test.exists()) {
+                                    seedProgress++;
+                                }
+                                seedMaxProgress += 2;
                             }
                         }
                     }
