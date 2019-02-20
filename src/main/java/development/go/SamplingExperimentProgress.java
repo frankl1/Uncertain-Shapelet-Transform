@@ -14,7 +14,7 @@ import java.util.List;
 public class SamplingExperimentProgress {
     public static void main(String[] args) throws IOException {
         File datasetList = new File("/scratch/datasetList.txt");
-        File globalResultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nnscv2");
+        File globalResultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nn4");
         File datasetDir = new File("/scratch/TSCProblems2018");
         int[] seeds = new int[1];
         for (int i = 0; i < seeds.length; i++) {
@@ -30,8 +30,9 @@ public class SamplingExperimentProgress {
         parameterisedSuppliers.add(new MsmParameterisedSupplier());
         parameterisedSuppliers.add(new TweParameterisedSupplier());
         parameterisedSuppliers.add(new ErpParameterisedSupplier());
-        parameterisedSuppliers.add(new EuclideanParameterisedSupplier());
+//        parameterisedSuppliers.add(new EuclideanParameterisedSupplier());
         while (overallPercentageProgress < 100) {
+            List<String> completeDatasets = new ArrayList<>();
             BufferedReader reader = new BufferedReader(new FileReader(datasetList));
             String dataset;
             int overallProgress = 0;
@@ -45,7 +46,6 @@ public class SamplingExperimentProgress {
                 for (int seed : seeds) {
                     Instances[] splitInstances = InstanceTools.resampleInstances(instances, seed, 0.5);
                     Instances trainInstances = splitInstances[0];
-                    int numTrainInstances = trainInstances.numInstances();
                     int seedProgress = 0;
                     int seedMaxProgress = 0;
                     for (ParameterisedSupplier<? extends DistanceMeasure> parameterisedSupplier : parameterisedSuppliers) {
@@ -54,21 +54,14 @@ public class SamplingExperimentProgress {
                             DistanceMeasure distanceMeasure = parameterisedSupplier.get(k);
                             NearestNeighbour nearestNeighbour = new NearestNeighbour();
                             nearestNeighbour.setDistanceMeasure(distanceMeasure);
-                            String resultsFilePrefix = seed
+                            String path = seed
                                 + "/" + nearestNeighbour.getDistanceMeasure()
-                                + "/" + nearestNeighbour.getDistanceMeasure().getParameters();
-                            for (int i = 0, j = 0; i <= numTrainInstances; i++) {
-                                File file = new File(resultsDir, resultsFilePrefix + "/" + i);
-                                File train = new File(file, "train.gzip");
-                                File test = new File(file, "test.gzip");
-                                if (train.exists()) {
-                                    seedProgress++;
-                                }
-                                if (test.exists()) {
-                                    seedProgress++;
-                                }
-                                seedMaxProgress += 2;
+                                + "/" + nearestNeighbour.getDistanceMeasure().getParameters() + ".gzip";
+                            File file = new File(resultsDir, path);
+                            if(file.exists()) {
+                                seedProgress++;
                             }
+                            seedMaxProgress ++;
                         }
                     }
                     System.out.print(" ");
@@ -80,13 +73,23 @@ public class SamplingExperimentProgress {
                     System.out.print(" ");
                     System.out.print(String.format("%3.2f", (double) datasetProgress / datasetMaxProgress * 100));
                 }
+                if(datasetProgress == datasetMaxProgress) {
+                    completeDatasets.add(dataset);
+                }
                 overallMaxProgress += datasetMaxProgress;
                 overallProgress += datasetProgress;
                 System.out.println();
             }
             reader.close();
             overallPercentageProgress = (double) overallProgress / overallMaxProgress * 100;
-            System.out.println(String.format("%3.2f", overallPercentageProgress));
+            System.out.println("-----");
+            System.out.println(String.format("Overall: %3.2f", overallPercentageProgress));
+            System.out.println("-----");
+            System.out.println("Complete:");
+            for(String str : completeDatasets) {
+                System.out.println("\"" + str + "\",");
+            }
+            System.out.println("-----");
         }
     }
 }

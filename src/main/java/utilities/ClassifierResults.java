@@ -317,7 +317,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     @Override
     public String toString() {
-        findAllStatsOnce();
+//        findAllStatsOnce();
         return writeResultsFileToString();
     }
 
