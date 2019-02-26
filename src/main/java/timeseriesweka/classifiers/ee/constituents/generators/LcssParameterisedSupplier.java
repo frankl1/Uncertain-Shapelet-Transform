@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ee.constituents.generators;
 
 import timeseriesweka.classifiers.ee.constituents.*;
+import timeseriesweka.classifiers.ee.index.IndexedSupplierObtainer;
 import timeseriesweka.classifiers.ee.index.LinearInterpolater;
 import timeseriesweka.measures.lcss.Lcss;
 import utilities.StatisticUtilities;
@@ -26,7 +27,22 @@ public class LcssParameterisedSupplier extends ParameterisedSupplier<Lcss> {
     @Override
     public void setParameterRanges(final Instances instances) {
         double pStdDev = StatisticUtilities.populationStandardDeviation(instances);
-        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 0.25, 10));
+        int instanceLength = instances.numAttributes() - 1;
+//        warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 0.25 * instanceLength, 10));
+        warpingWindowParameter.getValueRange().setIndexedSupplier(new IndexedSupplierObtainer<Double>(10) {
+
+            final int numAttrs = (int) (0.25 * instanceLength);
+            final double diff = (double) (numAttrs) / (size() - 1);
+
+            @Override
+            protected Double obtain(final double value) {
+                if(value == 1) {
+                    return (double) numAttrs;
+                } else {
+                    return (double) ((int) (diff * ((int) (value * size()))));
+                }
+            }
+        });
         costParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0.2 * pStdDev, pStdDev, 10));
     }
 

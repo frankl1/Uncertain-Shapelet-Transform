@@ -1,6 +1,5 @@
 package utilities;
 
-import weka.classifiers.rules.ZeroR;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -9,7 +8,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.zip.GZIPInputStream;
 
 public class Utilities {
     public static final int size(double[][] matrix) {
@@ -265,6 +263,36 @@ public class Utilities {
         throw new IllegalArgumentException("failed to load: " + datasetDir.getPath());
     }
 
+    public static Instances[] loadSplitInstances(File datasetDir) throws IOException {
+        File trainFile = datasetDir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(final File file) {
+                String name = file.getName();
+                int index = name.indexOf("_");
+                if(index < 0) {
+                    return false;
+                }
+                String end = name.substring(index + 1);
+                return end.equalsIgnoreCase("train.arff");
+            }
+        })[0];
+        File testFile = datasetDir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(final File file) {
+                String name = file.getName();
+                int index = name.indexOf("_");
+                if(index < 0) {
+                    return false;
+                }
+                String end = name.substring(index + 1);
+                return end.equalsIgnoreCase("test.arff");
+            }
+        })[0]; // todo checks / exceptions
+        Instances testInstances = instancesFromFile(testFile);
+        Instances trainInstances = instancesFromFile(trainFile);
+        return new Instances[] {trainInstances, testInstances};
+    }
+
     public static Instances loadDataset(String datasetDir) throws IOException {
         return loadDataset(new File(datasetDir));
     }
@@ -292,6 +320,36 @@ public class Utilities {
         function.run();
         long duration = System.nanoTime() - timeStamp;
         box.setContents(duration + box.getContents());
+    }
+
+    public static String asString(double[] array) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(array[0]);
+        for(int i = 1; i < array.length; i++) {
+            stringBuilder.append(", ");
+            stringBuilder.append(array[i]);
+        }
+        return stringBuilder.toString();
+    }
+
+    public static int[] argMax(double[] array) {
+        List<Integer> indices = new ArrayList<>();
+        double max = array[0];
+        indices.add(0);
+        for(int i = 1; i < array.length; i++) {
+            if(array[i] >= max) {
+                if(array[i] > max) {
+                    max = array[i];
+                    indices.clear();
+                }
+                indices.add(i);
+            }
+        }
+        int[] indicesCopy = new int[indices.size()];
+        for(int i = 0; i < indicesCopy.length; i++) {
+            indicesCopy[i] = indices.get(i);
+        }
+        return indicesCopy;
     }
 
 }

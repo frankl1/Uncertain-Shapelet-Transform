@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
@@ -143,10 +144,14 @@ public class DTW1NN extends Efficient1NN {
             matrixD[i][0] = matrixD[i - 1][0] + (first.value(i) - second.value(0)) * (first.value(i) - second.value(0));
         }
 //Warp the rest,
+//        System.out.println(Utilities.asString(matrixD[0]));
         for (int i = 1; i < n; i++) {
             tooBig = true;
             start = windowSize < i ? i - windowSize + 1 : 1;
             end = i + windowSize < m ? i + windowSize : m;
+            if(matrixD[i][start - 1] < cutoff) {
+                tooBig = false;
+            }
             for (int j = start; j < end; j++) {
                 minDist = matrixD[i][j - 1];
                 if (matrixD[i - 1][j] < minDist) {
@@ -160,12 +165,15 @@ public class DTW1NN extends Efficient1NN {
                     tooBig = false;
                 }
             }
+//            System.out.println(Utilities.asString(matrixD[i]));
             //Early abandon
             if (tooBig) {
+//                System.out.println("---");
                 return Double.MAX_VALUE;
             }
         }
-//Find the minimum distance at the end points, within the warping window. 
+//        System.out.println("---");
+//Find the minimum distance at the end points, within the warping window.
         return matrixD[n-1][m-1];
     }
     

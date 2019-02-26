@@ -701,7 +701,7 @@ public abstract class AbstractInstance implements Instance, Serializable,
    */
   @Override
   public String toString() {
-    return String.valueOf(classValue());
+    return String.valueOf(weight()) + ", " + String.valueOf(classValue());
 //    return toStringMaxDecimalDigits(s_numericAfterDecimalPoint);
   }
 

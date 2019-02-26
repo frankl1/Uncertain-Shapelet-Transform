@@ -108,7 +108,7 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
         double thisDist;
                 
         for(Instance i:this.train){
-            thisDist = distance(instance, i, bsfDistance); 
+            thisDist = distance(instance, i, bsfDistance);
             if(thisDist < bsfDistance){
                 bsfDistance = thisDist;
                 classCounts = new int[train.numClasses()];
@@ -464,12 +464,15 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
         
         int correct = 0;
         double pred, actual;
-        
+
         double[] accAndPreds = new double[train.numInstances()+1];
         for(int i = 0; i < train.numInstances(); i++){
             trainLoocv = new Instances(train);
             testLoocv = trainLoocv.remove(i);
             actual = testLoocv.classValue();
+            if(testLoocv.weight() == 18) {
+                boolean b = true;
+            }
             this.buildClassifier(trainLoocv);
             pred = this.classifyInstance(testLoocv);
             if(pred==actual){
@@ -477,6 +480,7 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
             }
             accAndPreds[i+1]= pred;
         }
+//        System.out.println(results.toString());
         accAndPreds[0] = (double)correct/train.numInstances();
 //        System.out.println(accAndPreds[0]);
         

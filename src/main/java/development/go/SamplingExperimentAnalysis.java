@@ -78,20 +78,20 @@ public class SamplingExperimentAnalysis {
     }
 
     public static void main(String[] args) throws IOException {
-        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nn3");
+        File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nn4");
         File datasetsDir = new File("/scratch/TSCProblems2018");
         List<String> datasetNames = Arrays.asList(
-            "Beef"
+            "Fish"
             );
         List<ParameterisedSupplier<? extends DistanceMeasure>> parameterisedSuppliers = new ArrayList<>();
         parameterisedSuppliers.add(new DtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new DdtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new WdtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new WddtwParameterisedSupplier());
-//        parameterisedSuppliers.add(new LcssParameterisedSupplier());
-//        parameterisedSuppliers.add(new MsmParameterisedSupplier());
-//        parameterisedSuppliers.add(new TweParameterisedSupplier());
-//        parameterisedSuppliers.add(new ErpParameterisedSupplier());
+        parameterisedSuppliers.add(new DdtwParameterisedSupplier());
+        parameterisedSuppliers.add(new WdtwParameterisedSupplier());
+        parameterisedSuppliers.add(new WddtwParameterisedSupplier());
+        parameterisedSuppliers.add(new LcssParameterisedSupplier());
+        parameterisedSuppliers.add(new MsmParameterisedSupplier());
+        parameterisedSuppliers.add(new TweParameterisedSupplier());
+        parameterisedSuppliers.add(new ErpParameterisedSupplier());
         String variableName = "data";
         int numSeeds = 1;
         BufferedWriter writer = new BufferedWriter(new FileWriter("matlabCommands.m"));
@@ -127,23 +127,27 @@ public class SamplingExperimentAnalysis {
 //                            Map<Integer, String> instIndexResults = paramResults.computeIfAbsent(instIndex, key -> new TreeMap<>());
 //                            int j = 0;
                             for(int trainOrTest = 0; trainOrTest <= 1; trainOrTest++) {
-                                List<String> values = new ArrayList<>();
-                                values.add(String.valueOf(benchmark)); // bench
-                                values.add(String.valueOf(objectInputStream.readDouble())); // acc
-                                values.add(String.valueOf(objectInputStream.readDouble())); // balacc
-                                values.add(String.valueOf(objectInputStream.readDouble())); // nll
-                                values.add(String.valueOf(objectInputStream.readDouble())); // mcc
-                                values.add(String.valueOf(objectInputStream.readDouble())); // meanAuroc
-                                values.add(String.valueOf(objectInputStream.readDouble())); // f1
-                                values.add(String.valueOf(objectInputStream.readDouble())); // precision
-                                values.add(String.valueOf(objectInputStream.readDouble())); // recall
-                                values.add(String.valueOf(objectInputStream.readDouble())); // sens
-                                values.add(String.valueOf(objectInputStream.readDouble())); // spec
-                                values.add(String.valueOf(objectInputStream.readLong())); // test time
-                                values.add(String.valueOf(objectInputStream.readLong())); // train time
-                                values.add(String.valueOf(objectInputStream.readLong())); // mem
+                                Map<String, String> values = new HashMap<>();
+//                                values.put("bench", String.valueOf(benchmark)); // bench
+                                values.put("acc", String.valueOf(objectInputStream.readDouble())); // acc
+                                values.put("balacc", String.valueOf(objectInputStream.readDouble())); // balacc
+                                values.put("nll", String.valueOf(objectInputStream.readDouble())); // nll
+                                values.put("mcc", String.valueOf(objectInputStream.readDouble())); // mcc
+                                values.put("auroc", String.valueOf(objectInputStream.readDouble())); // meanAuroc
+                                values.put("f1", String.valueOf(objectInputStream.readDouble())); // f1
+                                values.put("prec", String.valueOf(objectInputStream.readDouble())); // precision
+                                values.put("rec", String.valueOf(objectInputStream.readDouble())); // recall
+                                values.put("sens", String.valueOf(objectInputStream.readDouble())); // sens
+                                values.put("spec", String.valueOf(objectInputStream.readDouble())); // spec
+                                values.put("testTime", String.valueOf(objectInputStream.readLong())); // test time
+                                values.put("trainTime", String.valueOf(objectInputStream.readLong())); // train time
+                                values.put("mem", String.valueOf(objectInputStream.readLong())); // mem
 //                                for(int j = 0; j < 14; j++) {
-                                    writer.write(variableName);
+//                                for(String key : values.keySet()) {
+                                String key = "acc";
+                                    writer.write(distanceMeasure.toString());
+                                    writer.write("_");
+                                    writer.write(key);
                                     writer.write("(");
 //                                    writer.write(String.valueOf(seed + 1));
 //                                    writer.write(",");
@@ -156,7 +160,7 @@ public class SamplingExperimentAnalysis {
 //                                    writer.write(String.valueOf(j + 1));
                                     writer.write(String.valueOf(trainOrTest + 1));
                                     writer.write(") = ");
-                                    writer.write(values.get(1));
+                                    writer.write(values.get(key));
 //                                    writer.write(values.get(j));
                                     writer.write(";");
                                     writer.newLine();

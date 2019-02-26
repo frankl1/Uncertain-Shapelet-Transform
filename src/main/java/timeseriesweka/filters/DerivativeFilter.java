@@ -54,7 +54,7 @@ public class DerivativeFilter extends SimpleBatchFilter{
             Instance toAdd = new DenseInstance(data.numAttributes());
             
             double[] rawData = data.instance(i).toDoubleArray();
-            double[] derivative = getDerivative(rawData,true); // class value has now been removed - be careful!
+            double[] derivative = derivative(rawData,true); // class value has now been removed - be careful!
 
             for(int j = 0; j < derivative.length; j++){
                 toAdd.setValue(j, derivative[j]);
@@ -67,7 +67,7 @@ public class DerivativeFilter extends SimpleBatchFilter{
     }
     
     
-    private static double[] getDerivative(double[] input, boolean classValOn){
+    private static double[] derivative(double[] input, boolean classValOn){
 
         int classPenalty = 0;
         if(classValOn){
@@ -86,6 +86,18 @@ public class DerivativeFilter extends SimpleBatchFilter{
         return derivative;
     }
 
+    public static double[] derivative(double[] input){
 
+        double[] derivative = new double[input.length];
+
+        for(int i = 1; i < input.length - 1;i++){ // avoids class Val if present
+            derivative[i] = ((input[i]-input[i-1])+((input[i+1]-input[i-1])/2))/2;
+        }
+
+        derivative[0] = derivative[1];
+        derivative[derivative.length-1] = derivative[derivative.length-2];
+
+        return derivative;
+    }
 
 }

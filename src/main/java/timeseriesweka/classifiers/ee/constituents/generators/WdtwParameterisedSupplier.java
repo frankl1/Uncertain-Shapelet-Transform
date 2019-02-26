@@ -34,7 +34,7 @@ public class WdtwParameterisedSupplier extends ParameterisedSupplier<Wdtw> {
     @Override
     public void setParameterRanges(final Instances instances) {
         warpingWindowParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(1, 1, 1));
-        weightParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0.01, 1, 100));
+        weightParameter.getValueRange().setIndexedSupplier(new LinearInterpolater(0, 1, 101));
     }
 
 }

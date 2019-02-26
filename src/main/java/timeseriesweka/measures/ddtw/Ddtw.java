@@ -9,7 +9,7 @@ public class Ddtw extends Dtw {
 
     @Override
     protected double measureDistance(final double[] timeSeriesA, final double[] timeSeriesB, final double cutOff) {
-        return super.measureDistance(ArrayUtilities.derivative(timeSeriesA), ArrayUtilities.derivative(timeSeriesB), cutOff);
+        return super.measureDistance(DerivativeFilter.derivative(timeSeriesA), DerivativeFilter.derivative(timeSeriesB), cutOff);
     }
 
     @Override

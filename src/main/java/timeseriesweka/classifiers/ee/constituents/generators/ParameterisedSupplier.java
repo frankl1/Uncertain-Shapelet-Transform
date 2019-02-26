@@ -38,4 +38,9 @@ public abstract class ParameterisedSupplier<A> implements IndexedSupplier<A> {
     }
 
     public abstract void setParameterRanges(Instances instances); // todo strip out into subclass
+
+    @Override
+    public String toString() {
+        return get().toString();
+    }
 }
