@@ -2,39 +2,10 @@ package timeseriesweka.measures.erp;
 
 import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.dtw.Dtw;
+import weka.core.Option;
 
-public class Erp extends DistanceMeasure {
-
-    public static final Mutable<Erp, Double> WARPING_WINDOW_MUTABLE = new Mutable<Erp, Double>() {
-        @Override
-        public <C extends Erp, D extends Double> void setValue(final C subject, final D value) {
-            subject.setWarpingWindow(value);
-        }
-
-        @Override
-        public <C extends Erp> Double getValue(final C subject) {
-            return subject.getWarpingWindow();
-        }
-    };
-    public static final Mutable<Erp, Double> PENALTY_MUTABLE = new Mutable<Erp, Double>() {
-        @Override
-        public <C extends Erp, D extends Double> void setValue(final C subject, final D value) {
-            subject.setPenalty(value);
-        }
-
-        @Override
-        public <C extends Erp> Double getValue(final C subject) {
-            return subject.getPenalty();
-        }
-    };
-
-    public double getWarpingWindow() {
-        return warpingWindow;
-    }
-
-    public void setWarpingWindow(double bandSize) {
-        this.warpingWindow = bandSize;
-    }
+public class Erp extends Dtw {
 
     public double getPenalty() {
         return penalty;
@@ -44,12 +15,11 @@ public class Erp extends DistanceMeasure {
         this.penalty = g;
     }
 
-    private double warpingWindow; // warp
     private double penalty; // penalty for ee gap, 0 best according to paper
 
-    public Erp(double warpingWindow, double penalty) {
-        this.warpingWindow = warpingWindow;
-        this.penalty = penalty;
+    public Erp(double warpingWindowPercentage, double penalty) {
+        super(warpingWindowPercentage);
+        setPenalty(penalty);
     }
 
     public Erp() {
@@ -58,8 +28,14 @@ public class Erp extends DistanceMeasure {
 
     @Override
     protected double measureDistance(double[] timeSeriesA, double[] timeSeriesB, double cutOff) {
+
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
+        // todo remove sqrt (Jay says this changes the distance however, need to confirm!)
+
         // Current and previous columns of the matrix
-        double[] curr = new double[timeSeriesB.length];
+        double[] curr = new double[timeSeriesB.length]; // todo use timeSeriesA as it's the longer of the two
         double[] prev = new double[timeSeriesB.length];
 
         // size of edit distance band
@@ -137,18 +113,24 @@ public class Erp extends DistanceMeasure {
     }
 
     @Override
+    public String[] getOptions() {
+        return super.getOptions(); // todo not sure how this works yet
+//        String[] superOptions = super.getOptions();
+//        String[] options = new String[superOptions.length + 2];
+//        System.arraycopy(superOptions, 0, options, 0, superOptions.length);
+//        options[options.length - 2] = "-p";
+//        options[options.length - 1] = String.valueOf(penalty);
+//        return options;
+    }
+
+    @Override
     public String getRevision() {
-        return null;
+        return "1";
     }
 
     @Override
-    public String getParameters() {
-        return "penalty=" + penalty + ",warpingWindow=" + warpingWindow;
-    }
-
-    @Override
-    public String toString() {
-        return "erp";
+    public void setOptions(final String[] options) throws Exception {
+        // todo not sure how this works yet
     }
 
 }

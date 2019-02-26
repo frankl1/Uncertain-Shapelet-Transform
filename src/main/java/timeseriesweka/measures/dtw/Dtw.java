@@ -2,55 +2,43 @@ package timeseriesweka.measures.dtw;
 
 import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
-import utilities.Utilities;
-
-import static utilities.Utilities.asString;
 
 public class Dtw extends DistanceMeasure {
 
-    public static Mutable<Dtw, Double> WARPING_WINDOW_MUTABLE = new Mutable<Dtw, Double>() {
-        @Override
-        public <C extends Dtw, D extends Double> void setValue(final C subject, final D value) {
-            subject.setWarpingWindow(value);
-        }
-
-        @Override
-        public <C extends Dtw> Double getValue(final C subject) {
-            return subject.getWarpingWindow();
-        }
-    };
+    public static Mutable<Dtw, Double> WARPING_WINDOW_MUTABLE = null;
 
     /**
-     * get the current warp percentage
-     * @return warp percentage between 0 and 1 inclusive
+     * get the current warpingWindowPercentage percentage
+     * @return warpingWindowPercentage percentage between 0 and 1 inclusive
      */
     public double getWarpingWindow() {
-        return warp;
+        return warpingWindowPercentage;
     }
 
     /**
-     * set the warp percentage
-     * @param warp warp percentage between 0 and 1 inclusive
+     * set the percentage percentage
+     * @param percentage percentage percentage between 0 and 1 inclusive
      */
-    public void setWarpingWindow(double warp) {
-        if(warp < 0) {
+    public void setWarpingWindow(double percentage) {
+        if(percentage < 0) {
             throw new IllegalArgumentException("Warp cannot be less than 0");
-        } else if(warp > 1) {
+        } else if(percentage > 1) {
             throw new IllegalArgumentException("Warp cannot be more than 1");
         } else {
-            this.warp = warp;
+            this.warpingWindowPercentage = percentage;
         }
     }
 
-    public Dtw(double warp) {
-        this.warp = warp;
+    public Dtw(double warpingWindowPercentage) {
+
+        setWarpingWindow(warpingWindowPercentage);
     }
 
     public Dtw() {
         this(1);
     }
 
-    private double warp;
+    private double warpingWindowPercentage;
 
     /**
      * find the cost
@@ -62,14 +50,13 @@ public class Dtw extends DistanceMeasure {
         return Math.pow(timeSeriesA[indexA] - timeSeriesB[indexB], 2);
     }
 
-    protected int findWindowSize(int length) {
-        int w=(int)(warp*length);   //Rounded down.
-        //No Warp, windowSize=1
-        if(w<1) w=1;
-            //Full Warp : windowSize=n, otherwise scale between
-        else if(w<length)
-            w++;
-        return w;
+    protected int findWindowSize(int length) { // todo scale window size correctly, current duplicates n (i.e. a instance length of 10 would have 10 for the window size for both 100% and 90% window
+        int size =(int)(warpingWindowPercentage * length); // round window down
+        // no warp = windowSize=1
+        if(size < 1) size = 1; // full warp : windowSize=n, otherwise scale between
+        else if(size<length)
+            size++;
+        return size;
     }
 
 
@@ -142,7 +129,7 @@ public class Dtw extends DistanceMeasure {
 //        }
 //        int n=a.length;
 //        int m=b.length;
-//        //No Warp: windowSize=1, full warp: windowSize=m
+//        //No Warp: windowSize=1, full warpingWindowPercentage: windowSize=m
 //        int windowSize = (int) Math.max(1, Math.round(a.length * getWarpingWindow()));;
 //        double[] row1=new double[m];
 //        double[] row2;
@@ -170,7 +157,7 @@ public class Dtw extends DistanceMeasure {
 ////        System.out.println();
 ////        System.out.println(asString(row1));
 //
-//        //For each remaining row, warp row i
+//        //For each remaining row, warpingWindowPercentage row i
 //        for (int i=1;i<n;i++){
 //            tooBig=true;
 //            row2=new double[m];
@@ -222,6 +209,10 @@ public class Dtw extends DistanceMeasure {
 //
 //        return row1[m-1];
 
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
+
         double[] first = timeSeriesA;
         double[] second = timeSeriesB;
         
@@ -230,7 +221,7 @@ public class Dtw extends DistanceMeasure {
 
         int n = first.length;
         int m = second.length;
-        /*  Parameter 0<=r<=1. 0 == no warp, 1 == full warp 
+        /*  Parameter 0<=r<=1. 0 == no warpingWindowPercentage, 1 == full warpingWindowPercentage
          generalised for variable window size
          * */
         int windowSize = findWindowSize(n);
@@ -305,17 +296,17 @@ public class Dtw extends DistanceMeasure {
     }
 
     @Override
-    public String toString() {
-        return "dtw";
-    }
-
-    @Override
-    public String getParameters() {
-        return "warp=" + warp;
+    public String[] getOptions() {
+        return new String[] {"-w", String.valueOf(warpingWindowPercentage)}; // todo not sure whether it should be ["-w 0.8"] or ["-w", "0.8"]
     }
 
     @Override
     public String getRevision() {
         return "1";
+    }
+
+    @Override
+    public void setOptions(final String[] options) throws Exception {
+        // todo not sure how this should be parsed, is it ["-w 0.8"] or ["-w", "0.8"]?
     }
 }

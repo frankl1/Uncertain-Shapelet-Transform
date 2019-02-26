@@ -5,18 +5,6 @@ import timeseriesweka.measures.dtw.Dtw;
 
 public class Wdtw extends Dtw {
 
-    public static Mutable<Wdtw, Double> WEIGHT_MUTABLE = new Mutable<Wdtw, Double>() {
-        @Override
-        public <C extends Wdtw, D extends Double> void setValue(final C subject, final D value) {
-            subject.setWeight(value);
-        }
-
-        @Override
-        public <C extends Wdtw> Double getValue(final C subject) {
-            return subject.getWeight();
-        }
-    };
-
     public double getWeight() {
         return weight;
     }
@@ -27,7 +15,7 @@ public class Wdtw extends Dtw {
 
     public Wdtw(double warp, double weight) {
         super(warp);
-        this.weight = weight;
+        setWeight(weight);
     }
 
     public Wdtw() {
@@ -40,16 +28,22 @@ public class Wdtw extends Dtw {
     protected double findCost(double[] timeSeriesA, int indexA, double[] timeSeriesB, int indexB) {
         return super.findCost(timeSeriesA, indexA, timeSeriesB, indexB) +
                 1 / (1 + Math.exp(-weight * ((double) indexA - (double) timeSeriesA.length / 2)));
-//                1 / (1 + Math.exp(-weight * (Math.abs(indexA - indexB) - (double)timeSeriesA.length / 2)));
+//                1 / (1 + Math.exp(-weight * (Math.abs(indexA - indexB) - (double)timeSeriesA.length / 2))); // this makes a difference, todo check agaisnt paper
     }
 
     @Override
     protected double measureDistance(final double[] timeSeriesA, final double[] timeSeriesB, final double cutOff) {
+
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
+        // todo might be able to inherit from dtw to use warping window perhaps?
+
         int seriesLength = timeSeriesA.length;
         double[] weightVector = new double[seriesLength];
         double halfLength = (double)seriesLength/2;
 
-        for(int i = 0; i < seriesLength; i++){
+        for(int i = 0; i < seriesLength; i++){ // todo precompute and use in findCost func
             weightVector[i] = 1/(1+Math.exp(-weight*(i-halfLength)));
         }
         
@@ -101,17 +95,9 @@ public class Wdtw extends Dtw {
 
     @Override
     public String getRevision() {
-        return null;
+        return "1";
     }
 
-    @Override
-    public String getParameters() {
-        return super.getParameters() + ",weight=" + weight + ",";
-    }
-
-    @Override
-    public String toString() {
-        return "wdtw";
-    }
+    // todo getOptions and setOptions
 
 }

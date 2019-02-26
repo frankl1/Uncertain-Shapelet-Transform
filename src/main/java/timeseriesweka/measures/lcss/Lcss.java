@@ -2,39 +2,17 @@ package timeseriesweka.measures.lcss;
 
 import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.dtw.Dtw;
 
-public class Lcss extends DistanceMeasure {
+public class Lcss extends Dtw {
 
-    public static final Mutable<Lcss, Double> WARPING_WINDOW_MUTABLE = new Mutable<Lcss, Double>() {
-        @Override
-        public <C extends Lcss, D extends Double> void setValue(final C subject, final D value) {
-            subject.setWarpingWindow(value);
-        }
-
-        @Override
-        public <C extends Lcss> Double getValue(final C subject) {
-            return subject.getWarpingWindow();
-        }
-    };
-    public static final Mutable<Lcss, Double> COST_MUTABLE = new Mutable<Lcss, Double>() {
-        @Override
-        public <C extends Lcss, D extends Double> void setValue(final C subject, final D value) {
-            subject.setTolerance(value);
-        }
-
-        @Override
-        public <C extends Lcss> Double getValue(final C subject) {
-            return subject.getTolerance();
-        }
-    };
-
-    public Lcss(double epsilon, int delta) {
-        this.tolerance = epsilon;
-        this.warpingWindow = delta;
+    public Lcss(double tolerance, int warpingWindowPercentage) {
+        super(warpingWindowPercentage);
+        setTolerance(tolerance);
     }
 
     // delta === warp
-    // epsilon === diff between two values before they're considered the same
+    // epsilon === diff between two values before they're considered the same AKA tolerance
 
     public Lcss() {
         this(0.01, 1);
@@ -46,22 +24,15 @@ public class Lcss extends DistanceMeasure {
         return tolerance;
     }
 
-    public void setTolerance(double epsilon) {
-        this.tolerance = epsilon;
+    public void setTolerance(double tolerance) {
+        this.tolerance = tolerance;
     }
-
-    public double getWarpingWindow() {
-        return warpingWindow;
-    } // todo change to double percetnage
-
-    public void setWarpingWindow(double warpingWindow) {
-        this.warpingWindow = warpingWindow;
-    }
-
-    private double warpingWindow;
 
     @Override
     protected double measureDistance(double[] first, double[] second, double cutOff) {
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
         double[] a  = first;
         double[] b = second;
         int m = first.length;
@@ -69,8 +40,7 @@ public class Lcss extends DistanceMeasure {
 
         int[][] lcss = new int[m+1][n+1];
 
-//        int warpingWindow = (int) this.warpingWindow * first.length;
-        int warpingWindow = (int) this.warpingWindow;
+        int warpingWindow = (int) this.getWarpingWindow() * first.length;
 
         for(int i = 0; i < m; i++){ // another version which gives no diff in results!
             for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
@@ -95,7 +65,7 @@ public class Lcss extends DistanceMeasure {
         }
         return 1-((double)max/m);
 
-//        for(int i = 0; i < m; i++){
+//        for(int i = 0; i < m; i++){ // another version, calculates the same distance
 //            for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
 //                if(j < 0){
 //                    j = -1;
@@ -122,20 +92,6 @@ public class Lcss extends DistanceMeasure {
 //        return 1-((double)max/m);
     }
 
-    @Override
-    public String getRevision() {
-        return null;
-    }
-
-    @Override
-    public String getParameters() {
-        return "tolerance=" + tolerance + ",warpingWindow=" + warpingWindow;
-    }
-
-    @Override
-    public String toString() {
-        return "lcss";
-    }
-
+    // todo get and set options
 
 }

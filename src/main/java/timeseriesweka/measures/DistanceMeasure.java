@@ -24,8 +24,6 @@ import static utilities.Utilities.*;
 
 public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, Serializable {
 
-    public static final double MAX = Double.POSITIVE_INFINITY;
-
     public DistanceMeasure() {
         setDontNormalize(true); // disable WEKA's normalisation - shouldn't use it anyway but just in case!
     }
@@ -47,7 +45,7 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      * @param cutOff cut off value to abandon distance measurement early
      * @return distance between two time series
      */
-    protected abstract double measureDistance(double[] timeSeriesA, double[] timeSeriesB, double cutOff);
+    protected abstract double measureDistance(double[] timeSeriesA, double[] timeSeriesB, double cutOff); // todo ends up copying instance to double[] many times, perhaps just use accessors?
 
     /**
      * measures distance between time series, swapping the two time series so A is always the longest
@@ -96,5 +94,27 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
         return measureDistance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
     }
 
-    // todo parseParams
+    /**
+     * get the parameters
+     * @return string of parameters
+     */
+    @Override
+    public String getParameters() {
+        StringBuilder stringBuilder = new StringBuilder();
+        String[] parameters = getOptions();
+        for(String str : parameters) {
+            stringBuilder.append(str);
+        }
+        return stringBuilder.toString();
+    }
+
+    /**
+     * string representation of this class, i.e. the distance measure name
+     * @return distance measure name
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName().toLowerCase();
+    }
+
 }

@@ -1,41 +1,22 @@
 package timeseriesweka.measures.twe;
 
-import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Twe extends DistanceMeasure {
 
-    public static final Mutable<Twe, Double> LAMBDA_MUTABLE = new Mutable<Twe, Double>() {
-        @Override
-        public <C extends Twe, D extends Double> void setValue(final C subject, final D value) {
-            subject.setLambda(value);
-        }
-
-        @Override
-        public <C extends Twe> Double getValue(final C subject) {
-            return subject.getLambda();
-        }
-    };
-    public static final Mutable<Twe, Double> NU_MUTABLE = new Mutable<Twe, Double>() {
-        @Override
-        public <C extends Twe, D extends Double> void setValue(final C subject, final D value) {
-            subject.setNu(value);
-        }
-
-        @Override
-        public <C extends Twe> Double getValue(final C subject) {
-            return subject.getNu();
-        }
-    };
-
     @Override
     protected double measureDistance(double[] a, double[] b, double cutOff) {
-        /*This code is faithful to the c version, so uses ee redundant
+        /*This code is faithful to the c version, so uses a redundant
  * Multidimensional representation. The c code does not describe what the
             arguments
  * tsB and tsA are. We assume they are the time stamps (i.e. index sets),
  * and initialise them accordingly.
  */
+
+        // todo cleanup
+        // todo trim memory to window by window
+        // todo early abandon
+        // todo might be able to inherit from dtw to use warping window perhaps?
 
         int dim=1;
         double dist, disti1, distj1;
@@ -124,19 +105,19 @@ public class Twe extends DistanceMeasure {
                 htrans=Math.abs((tsa[i-1]-tsb[j-1]));
                 if(j>1&&i>1)
                     htrans+=Math.abs((tsa[i-2]-tsb[j-2]));
-                dist0=D[i-1][j-1]+nu*htrans+D[i][j];
+                dist0=D[i-1][j-1]+ stiffness *htrans+D[i][j];
                 dmin=dist0;
                 if(i>1)
                     htrans=((tsa[i-1]-tsa[i-2]));
                 else htrans=tsa[i-1];
-                dist=Di1[i]+D[i-1][j]+lambda+nu*htrans;
+                dist=Di1[i]+D[i-1][j]+ penalty + stiffness *htrans;
                 if(dmin>dist){
                     dmin=dist;
                 }
                 if(j>1)
                     htrans=(tsb[j-1]-tsb[j-2]);
                 else htrans=tsb[j-1];
-                dist=Dj1[j]+D[i][j-1]+lambda+nu*htrans;
+                dist=Dj1[j]+D[i][j-1]+ penalty + stiffness *htrans;
                 if(dmin>dist){
                     dmin=dist;
                 }
@@ -148,50 +129,41 @@ public class Twe extends DistanceMeasure {
         return dist;
     }
 
-    public Twe(double lambda, double nu) {
-        this.lambda = lambda;
-        this.nu = nu;
+    public Twe(double penalty, double stiffness) {
+        setPenalty(penalty);
+        setStiffness(stiffness);
     }
 
     public Twe() {
         this(1,1);
     }
 
-    private double lambda; // between 0 and 1 inclusively, the penalty for deletions
+    private double penalty; // between 0 and 1 inclusively, the penalty for deletions AKA lambda
 
-    public double getLambda() {
-        return lambda;
+    public double getPenalty() {
+        return penalty;
     }
 
-    public void setLambda(double lambda) {
-        this.lambda = lambda;
+    public void setPenalty(double penalty) {
+        this.penalty = penalty;
     }
 
-    public double getNu() {
-        return nu;
+    public double getStiffness() {
+        return stiffness;
     }
 
-    public void setNu(double nu) {
-        this.nu = nu;
+    public void setStiffness(double stiffness) {
+        this.stiffness = stiffness;
     }
 
-    private double nu; // above 0,  or 'stiffness'. 1e10^-5, 1e10^-4, 1e10^-3, 1e10^-2, 1e10^-1, 1
+    private double stiffness; // above 0, nu or 'stiffness'. 1e10^-5, 1e10^-4, 1e10^-3, 1e10^-2, 1e10^-1, 1
 
     @Override
     public String getRevision() {
-        return null;
+        return "1";
     }
 
-
-    @Override
-    public String getParameters() {
-        return "lambda=" + lambda + ",nu=" + nu;
-    }
-
-    @Override
-    public String toString() {
-        return "twe";
-    }
+    // todo getOptions and setOptions
 
 
 }

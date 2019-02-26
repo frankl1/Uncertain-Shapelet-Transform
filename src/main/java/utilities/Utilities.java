@@ -4,9 +4,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class Utilities {
@@ -226,6 +224,24 @@ public class Utilities {
         return instancesByClass;
     }
 
+    public static Map<Double, Instances> instancesByClassMap(Instances instances) {
+        Instances[] instancesByClass = instancesByClass(instances);
+        Map<Double, Instances> instancesByClassMap = new TreeMap<>();
+        for(int i = 0; i < instancesByClass.length; i++) {
+            instancesByClassMap.put((double) i, instancesByClass[i]);
+        }
+        return instancesByClassMap;
+    }
+
+    public static double[] classDistribution(Instances instances) {
+        double[] distribution = new double[instances.numClasses()];
+        for(Instance instance : instances) {
+            distribution[(int) instance.classValue()]++;
+        }
+        normalise(distribution);
+        return distribution;
+    }
+
     public static List<List<Integer>> instanceIndicesByClass(Instances instances) {
         List<List<Integer>> instanceIndicesByClass = new ArrayList<>();
         for(int i = 0; i < instances.numClasses(); i++) {
@@ -350,6 +366,14 @@ public class Utilities {
             indicesCopy[i] = indices.get(i);
         }
         return indicesCopy;
+    }
+
+    public static void percentageCheck(double percentage) {
+        if(percentage < 0) {
+            throw new IllegalArgumentException("percentage cannot be less than 0: " + percentage);
+        } else if(percentage > 1) {
+            throw new IllegalArgumentException("percentage cannot be more than 1: " + percentage);
+        }
     }
 
 }

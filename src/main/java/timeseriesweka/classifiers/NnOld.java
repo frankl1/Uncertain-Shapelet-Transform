@@ -1,13 +1,9 @@
 package timeseriesweka.classifiers;
 
-import scala.tools.nsc.interpreter.Results;
-import statistics.tests.TestResults;
 import timeseriesweka.classifiers.ee.constituents.generators.*;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.*;
-import timeseriesweka.filters.DerivativeFilter;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.msm.Msm;
 import utilities.*;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -16,14 +12,10 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static utilities.Utilities.asString;
-import static utilities.Utilities.extractTimeSeries;
-
-public class Nn extends AbstractClassifier {
+public class NnOld extends AbstractClassifier {
     private Instances trainInstances;
 
     public DistanceMeasure getDistanceMeasure() {
@@ -108,7 +100,7 @@ public class Nn extends AbstractClassifier {
                         Instances testInstances = split[1];
                         DTW1NN orig = new DTW1NN();
                         Dtw1Nn2 orig2 = new Dtw1Nn2();
-                        Nn nn = new Nn();
+                        NnOld nn = new NnOld();
                         DtwParameterisedSupplier ps = new DtwParameterisedSupplier();
                         ps.setParameterRanges(trainInstances);
                         String previousTestResult = "/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EEConstituentResults/" + type + "_Rn_1NN/Predictions/" + datasetName + "/testFold" + foldIndex + ".csv";
