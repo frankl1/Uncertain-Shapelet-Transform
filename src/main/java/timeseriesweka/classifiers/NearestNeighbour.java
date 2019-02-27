@@ -15,6 +15,8 @@ import java.util.*;
 
 public class NearestNeighbour extends AbstractClassifier implements Reproducible, SaveParameterInfo {
 
+    // todo implement checkpointing and contracting
+
     private Instances originalTrainInstances = null;
 
     public double getSampleSizePercentage() {
