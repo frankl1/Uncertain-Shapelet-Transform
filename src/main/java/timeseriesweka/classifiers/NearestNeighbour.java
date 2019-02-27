@@ -4,6 +4,7 @@ import scala.reflect.macros.runtime.JavaReflectionRuntimes;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
+import utilities.ClassifierResults;
 import utilities.Reproducible;
 import utilities.Utilities;
 import weka.classifiers.AbstractClassifier;
@@ -124,7 +125,15 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         trainDuration += System.nanoTime() - timeStamp;
     }
 
-    // todo some means of getting train cv stats - ask james
+    public ClassifierResults getTrainCv() {
+        ClassifierResults results = new ClassifierResults();
+        results.setNumClasses(originalTrainInstances.numClasses());
+        results.setNumInstances(trainNearestNeighbourFinders.size());
+        for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
+            results.storeSingleResult(nearestNeighbourFinder.classValue(), nearestNeighbourFinder.predict());
+        }
+        return results;
+    }
 
     // todo different distributionForInstances, e.g. class weighting, random tie break, absolute, etc
 
@@ -211,6 +220,10 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
 
         public NearestNeighbourFinder(Instance instance) {
             this.instance = instance;
+        }
+
+        public double classValue() {
+            return instance.classValue();
         }
 
         private double findCutOff() {
