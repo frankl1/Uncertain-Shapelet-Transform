@@ -1,6 +1,6 @@
 package timeseriesweka.classifiers;
 
-import scala.reflect.macros.runtime.JavaReflectionRuntimes;
+import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
@@ -13,7 +13,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class NearestNeighbour extends AbstractClassifier implements Reproducible {
+public class NearestNeighbour extends AbstractClassifier implements Reproducible, SaveParameterInfo {
 
     private Instances originalTrainInstances = null;
 
@@ -125,17 +125,44 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         trainDuration += System.nanoTime() - timeStamp;
     }
 
-    public ClassifierResults getTrainCv() {
+    public ClassifierResults getTrainPrediction(Instances trainInstances) throws Exception {
+        buildClassifier(trainInstances);
         ClassifierResults results = new ClassifierResults();
         results.setNumClasses(originalTrainInstances.numClasses());
         results.setNumInstances(trainNearestNeighbourFinders.size());
         for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
             results.storeSingleResult(nearestNeighbourFinder.classValue(), nearestNeighbourFinder.predict());
         }
+        results.memory = SizeOf.deepSizeOf(this);
+        results.setName(toString());
+        results.setParas(getParameters());
+        results.setTrainTime(getTrainDuration());
+        results.setTestTime(-1);
         return results;
     }
 
-    public boolean isUseRandomTieBreak() {
+    public ClassifierResults getTestPredictions(Instances testInstances) {
+        double[][] predictions = distributionForInstances(testInstances);
+        ClassifierResults results = new ClassifierResults();
+        results.setNumClasses(testInstances.numClasses());
+        results.setNumInstances(testInstances.numInstances());
+        for(int i = 0; i < predictions.length; i++) {
+            results.storeSingleResult(testInstances.get(i).classValue(), predictions[i]);
+        }
+        results.memory = SizeOf.deepSizeOf(this);
+        results.setName(toString());
+        results.setParas(getParameters());
+        results.setTrainTime(getTrainDuration());
+        results.setTestTime(getTestDuration());
+        return results;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
+
+    public boolean usesRandomTieBreak() {
         return useRandomTieBreak;
     }
 
@@ -204,15 +231,22 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         setDistanceMeasure(new Dtw());
     }
 
-    public boolean isEarlyAbandon() {
-        return earlyAbandon;
+    public boolean usesEarlyAbandon() {
+        return useEarlyAbandon;
     }
 
-    public void setEarlyAbandon(final boolean earlyAbandon) {
-        this.earlyAbandon = earlyAbandon;
+    public void setUseEarlyAbandon(final boolean useEarlyAbandon) {
+        this.useEarlyAbandon = useEarlyAbandon;
     }
 
-    private boolean earlyAbandon = false;
+    private boolean useEarlyAbandon = false;
+
+    @Override
+    public String getParameters() {
+        return null; // todo delegate to getOptions
+    }
+
+    // todo getOptions setOptions
 
     public interface NeighbourWeighter {
         double weight(double distance);
@@ -246,7 +280,7 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         }
 
         private double findCutOff() {
-            if(earlyAbandon) {
+            if(useEarlyAbandon) {
                 return nearestNeighbours.lastKey();
             } else {
                 return Double.POSITIVE_INFINITY;

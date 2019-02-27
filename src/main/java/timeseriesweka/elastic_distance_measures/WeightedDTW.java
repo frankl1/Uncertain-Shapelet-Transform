@@ -187,7 +187,7 @@ public class WeightedDTW extends BasicDTW{
                     overflow = false; // because there's evidence that the path can continue
                 }
 //                    
-//                if(minDistance > cutOffValue && this.isEarlyAbandon){
+//                if(minDistance > cutOffValue && this.isUseEarlyAbandon){
 //                    this.distances[i][j] = Double.MAX_VALUE;
 //                }else{
 //                    this.distances[i][j] = minDistance+this.weightVector[Math.abs(i-j)] *(first[i]-second[j])*(first[i]-second[j]); //edited by Jay
