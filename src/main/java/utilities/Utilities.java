@@ -376,4 +376,10 @@ public class Utilities {
         }
     }
 
+    public static Instances instanceToInstances(Instance instance) {
+        Instances instances = new Instances(instance.dataset(), 0);
+        instances.add(instance);
+        return instances;
+    }
+
 }

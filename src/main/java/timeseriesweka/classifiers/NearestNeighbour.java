@@ -1,8 +1,10 @@
 package timeseriesweka.classifiers;
 
+import scala.reflect.macros.runtime.JavaReflectionRuntimes;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
+import utilities.Reproducible;
 import utilities.Utilities;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
@@ -10,7 +12,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-public class NearestNeighbour extends AbstractClassifier {
+public class NearestNeighbour extends AbstractClassifier implements Reproducible {
 
     private Instances originalTrainInstances = null;
 
@@ -33,8 +35,16 @@ public class NearestNeighbour extends AbstractClassifier {
         return (int) (sampleSizePercentage * originalTrainInstances.numInstances());
     }
 
-    private Instances sampledTrainInstances = null;
-    private Random random = new Random(); // todo set seed / set random
+    public void setSeed(long seed) {
+        random.setSeed(seed);
+    }
+
+    public void setRandom(Random random) {
+        this.random = random;
+    }
+
+    private Instances sampledTrainInstances;
+    private Random random = new Random();
     private TreeMap<Double, Double> classSamplingProbabilities; // sampling probability by class value
     private double[] classDistribution;
     private Map<Double, Instances> instancesByClassMap; // class value by instances of that class
@@ -64,31 +74,54 @@ public class NearestNeighbour extends AbstractClassifier {
         return sampledInstance;
     }
 
+    public long getTrainDuration() {
+        return trainDuration;
+    }
+
+    private long trainDuration = 0;
+
+    public long getTestDuration() {
+        return testDuration + predictDuration;
+    }
+
+    private long testDuration = 0;
+    private long predictDuration = 0;
+
+    public boolean isCvTrain() {
+        return cvTrain;
+    }
+
+    public void setCvTrain(final boolean cvTrain) {
+        this.cvTrain = cvTrain;
+    }
+
+    private boolean cvTrain = false;
+
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
-        if(trainInstances == null) throw new IllegalArgumentException("train instances cannot be null");
-        if(trainInstances == this.originalTrainInstances) { // todo sort out repeat calls as someone could have messed with the train set inbetween
-            // same train instances, therefore use current build progress so far
-            if(sampledTrainInstances == null) {
-                sampledTrainInstances = new Instances(trainInstances, 0);
-                trainNearestNeighbourFinders = new ArrayList<>();
-            }
-        } else {
+        long timeStamp = System.nanoTime();
+        if(!trainInstances.equals(this.originalTrainInstances)) {
             // reset as train dataset has change
             this.originalTrainInstances = trainInstances;
             this.sampledTrainInstances = new Instances(trainInstances, 0);
             instancesByClassMap = Utilities.instancesByClassMap(trainInstances);
+            classSamplingProbabilities = new TreeMap<>();
             for(Double classValue : instancesByClassMap.keySet()) {
                 classSamplingProbabilities.put((double) instancesByClassMap.get(classValue).numInstances() / trainInstances.numInstances(), classValue);
             }
             classDistribution = Utilities.classDistribution(trainInstances);
+            trainNearestNeighbourFinders = new ArrayList<>();
+            trainDuration = 0;
         }
         int sampleSize = getSampleSize();
         while (sampledTrainInstances.numInstances() < sampleSize) {
             Instance sampledInstance = sampleTrainInstance();
             sampledTrainInstances.add(sampledInstance);
-            trainNearestNeighbourFinders.add(new NearestNeighbourFinder(sampledInstance));
+            if(cvTrain) {
+                trainNearestNeighbourFinders.add(new NearestNeighbourFinder(sampledInstance));
+            }
         }
+        trainDuration += System.nanoTime() - timeStamp;
     }
 
     // todo some means of getting train cv stats - ask james
@@ -97,34 +130,35 @@ public class NearestNeighbour extends AbstractClassifier {
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
-        if(originalTrainInstances == null) throw new IllegalStateException("not trained");
-
+        return distributionForInstances(Utilities.instanceToInstances(testInstance))[0];
     }
 
     private Instances originalTestInstances;
     private List<NearestNeighbourFinder> testNearestNeighbourFinders;
 
     public double[][] distributionForInstances(final Instances testInstances) {
-        // todo check test instances same as current
-        if(testInstances == originalTestInstances) { // if same as test instances from previous calls // todo fix this, not a good check, see build
-
-        } else {
+        long timeStamp = System.nanoTime();
+        if(!testInstances.equals(originalTestInstances)) {
             originalTestInstances = testInstances;
             testNearestNeighbourFinders = new ArrayList<>();
             for(Instance testInstance : testInstances) {
                 testNearestNeighbourFinders.add(new NearestNeighbourFinder(testInstance));
             }
+            testDuration = 0;
         }
         while (!sampledTrainInstances.isEmpty()) {
-            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.numInstances())); // todo use dedicated random
+            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.numInstances()));
             for(NearestNeighbourFinder testNearestNeighbourFinder : testNearestNeighbourFinders) {
                 testNearestNeighbourFinder.addNeighbour(sampledTrainInstance);
             }
         }
+        testDuration += System.nanoTime() - timeStamp;
+        timeStamp = System.nanoTime();
         double[][] predictions = new double[testNearestNeighbourFinders.size()][];
         for(int i = 0; i < predictions.length; i++) {
             predictions[i] = testNearestNeighbourFinders.get(i).predict();
         }
+        predictDuration = System.nanoTime() - timeStamp;
         return predictions;
     }
 
