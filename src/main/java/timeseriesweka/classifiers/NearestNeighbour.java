@@ -135,7 +135,26 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
         return results;
     }
 
-    // todo different distributionForInstances, e.g. class weighting, random tie break, absolute, etc
+    public boolean isUseRandomTieBreak() {
+        return useRandomTieBreak;
+    }
+
+    public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
+        this.useRandomTieBreak = useRandomTieBreak;
+    }
+
+    private boolean useRandomTieBreak = false;
+
+    @Override
+    public double classifyInstance(final Instance instance) throws Exception {
+        double[] prediction = distributionForInstance(instance);
+        int[] maxIndices = Utilities.argMax(prediction);
+        if(useRandomTieBreak) {
+            return prediction[maxIndices[random.nextInt(maxIndices.length)]];
+        } else {
+            return prediction[maxIndices[0]];
+        }
+    }
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
@@ -262,7 +281,7 @@ public class NearestNeighbour extends AbstractClassifier implements Reproducible
             distance = distances.pollFirst();
             List<Instance> neighbours = new ArrayList<>(this.nearestNeighbours.get(distance));
             while (neighbourCount <= k) {
-                Instance neighbour = neighbours.remove(random.nextInt(neighbours.size())); // todo this might cause inconsistencies, i.e. what if classification occurs more than once? Sampling will not be the same after. Need to use a different random
+                Instance neighbour = neighbours.remove(random.nextInt(neighbours.size()));
                 predictions[(int) neighbour.classValue()] += neighbourWeighter.weight(distance);
                 neighbourCount++;
             }
