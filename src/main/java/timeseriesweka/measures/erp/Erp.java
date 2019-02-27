@@ -1,11 +1,21 @@
 package timeseriesweka.measures.erp;
 
-import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import weka.core.Option;
 
 public class Erp extends Dtw {
+
+    private double penalty; // penalty for ee gap, 0 best according to paper
+
+    public Erp() {
+        this(1, 0);
+    }
+
+    public Erp(double warpingWindowPercentage, double penalty) {
+        super(warpingWindowPercentage);
+        setPenalty(penalty);
+    }
 
     public double getPenalty() {
         return penalty;
@@ -13,17 +23,6 @@ public class Erp extends Dtw {
 
     public void setPenalty(double g) {
         this.penalty = g;
-    }
-
-    private double penalty; // penalty for ee gap, 0 best according to paper
-
-    public Erp(double warpingWindowPercentage, double penalty) {
-        super(warpingWindowPercentage);
-        setPenalty(penalty);
-    }
-
-    public Erp() {
-        this(1, 0);
     }
 
     @Override

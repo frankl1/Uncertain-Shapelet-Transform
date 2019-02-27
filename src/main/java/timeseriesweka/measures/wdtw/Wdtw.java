@@ -1,6 +1,5 @@
 package timeseriesweka.measures.wdtw;
 
-import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.dtw.Dtw;
 
 public class Wdtw extends Dtw {

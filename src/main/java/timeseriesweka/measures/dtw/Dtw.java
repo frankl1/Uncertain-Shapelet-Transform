@@ -1,11 +1,8 @@
 package timeseriesweka.measures.dtw;
 
-import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 
 public class Dtw extends DistanceMeasure {
-
-    public static Mutable<Dtw, Double> WARPING_WINDOW_MUTABLE = null;
 
     /**
      * get the current warpingWindowPercentage percentage

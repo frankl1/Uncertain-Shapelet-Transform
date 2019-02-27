@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
  * @author raj09hxu
  */
 public interface ContractClassifier {
+    // todo overhaul / add in TimeUnit interface
+
     public static double CHECKPOINTINTERVAL=2.0;    //Minimum interval between checkpoointing
     public enum TimeLimit {MINUTE, HOUR, DAY};
 

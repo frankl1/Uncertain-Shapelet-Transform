@@ -1,6 +1,5 @@
 package timeseriesweka.measures.lcss;
 
-import timeseriesweka.classifiers.ee.constituents.Mutable;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 

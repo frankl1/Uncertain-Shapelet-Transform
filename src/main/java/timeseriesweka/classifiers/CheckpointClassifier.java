@@ -21,8 +21,10 @@ import java.io.*;
  */
 public interface CheckpointClassifier extends Serializable{
 
+    // fixme when saving a checkpoint, if the program is killed part way through the checkpoint file is corrupt. Need something to avoid this - perhaps a tmp file to save to then rename to the checkpoint file?
+
     //Set the path where checkpointed versions will be stored
-    public void setSavePath(String path);
+    public void setSavePath(String path); // todo get save path
     //Define how to copy from a loaded object to this object
     public void copyFromSerObject(Object obj) throws Exception;
 

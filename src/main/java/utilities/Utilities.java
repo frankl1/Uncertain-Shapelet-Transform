@@ -203,14 +203,15 @@ public class Utilities {
     }
 
     public static void main(String[] args) {
-        for(int i = 0; i < 48; i++) {
-            int[] result = fromCombination(i, 4, 3, 4);
-            for(int j : result) {
-                System.out.print(j);
-                System.out.print(", ");
-            }
-            System.out.println();
-        }
+//        for(int i = 0; i < 48; i++) {
+//            int[] result = fromCombination(i, 4, 3, 4);
+//            for(int j : result) {
+//                System.out.print(j);
+//                System.out.print(", ");
+//            }
+//            System.out.println();
+//        }
+        System.out.println(asDirectoryPath("abc/def"));
     }
 
     public static Instances[] instancesByClass(Instances instances) {
@@ -382,4 +383,7 @@ public class Utilities {
         return instances;
     }
 
+    public static String asDirectoryPath(final String path) {
+        return new File(path).getPath() + "/"; // todo make sure this outputs trailing slash
+    }
 }
