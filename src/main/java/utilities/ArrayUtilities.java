@@ -34,6 +34,9 @@ public class ArrayUtilities {
 
     public static void normalise(double[] array) {
         double sum = sum(array);
+        if(sum == 0) {
+            throw new IllegalArgumentException("sum of zero");
+        }
         for(int i = 0; i < array.length; i++) {
             array[i] /= sum;
         }

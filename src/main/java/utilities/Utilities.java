@@ -1,5 +1,6 @@
 package utilities;
 
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -396,5 +397,33 @@ public class Utilities {
         file.setExecutable(true, false);
         file.setWritable(true, false);
         file.setReadable(true, false);
+    }
+
+
+    public static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances) throws Exception {
+        classifier.buildClassifier(trainInstances);
+        return test(classifier, testInstances);
+    }
+
+    public static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances, ClassifierResults results) throws Exception {
+        classifier.buildClassifier(trainInstances);
+        return test(classifier, testInstances, results);
+    }
+
+    public static ClassifierResults test(Classifier classifier, Instances testInstances, ClassifierResults results) throws Exception {
+        for(Instance testInstance : testInstances) {
+            double classValue = testInstance.classValue();
+            double[] predictions = classifier.distributionForInstance(testInstance);
+            results.storeSingleResult(classValue, predictions);
+        }
+        return results;
+    }
+
+    public static ClassifierResults test(Classifier classifier, Instances testInstances) throws Exception {
+        ClassifierResults results = test(classifier, testInstances, new ClassifierResults());
+        results.setNumInstances(testInstances.numInstances());
+        results.setNumClasses(testInstances.numClasses());
+        results.findAllStatsOnce();
+        return results;
     }
 }

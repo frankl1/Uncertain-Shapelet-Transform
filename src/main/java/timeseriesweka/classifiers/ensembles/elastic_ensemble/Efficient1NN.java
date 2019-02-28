@@ -470,9 +470,6 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
             trainLoocv = new Instances(train);
             testLoocv = trainLoocv.remove(i);
             actual = testLoocv.classValue();
-            if(testLoocv.weight() == 18) {
-                boolean b = true;
-            }
             this.buildClassifier(trainLoocv);
             pred = this.classifyInstance(testLoocv);
             if(pred==actual){
@@ -480,10 +477,8 @@ public abstract class Efficient1NN extends AbstractClassifier implements SavePar
             }
             accAndPreds[i+1]= pred;
         }
-//        System.out.println(results.toString());
         accAndPreds[0] = (double)correct/train.numInstances();
-//        System.out.println(accAndPreds[0]);
-        
+
         if(individualCvParamFileWriting){
             new File(this.outputDir+this.classifierIdentifier+"/cv/"+datasetName+"/trainFold"+resampleId+"/").mkdirs();
             out = new FileWriter(singleFileName);
