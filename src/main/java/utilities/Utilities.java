@@ -386,4 +386,15 @@ public class Utilities {
     public static String asDirectoryPath(final String path) {
         return new File(path).getPath() + "/"; // todo make sure this outputs trailing slash
     }
+
+    public static void setOpenPermissions(File file) {
+        File parent = file.getParentFile();
+        if(parent != null) setOpenPermissions(parent);
+        file.setExecutable(true, true);
+        file.setWritable(true, true);
+        file.setReadable(true, true);
+        file.setExecutable(true, false);
+        file.setWritable(true, false);
+        file.setReadable(true, false);
+    }
 }
