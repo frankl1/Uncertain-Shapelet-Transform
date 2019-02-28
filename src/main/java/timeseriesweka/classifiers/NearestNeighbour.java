@@ -1,17 +1,20 @@
 package timeseriesweka.classifiers;
 
 import net.sourceforge.sizeof.SizeOf;
+import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
+import timeseriesweka.classifiers.ensembles.elastic_ensemble.Dtw1Nn2;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class NearestNeighbour extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CompressedCheckpointClassifier, ContractClassifier {
@@ -35,6 +38,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     private long testDuration = 0;
     private long predictDuration = 0;
     private boolean cvTrain = false;
+    private Instances originalSampledTrainInstances;
     private boolean useRandomTieBreak = false;
     private Instances originalTestInstances;
     private List<NearestNeighbourFinder> testNearestNeighbourFinders;
@@ -50,35 +54,159 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         setDistanceMeasure(new Dtw());
     }
 
+
+    private static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances) throws Exception {
+        classifier.buildClassifier(trainInstances);
+        return test(classifier, testInstances);
+    }
+
+    private static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances, ClassifierResults results) throws Exception {
+        classifier.buildClassifier(trainInstances);
+        return test(classifier, testInstances, results);
+    }
+
+    private static ClassifierResults test(Classifier classifier, Instances testInstances) throws Exception {
+        ClassifierResults results = test(classifier, testInstances, new ClassifierResults());
+        results.setNumInstances(testInstances.numInstances());
+        results.setNumClasses(testInstances.numClasses());
+        results.findAllStatsOnce();
+        return results;
+    }
+
+    private static ClassifierResults test(Classifier classifier, Instances testInstances, ClassifierResults results) throws Exception {
+        int i = 0;
+        for(Instance testInstance : testInstances) {
+            if(testInstance.weight() == 140) {
+                boolean b = true;
+            }
+            double classValue = testInstance.classValue();
+            if(testInstance.classValue() != classifier.classifyInstance(testInstance)) {
+                boolean b = true;
+            }
+            double[] prediction = classifier.distributionForInstance(testInstance);
+            results.storeSingleResult(classValue, prediction);
+//            double pred = classifier.classifyInstance(testInstance);
+//            if(classValue != pred) {
+//                boolean b = true;
+//                System.out.println(i);
+//            }
+            i++;
+        }
+        return results;
+    }
+
     public static void main(String[] args) throws Exception {
-        int seed = 3;
-        NearestNeighbour nearestNeighbour = new NearestNeighbour();
-        nearestNeighbour.setUseRandomTieBreak(false);
-        nearestNeighbour.setUseEarlyAbandon(false);
-        nearestNeighbour.setSampleSizePercentage(1);
-        nearestNeighbour.setCvTrain(true);
-        Dtw dtw = new Dtw();
-        dtw.setWarpingWindow(0);
-        nearestNeighbour.setDistanceMeasure(dtw);
-        nearestNeighbour.setNeighbourWeighter(WEIGHT_UNIFORM);
-        nearestNeighbour.setSeed(seed);
-        String datasetName = "GunPoint";
-        String checkpointDirPath = "/scratch/checkpoints/" + datasetName;
-        new File(checkpointDirPath).mkdirs();
-//        nearestNeighbour.setSavePath(checkpointDirPath);
-        String datasetPath = "/scratch/Datasets/TSCProblems2015/" + datasetName;
-        Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
-        Instances trainInstances = split[0];
-        Instances testInstances = split[1];
-        split = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
-        trainInstances = split[0];
-        testInstances = split[0];
-        ClassifierResults trainResults = nearestNeighbour.getTrainPrediction(trainInstances);
-        trainResults.findAllStatsOnce();
-        ClassifierResults testResults = nearestNeighbour.getTestPrediction(testInstances);
-        testResults.findAllStatsOnce();
-        System.out.println(trainResults.acc);
-        System.out.println(testResults.acc);
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        executorService.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        String datasetsPath = "/scratch/Datasets/TSCProblems2015/";
+        System.out.println(datasetsPath);
+        List<String> datasetNames = new ArrayList<>();
+//        for(File file : new File(datasetsPath).listFiles(new FileFilter() {
+//            @Override
+//            public boolean accept(final File file) {
+//                return file.isDirectory();
+//            }
+//        })) {
+//            datasetNames.add(file.getName());
+//        }
+        BufferedReader reader = new BufferedReader(new FileReader("/scratch/datasetList.txt"));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            datasetNames.add(line);
+        }
+        reader.close();
+        int foldIndex = 0;
+        String type = "DTW";
+        for(String datasetName : datasetNames) {
+            String datasetPath = datasetsPath + datasetName;
+            executorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+                    try {
+                        Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
+                        Instances trainInstances = split[0];
+                        Instances testInstances = split[1];
+                        DTW1NN orig = new DTW1NN();
+                        Dtw1Nn2 orig2 = new Dtw1Nn2();
+                        NearestNeighbour nn = new NearestNeighbour();
+                        nn.setSavePath("/scratch/checkpoints/" + datasetName);
+                        nn.setCvTrain(true);
+                        Dtw dtw = new Dtw();
+                        nn.setDistanceMeasure(dtw);
+                        String previousTestResult = "/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EEConstituentResults/" + type + "_Rn_1NN/Predictions/" + datasetName + "/testFold" + foldIndex + ".csv";
+                        String previousTrainResult = "/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EEConstituentResults/" + type + "_Rn_1NN/Predictions/" + datasetName + "/trainFold" + foldIndex + ".csv";
+                        BufferedReader testReader = new BufferedReader(new FileReader(previousTestResult));
+                        testReader.readLine();
+                        int testParam = Integer.parseInt(testReader.readLine());
+                        double testAcc = Double.parseDouble(testReader.readLine());
+                        testReader.close();
+                        BufferedReader trainReader = new BufferedReader(new FileReader(previousTrainResult));
+                        trainReader.readLine();
+                        int trainParam = Integer.parseInt(trainReader.readLine());
+                        double trainAcc = Double.parseDouble(trainReader.readLine());
+                        trainReader.close();
+                        dtw.setWarpingWindow((double) trainParam / 100);
+                        orig.setParamsFromParamId(trainInstances, testParam);
+                        orig2.setParamsFromParamId(trainInstances, testParam);
+                        ClassifierResults origTestResults = trainAndTest(orig, trainInstances, testInstances);
+                        ClassifierResults orig2TestResults = trainAndTest(orig, trainInstances, testInstances);
+                        nn.buildClassifier(trainInstances);
+                        ClassifierResults nnTestResults = nn.getTestPrediction(testInstances);
+                        nnTestResults.findAllStatsOnce();
+                        dtw.setWarpingWindow((double) trainParam / 100);
+                        orig.setParamsFromParamId(trainInstances, trainParam);
+                        orig2.setParamsFromParamId(trainInstances, trainParam);
+                        ClassifierResults results = nn.getTrainPrediction(trainInstances);
+                        results.findAllStatsOnce();
+                        double nnLoocv = results.acc;
+                        double origLoocv = orig.loocvAccAndPreds(trainInstances,  trainParam)[0];
+                        double orig2Loocv = orig2.loocvAccAndPreds(trainInstances,  trainParam)[0];
+                        System.out.println(datasetName
+                            + ", " + origLoocv
+                            + ", " + orig2Loocv
+                            + ", " + nnLoocv
+                            + ", " + trainAcc
+                            + ", " + origTestResults.acc
+                            + ", " + orig2TestResults.acc
+                            + ", " + nnTestResults.acc
+                            + ", " + testAcc
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+        executorService.shutdown();
+//        int seed = 3;
+//        NearestNeighbour nearestNeighbour = new NearestNeighbour();
+//        nearestNeighbour.setUseRandomTieBreak(false);
+//        nearestNeighbour.setUseEarlyAbandon(false);
+//        nearestNeighbour.setSampleSizePercentage(1);
+//        nearestNeighbour.setCvTrain(true);
+//        Dtw dtw = new Dtw();
+//        dtw.setWarpingWindow(0.02);
+//        nearestNeighbour.setDistanceMeasure(dtw);
+//        nearestNeighbour.setNeighbourWeighter(WEIGHT_UNIFORM);
+//        nearestNeighbour.setSeed(seed);
+//        String datasetName = "GunPoint";
+//        String checkpointDirPath = "/scratch/checkpoints/" + datasetName;
+//        new File(checkpointDirPath).mkdirs();
+////        nearestNeighbour.setSavePath(checkpointDirPath);
+//        String datasetPath = "/scratch/Datasets/TSCProblems2015/" + datasetName;
+//        Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
+//        Instances trainInstances = split[0];
+//        Instances testInstances = split[1];
+//        split = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+//        trainInstances = split[0];
+//        testInstances = split[0];
+//        ClassifierResults trainResults = nearestNeighbour.getTrainPrediction(trainInstances);
+//        trainResults.findAllStatsOnce();
+//        ClassifierResults testResults = nearestNeighbour.getTestPrediction(testInstances);
+//        testResults.findAllStatsOnce();
+//        System.out.println(trainResults.acc);
+//        System.out.println(testResults.acc);
     }
 
     public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
@@ -144,7 +272,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         if (!trainInstances.equals(this.originalTrainInstances)) {
             // reset as train dataset has change
             this.originalTrainInstances = trainInstances;
-            this.sampledTrainInstances = new Instances(trainInstances, 0);
+            this.originalSampledTrainInstances = new Instances(trainInstances, 0);
             instancesByClass = Utilities.instancesByClass(trainInstances);
             classSamplingProbabilities = new double[trainInstances.numClasses()];
             for (int i = 0; i < classSamplingProbabilities.length; i++) {
@@ -159,9 +287,9 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
             timeStamp = System.nanoTime();
         }
         int sampleSize = getSampleSize();
-        while (sampledTrainInstances.numInstances() < sampleSize && withinContractTrainTime()) {
+        while (originalSampledTrainInstances.numInstances() < sampleSize && withinContractTrainTime()) {
             Instance sampledInstance = sampleTrainInstance();
-            sampledTrainInstances.add(sampledInstance);
+            originalSampledTrainInstances.add(sampledInstance);
             if (cvTrain) {
                 NearestNeighbourFinder newNearestNeighbourFinder = new NearestNeighbourFinder(sampledInstance);
                 for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
@@ -175,7 +303,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
             timeStamp = System.nanoTime();
         }
         trainDuration += System.nanoTime() - timeStamp;
-        checkpoint(); // todo round robin sampling vs stratified vs random
+        checkpoint(true); // todo round robin sampling vs stratified vs random
     }
 
     @Override
@@ -216,6 +344,9 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         Instance sampledInstance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.numInstances()));
         classSamplingProbabilities[sampleClass]--;
         ArrayUtilities.add(classSamplingProbabilities, classDistribution);
+//        if(homogeneousInstances.numInstances() == 0) {
+//            classSamplingProbabilities[sampleClass] = Double.NEGATIVE_INFINITY;
+//        }
         return sampledInstance;
     }
 
@@ -284,6 +415,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
             for (Instance testInstance : testInstances) {
                 testNearestNeighbourFinders.add(new NearestNeighbourFinder(testInstance));
             }
+            sampledTrainInstances = new Instances(originalSampledTrainInstances);
             testDuration = 0;
             testDuration += System.nanoTime() - timeStamp;
             checkpoint();
@@ -311,11 +443,16 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     private void resumeFromCheckpoint() throws Exception {
         if(!hasLoadedFromCheckpoint && checkpointFilePath != null && new File(checkpointFilePath).exists()) {
             loadFromFile(checkpointFilePath);
+            hasLoadedFromCheckpoint = true;
         }
     }
 
     private void checkpoint() throws IOException {
-        if(checkpointFilePath != null && System.nanoTime() - lastCheckpointTimeStamp > minCheckpointInterval) {
+        checkpoint(false);
+    }
+
+    private void checkpoint(boolean force) throws IOException {
+        if(checkpointFilePath != null && (force || System.nanoTime() - lastCheckpointTimeStamp > minCheckpointInterval)) {
             saveToFile(checkpointFilePath);
             lastCheckpointTimeStamp = System.nanoTime();
         }
@@ -342,8 +479,10 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 
     @Override
     public void setSavePath(String path) {
-        path = Utilities.asDirectoryPath(path);
-        this.checkpointFilePath = path + CHECKPOINT_FILE_NAME;
+        File file = new File(path);
+        file.mkdirs();
+        Utilities.setOpenPermissions(file);
+        this.checkpointFilePath = file.getPath() + "/" + CHECKPOINT_FILE_NAME;
     }
 
     @Override
@@ -352,6 +491,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         originalTestInstances = other.originalTestInstances;
         originalTrainInstances = other.originalTrainInstances;
         sampledTrainInstances = other.sampledTrainInstances;
+        originalSampledTrainInstances = other.originalSampledTrainInstances; // todo make sure we've copied all the fields
         random = other.random;
         classSamplingProbabilities = other.classSamplingProbabilities;
         classDistribution = other.classDistribution;
@@ -367,7 +507,6 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         distanceMeasure = other.distanceMeasure;
         useEarlyAbandon = other.useEarlyAbandon;
         neighbourWeighter = other.neighbourWeighter;
-        hasLoadedFromCheckpoint = true;
     }
 
     public NeighbourWeighter getNeighbourWeighter() {
@@ -438,22 +577,24 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
             }
             int neighbourCount = 0;
             int k = getK();
-            Double distance;
-            while (i < distancesKeySet.size() - 1) {
+            int overflow = k - this.neighbourCount;
+            while (i < distancesKeySet.size() - 1 || (overflow == 0 && i < distancesKeySet.size())) {
                 i++;
-                distance = distancesIterator.next();
+                Double distance = distancesIterator.next();
                 List<Instance> neighbours = this.nearestNeighbours.get(distance);
                 for (Instance neighbour : neighbours) {
                     predictions[(int) neighbour.classValue()] += neighbourWeighter.weight(distance);
                     neighbourCount++;
                 }
             }
-            distance = distancesIterator.next(); // todo only need to trim if numNeighbours > k
-            List<Instance> neighbours = new ArrayList<>(this.nearestNeighbours.get(distance));
-            while (neighbourCount < k) {
-                Instance neighbour = neighbours.remove(random.nextInt(neighbours.size()));
-                predictions[(int) neighbour.classValue()] += neighbourWeighter.weight(distance);
-                neighbourCount++;
+            if(overflow > 0) {
+                Double distance = distancesIterator.next();
+                List<Instance> neighbours = new ArrayList<>(this.nearestNeighbours.get(distance));
+                while (neighbourCount < k) {
+                    Instance neighbour = neighbours.remove(random.nextInt(neighbours.size()));
+                    predictions[(int) neighbour.classValue()] += neighbourWeighter.weight(distance);
+                    neighbourCount++;
+                }
             }
             ArrayUtilities.normalise(predictions);
             return predictions;
