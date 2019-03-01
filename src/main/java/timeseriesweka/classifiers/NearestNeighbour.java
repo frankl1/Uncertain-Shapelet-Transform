@@ -51,8 +51,6 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     private long lastCheckpointTimeStamp = System.nanoTime() - minCheckpointInterval;
     private long trainDurationLimit = -1; // todo implement contract
     private boolean hasLoadedFromCheckpoint = false;
-//    private boolean useAbsoluteProbabilityTrain = false; // todo might be better to incorporate this + test version into the weight distance measure somehow
-    private boolean useAbsoluteProbabilityTest = true;
 
     public NearestNeighbour() {
         setDistanceMeasure(new Dtw());
@@ -104,7 +102,6 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
                         NearestNeighbour nn = new NearestNeighbour();
 //                        nn.setSavePath("/scratch/checkpoints/" + datasetName);
                         nn.setCvTrain(true);
-//                        nn.setUseAbsoluteProbabilityTrain(true); // causes major trainCv acc loss
                         nn.setUseEarlyAbandon(false);
                         nn.setUseRandomTieBreak(false);
                         nn.setNeighbourWeighter(WEIGHT_UNIFORM);
@@ -188,14 +185,6 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 //        System.out.println(trainResults.acc);
 //        System.out.println(testResults.acc);
     }
-
-//    public boolean usesAbsoluteProbability() {
-//        return useAbsoluteProbabilityTrain;
-//    }
-//
-//    public void setUseAbsoluteProbabilityTrain(final boolean useAbsoluteProbabilityTrain) {
-//        this.useAbsoluteProbabilityTrain = useAbsoluteProbabilityTrain;
-//    }
 
     public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
         this.useRandomTieBreak = useRandomTieBreak;
@@ -421,15 +410,6 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         double[][] predictions = new double[testNearestNeighbourFinders.size()][];
         for (int i = 0; i < predictions.length; i++) {
             double[] prediction = testNearestNeighbourFinders.get(i).predict();
-            if(useAbsoluteProbabilityTest) { // todo is absolute prob needed?
-                int[] maxIndices = argMax(prediction);
-                int maxIndex = 0;
-                if(maxIndices.length > 1 && useRandomTieBreak) {
-                    maxIndex = maxIndices[random.nextInt(maxIndices.length)];
-                }
-                prediction = new double[prediction.length];
-                prediction[maxIndex]++;
-            }
             predictions[i] = prediction;
         }
         predictDuration = System.nanoTime() - timeStamp;
