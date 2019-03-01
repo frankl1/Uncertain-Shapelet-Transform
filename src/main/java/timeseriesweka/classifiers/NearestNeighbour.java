@@ -81,26 +81,19 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         String type = "DTW";
         for(String datasetName : datasetNames) {
             String datasetPath = datasetsPath + datasetName;
-            executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+//            executorService.submit(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
                     try {
 //                        System.out.println("loading " + datasetName);
                         Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
                         Instances trainInstances = split[0];
                         Instances testInstances = split[1];
-                        int weight = 0;
-                        for(Instance instance : trainInstances) {
-                            instance.setWeight(weight++);
-                        }
-                        for(Instance instance : testInstances) {
-                            instance.setWeight(weight++);
-                        }
                         DTW1NN orig = new DTW1NN();
                         Dtw1Nn2 orig2 = new Dtw1Nn2();
                         NearestNeighbour nn = new NearestNeighbour();
-//                        nn.setSavePath("/scratch/checkpoints/" + datasetName);
+                        nn.setSavePath("/scratch/checkpoints/" + datasetName);
                         nn.setCvTrain(true);
                         nn.setUseEarlyAbandon(false);
                         nn.setUseRandomTieBreak(false);
@@ -152,8 +145,8 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                }
-            });
+//                }
+//            });
         }
         executorService.shutdown();
 //        int seed = 3;
