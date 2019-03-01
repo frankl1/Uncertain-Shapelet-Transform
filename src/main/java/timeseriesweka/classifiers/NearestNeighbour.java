@@ -189,13 +189,13 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 //        System.out.println(testResults.acc);
     }
 
-    public boolean usesAbsoluteProbability() {
-        return useAbsoluteProbabilityTrain;
-    }
-
-    public void setUseAbsoluteProbabilityTrain(final boolean useAbsoluteProbabilityTrain) {
-        this.useAbsoluteProbabilityTrain = useAbsoluteProbabilityTrain;
-    }
+//    public boolean usesAbsoluteProbability() {
+//        return useAbsoluteProbabilityTrain;
+//    }
+//
+//    public void setUseAbsoluteProbabilityTrain(final boolean useAbsoluteProbabilityTrain) {
+//        this.useAbsoluteProbabilityTrain = useAbsoluteProbabilityTrain;
+//    }
 
     public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
         this.useRandomTieBreak = useRandomTieBreak;
