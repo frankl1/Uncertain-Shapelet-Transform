@@ -52,7 +52,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     private long trainDurationLimit = -1; // todo implement contract
     private boolean hasLoadedFromCheckpoint = false;
 //    private boolean useAbsoluteProbabilityTrain = false; // todo might be better to incorporate this + test version into the weight distance measure somehow
-//    private boolean useAbsoluteProbabilityTest = false;
+    private boolean useAbsoluteProbabilityTest = true;
 
     public NearestNeighbour() {
         setDistanceMeasure(new Dtw());
@@ -421,15 +421,15 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         double[][] predictions = new double[testNearestNeighbourFinders.size()][];
         for (int i = 0; i < predictions.length; i++) {
             double[] prediction = testNearestNeighbourFinders.get(i).predict();
-//            if(useAbsoluteProbabilityTrain) {
-//                int[] maxIndices = argMax(prediction);
-//                int maxIndex = 0;
-//                if(maxIndices.length > 1 && useRandomTieBreak) {
-//                    maxIndex = maxIndices[random.nextInt(maxIndices.length)];
-//                }
-//                prediction = new double[prediction.length];
-//                prediction[maxIndex]++;
-//            }
+            if(useAbsoluteProbabilityTest) { // todo is absolute prob needed?
+                int[] maxIndices = argMax(prediction);
+                int maxIndex = 0;
+                if(maxIndices.length > 1 && useRandomTieBreak) {
+                    maxIndex = maxIndices[random.nextInt(maxIndices.length)];
+                }
+                prediction = new double[prediction.length];
+                prediction[maxIndex]++;
+            }
             predictions[i] = prediction;
         }
         predictDuration = System.nanoTime() - timeStamp;
