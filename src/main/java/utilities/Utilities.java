@@ -329,7 +329,7 @@ public class Utilities {
         long timeStamp = System.nanoTime();
         A result = function.get();
         long duration = System.nanoTime() - timeStamp;
-        box.setContents(duration + box.getContents());
+        box.accept(duration + box.get());
         return result;
     }
 
@@ -337,7 +337,7 @@ public class Utilities {
         long timeStamp = System.nanoTime();
         function.run();
         long duration = System.nanoTime() - timeStamp;
-        box.setContents(duration + box.getContents());
+        box.accept(duration + box.get());
     }
 
     public static String asString(double[] array) {

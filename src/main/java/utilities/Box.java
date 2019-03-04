@@ -3,32 +3,22 @@ package utilities;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class Box<A> implements Supplier<A>, Consumer<A> {
+public class Box<A> implements Boxed<A> {
     private A contents;
 
-    public Box(A contents) {
-        setContents(contents);
+    public Box(A contents) {accept(contents);
     }
 
     public Box() {
         this(null);
     }
-
-    public void setContents(A contents) {
-        this.contents = contents;
-    }
-
-    public A getContents() {
-        return contents;
-    }
-
     @Override
-    public void accept(final A a) {
-        setContents(a);
+    public void accept(final A contents) {
+        this.contents = contents;
     }
 
     @Override
     public A get() {
-        return getContents();
+        return contents;
     }
 }
