@@ -1,4 +1,4 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import development.go.Indexed.DoubleLinearInterpolator;
 import development.go.Indexed.IndexConsumer;
@@ -8,7 +8,7 @@ import weka.core.Instances;
 import java.util.List;
 
 public class WdtwParameterSpace extends ParameterSpace<Wdtw> {
-    private final DoubleLinearInterpolator weightValues = new DoubleLinearInterpolator(0d,0d,1);
+    private final DoubleLinearInterpolator weightValues = new DoubleLinearInterpolator(0d, 1d, 1);
     private double weightValue;
     private final IndexConsumer<Double> weightParameter = new IndexConsumer<>(weightValues, v -> weightValue = v);
     private DtwParameterSpace dtwParameterSpace = new DtwParameterSpace();
@@ -23,8 +23,6 @@ public class WdtwParameterSpace extends ParameterSpace<Wdtw> {
         warpingWindowValues.setSize(1);
         double maxweight = 100;
         double minweight = 0;
-        weightValues.setMin(minweight);
-        weightValues.setMax(maxweight);
         weightValues.setSize(101);
         parameters.add(weightParameter);
         return parameters;

@@ -4,7 +4,10 @@
 
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
+import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
+import timeseriesweka.measures.erp.Erp;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
@@ -12,6 +15,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.ERPDistance;
+
+import java.io.File;
+import java.io.IOException;
 //import efficient_standalone_classifiers.Eff
 /**
  *
@@ -212,11 +218,11 @@ public class ERP1NN extends Efficient1NN{
     }
     
       
-    public static void main(String[] args) throws Exception{
-        for(int i = 0; i < 10; i++){
-            runComparison();
-        }
-    }
+//    public static void main(String[] args) throws Exception{
+//        for(int i = 0; i < 10; i++){
+//            runComparison();
+//        }
+//    }
 
     @Override
     public void setParamsFromParamId(Instances train, int paramId) {
@@ -228,6 +234,23 @@ public class ERP1NN extends Efficient1NN{
         }
         this.g = gValues[paramId/10];
         this.bandSize = windowSizes[paramId%10];
+    }
+
+    public static void main(String[] args) throws IOException {
+        ERP1NN erp1NN = new ERP1NN();
+        ErpParameterSpace erpParameterSpace = new ErpParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        erpParameterSpace.useInstances(instances);
+        for(int i = 0; i < erpParameterSpace.size(); i++) {
+            erp1NN.setParamsFromParamId(instances, i);
+            erpParameterSpace.setCombination(i);
+            Erp erp = erpParameterSpace.build();
+            System.out.println(erp1NN.bandSize + " " + erp1NN.g);
+            System.out.println(erp.getWarpingWindow() + " " + erp.getPenalty());
+            if(erp1NN.bandSize != erp.getWarpingWindow() || erp.getPenalty() != erp1NN.g) {
+                throw new IllegalArgumentException();
+            }
+        }
     }
 
     @Override

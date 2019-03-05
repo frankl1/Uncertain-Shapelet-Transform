@@ -294,7 +294,7 @@ public class Dtw extends DistanceMeasure {
 
     @Override
     public String[] getOptions() {
-        return new String[] {"-w", String.valueOf(warpingWindowPercentage)}; // todo not sure whether it should be ["-w 0.8"] or ["-w", "0.8"]
+        return new String[] {WARPING_WINDOW_KEY, String.valueOf(warpingWindowPercentage)};
     }
 
     @Override
@@ -302,8 +302,14 @@ public class Dtw extends DistanceMeasure {
         return "1";
     }
 
+    private static final String WARPING_WINDOW_KEY = "-w";
+
     @Override
-    public void setOptions(final String[] options) throws Exception {
-        // todo not sure how this should be parsed, is it ["-w 0.8"] or ["-w", "0.8"]?
+    public boolean setOption(final String key, final String value) {
+        if(key.equals(WARPING_WINDOW_KEY)) {
+            setWarpingWindow(Double.parseDouble(value));
+            return true;
+        }
+        return false;
     }
 }

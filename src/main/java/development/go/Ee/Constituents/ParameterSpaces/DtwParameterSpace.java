@@ -1,4 +1,4 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import development.go.Indexed.DoubleLinearInterpolator;
 import development.go.Indexed.IndexConsumer;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public class DtwParameterSpace extends ParameterSpace<Dtw> {
 
-    private final DoubleLinearInterpolator warpingWindowValues = new DoubleLinearInterpolator(0d, 0d, 1);
+    private final DoubleLinearInterpolator warpingWindowValues = new DoubleLinearInterpolator(0d, 1d, 1);
     private double warpingWindowValue;
     private final IndexConsumer<Double> warpingWindowParameter = new IndexConsumer<>(warpingWindowValues, v -> warpingWindowValue = v);
 
@@ -21,9 +21,7 @@ public class DtwParameterSpace extends ParameterSpace<Dtw> {
 
     @Override
     protected List<IndexConsumer<?>> setupParameters(final Instances instances) {
-        warpingWindowValues.setMax(0d);
-        warpingWindowValues.setMin(100d);
-        warpingWindowValues.setSize(10);
+        warpingWindowValues.setSize(101);
         return new ArrayList<>(Collections.singletonList(warpingWindowParameter));
     }
 

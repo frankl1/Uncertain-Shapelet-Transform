@@ -1,6 +1,5 @@
 package timeseriesweka.measures.lcss;
 
-import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 
 public class Lcss extends Dtw {
@@ -91,6 +90,26 @@ public class Lcss extends Dtw {
 //        return 1-((double)max/m);
     }
 
-    // todo get and set options
+    private static final String TOLERANCE_KEY = "-t";
+
+    @Override
+    public String[] getOptions() {
+        String[] superOptions = super.getOptions();
+        String[] options = new String[superOptions.length + 2];
+        System.arraycopy(superOptions, 0, options, 0, superOptions.length);
+        options[options.length - 2] = TOLERANCE_KEY;
+        options[options.length - 1] = String.valueOf(tolerance);
+        return options;
+    }
+
+    @Override
+    public boolean setOption(final String key, final String value) {
+        if(key.equals(TOLERANCE_KEY)) {
+            setTolerance(Double.parseDouble(value));
+            return true;
+        } else {
+            return super.setOption(key, value);
+        }
+    }
 
 }

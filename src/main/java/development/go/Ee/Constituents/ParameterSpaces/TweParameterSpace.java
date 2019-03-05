@@ -1,4 +1,4 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import development.go.Indexed.IndexConsumer;
 import development.go.Indexed.IndexedValues;
@@ -42,8 +42,8 @@ public class TweParameterSpace extends ParameterSpace<Twe> {
 
     public List<IndexConsumer<?>> setupParameters(Instances instances) {
         List<IndexConsumer<?>> parameters = new ArrayList<>();
-        parameters.add(stiffnessParameter);
         parameters.add(penaltyParameter);
+        parameters.add(stiffnessParameter);
         return parameters;
     }
 

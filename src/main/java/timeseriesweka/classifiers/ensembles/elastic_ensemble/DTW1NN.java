@@ -1,5 +1,10 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
+import development.go.Ee.Constituents.ParameterSpaces.DtwParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import timeseriesweka.measures.dtw.Dtw;
+import timeseriesweka.measures.erp.Erp;
 import utilities.ClassifierTools;
 import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
@@ -7,6 +12,9 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.DTW;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  *
@@ -258,9 +266,26 @@ public class DTW1NN extends Efficient1NN {
     }
     
       
-    public static void main(String[] args) throws Exception{
-        for(int i = 0; i < 10; i++){
-            runComparison();
+//    public static void main(String[] args) throws Exception{
+//        for(int i = 0; i < 10; i++){
+//            runComparison();
+//        }
+//    }
+
+    public static void main(String[] args) throws IOException {
+        DTW1NN orig = new DTW1NN();
+        DtwParameterSpace parameterSpace = new DtwParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        parameterSpace.useInstances(instances);
+        for(int i = 0; i < parameterSpace.size(); i++) {
+            orig.setParamsFromParamId(instances, i);
+            parameterSpace.setCombination(i);
+            Dtw n = parameterSpace.build();
+            System.out.println(orig.r);
+            System.out.println(n.getWarpingWindow());
+            if(orig.r != n.getWarpingWindow()) {
+                throw new IllegalArgumentException();
+            }
         }
     }
 

@@ -3,7 +3,13 @@
 
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
+import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.WdtwParameterSpace;
+import timeseriesweka.measures.msm.Msm;
+import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.Classifier;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
@@ -11,6 +17,9 @@ import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.DTW;
 import timeseriesweka.elastic_distance_measures.WeightedDTW;
+
+import java.io.File;
+import java.io.IOException;
 //import efficient_standalone_classifiers.Eff
 /**
  *
@@ -177,31 +186,31 @@ public class WDTW1NN extends Efficient1NN{
     }
     
       
-    public static void main(String[] args) throws Exception{
-//        for(int i = 0; i < 10; i++){
-//            runComparison();
+//    public static void main(String[] args) throws Exception{
+////        for(int i = 0; i < 10; i++){
+////            runComparison();
+////        }
+//
+//        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/SonyAiboRobotSurface1/SonyAiboRobotSurface1_TRAIN");
+//
+//        Instance one, two;
+//        one = train.firstInstance();
+//        two = train.lastInstance();
+//        WeightedDTW wdtw;
+//        WDTW1NN wnn = new WDTW1NN();
+//        double g;
+//        for(int paramId = 0; paramId < 100; paramId++){
+//            g = (double)paramId/100;
+//            wdtw = new WeightedDTW(g);
+//
+//            wnn.setParamsFromParamId(train, paramId);
+//            System.out.print(wdtw.distance(one, two)+"\t");
+//            System.out.println(wnn.distance(one, two,Double.MAX_VALUE));
+//
 //        }
-
-        Instances train = ClassifierTools.loadData("C:/users/sjx07ngu/dropbox/tsc problems/SonyAiboRobotSurface1/SonyAiboRobotSurface1_TRAIN");
-        
-        Instance one, two;
-        one = train.firstInstance();
-        two = train.lastInstance();
-        WeightedDTW wdtw;
-        WDTW1NN wnn = new WDTW1NN();
-        double g;
-        for(int paramId = 0; paramId < 100; paramId++){
-            g = (double)paramId/100;
-            wdtw = new WeightedDTW(g);
-            
-            wnn.setParamsFromParamId(train, paramId);
-            System.out.print(wdtw.distance(one, two)+"\t");
-            System.out.println(wnn.distance(one, two,Double.MAX_VALUE));
-            
-        }
-
-
-    }
+//
+//
+//    }
 
     @Override
     public void setParamsFromParamId(Instances train, int paramId) {
@@ -219,7 +228,27 @@ public class WDTW1NN extends Efficient1NN{
     }
 
 
-    
-    
+//    public static void main(String[] args) {
+//        for(int i = 0; i < 101; i++) {
+//            System.out.println(String.valueOf((double) i / 100));
+//        }
+//    }
+
+    public static void main(String[] args) throws IOException {
+        WDTW1NN orig = new WDTW1NN();
+        WdtwParameterSpace parameterSpace = new WdtwParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        parameterSpace.useInstances(instances);
+        for(int i = 0; i < parameterSpace.size(); i++) {
+            orig.setParamsFromParamId(instances, i);
+            parameterSpace.setCombination(i);
+            Wdtw n = parameterSpace.build();
+            System.out.println(orig.g);
+            System.out.println(n.getWeight() + " " + n.getWarpingWindow());
+            if(orig.g != n.getWeight() || n.getWarpingWindow() != 1) {
+                throw new IllegalArgumentException();
+            }
+        }
+    }
     
 }

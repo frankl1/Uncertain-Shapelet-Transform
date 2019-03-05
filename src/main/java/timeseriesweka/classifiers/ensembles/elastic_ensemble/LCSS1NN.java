@@ -3,12 +3,21 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 
+import development.go.Ee.Constituents.ParameterSpaces.DtwParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.LcssParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import timeseriesweka.measures.dtw.Dtw;
+import timeseriesweka.measures.lcss.Lcss;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.LCSSDistance;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  *
@@ -101,12 +110,33 @@ public class LCSS1NN extends Efficient1NN{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    public static void main(String[] args) throws Exception{
-        for (int i = 0; i < 10; i++) {            
-            runComparison();
+//    public static void main(String[] args) throws Exception{
+//        for (int i = 0; i < 10; i++) {
+//            runComparison();
+//        }
+//    }
+
+    public static void main(String[] args) throws IOException {
+        LCSS1NN orig = new LCSS1NN();
+        LcssParameterSpace parameterSpace = new LcssParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        parameterSpace.useInstances(instances);
+        for(int i = 0; i < parameterSpace.size(); i++) {
+            if(i == 49) {
+                boolean b = true;
+            }
+            orig.setParamsFromParamId(instances, i);
+            parameterSpace.setCombination(i);
+            Lcss n = parameterSpace.build();
+            System.out.println(orig.epsilon + " " + orig.delta);
+            int w = (int) Math.round(n.getWarpingWindow() * (instances.numAttributes() - 1));
+            System.out.println(n.getTolerance() + " " + w);
+            if(orig.delta != w || orig.epsilon != n.getTolerance()) {
+                throw new IllegalArgumentException();
+            }
         }
     }
-    
+
     public static void runComparison() throws Exception{
         String tscProbDir = "C:/users/sjx07ngu/Dropbox/TSC Problems/";
         

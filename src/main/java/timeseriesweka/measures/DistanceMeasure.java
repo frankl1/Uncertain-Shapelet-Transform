@@ -3,6 +3,7 @@ package timeseriesweka.measures;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.msm.Msm;
+import utilities.OptionsSetter;
 import weka.core.Instance;
 import weka.core.NormalizableDistance;
 import weka.core.TechnicalInformationHandler;
@@ -22,7 +23,7 @@ import static utilities.Utilities.*;
 
 
 
-public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, Serializable {
+public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, Serializable, OptionsSetter {
 
     public DistanceMeasure() {
         setDontNormalize(true); // disable WEKA's normalisation - shouldn't use it anyway but just in case!
@@ -102,9 +103,14 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
     public String getParameters() {
         StringBuilder stringBuilder = new StringBuilder();
         String[] parameters = getOptions();
-        for(String str : parameters) {
-            stringBuilder.append(str);
+        if(parameters.length == 0) {
+            return "";
         }
+        for(int i = 0; i < parameters.length - 1; i++) {
+            stringBuilder.append(parameters[i]);
+            stringBuilder.append(" ");
+        }
+        stringBuilder.append(parameters[parameters.length - 1]);
         return stringBuilder.toString();
     }
 
@@ -116,5 +122,4 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
     public String toString() {
         return getClass().getSimpleName().toLowerCase();
     }
-
 }

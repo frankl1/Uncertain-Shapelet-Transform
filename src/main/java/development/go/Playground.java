@@ -9,7 +9,6 @@ import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.scp.ScpTimestamp;
-import timeseriesweka.classifiers.ee.constituents.generators.ParameterisedSupplier;
 import utilities.ClassifierResults;
 import utilities.ClassifierStats;
 import utilities.Utilities;

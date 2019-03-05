@@ -163,7 +163,30 @@ public class Twe extends DistanceMeasure {
         return "1";
     }
 
-    // todo getOptions and setOptions
+    private static final String STIFFNESS_KEY = "-s";
+    private static final String PENALTY_KEY = "-p";
+
+    @Override
+    public String[] getOptions() {
+        String[] options = new String[4];
+        options[0] = STIFFNESS_KEY;
+        options[1] = String.valueOf(stiffness);
+        options[2] = PENALTY_KEY;
+        options[3] = String.valueOf(penalty);
+        return options;
+    }
+
+    @Override
+    public boolean setOption(final String key, final String value) {
+        if(key.equals(STIFFNESS_KEY)) {
+            setStiffness(Double.parseDouble(value));
+            return true;
+        } else if(key.equals(PENALTY_KEY)) {
+            setPenalty(Double.parseDouble(value));
+            return true;
+        }
+        return false;
+    }
 
 
 }

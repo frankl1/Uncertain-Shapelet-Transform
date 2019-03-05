@@ -143,7 +143,7 @@ public class Utilities {
     // todo cleanup
 
     public static int[] fromCombination(int combination, int... binSizes) {
-        int maxCombination = numCombinations(binSizes);
+        int maxCombination = numCombinations(binSizes) - 1;
         if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
             throw new IllegalArgumentException();
         }
@@ -399,6 +399,35 @@ public class Utilities {
         file.setReadable(true, false);
     }
 
+    public static void mkdir(File dir) {
+        File parentFile = dir.getParentFile();
+        if (parentFile != null) {
+            mkdir(parentFile);
+        }
+        if(dir.mkdirs()) {
+            setOpenPermissions(dir);
+        }
+    }
+
+    public static List<Double> incrementalDiffList(double min, double max, int size) {
+        if(min > max) {
+            double temp = min;
+            min = max;
+            max = temp;
+        }
+        List<Double> values = new ArrayList<>();
+        values.add(min);
+        double diff = (max - min) / (size - 1);
+        double value = min;
+        for(int i = 1; i <= size - 2; i++) {
+            value = value + diff;
+            values.add(value);
+        }
+        values.add(max);
+        return values;
+    }
+
+
 
     public static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances) throws Exception {
         classifier.buildClassifier(trainInstances);
@@ -425,5 +454,14 @@ public class Utilities {
         results.setNumClasses(testInstances.numClasses());
         results.findAllStatsOnce();
         return results;
+    }
+
+    public static String toString(final int[] combination) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for(int i : combination) {
+            stringBuilder.append(i);
+            stringBuilder.append(" ");
+        }
+        return stringBuilder.toString();
     }
 }

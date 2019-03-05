@@ -1,4 +1,4 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import timeseriesweka.measures.ddtw.Ddtw;
 import timeseriesweka.measures.dtw.Dtw;

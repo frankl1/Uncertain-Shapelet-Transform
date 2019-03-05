@@ -6,7 +6,7 @@ public class IntegerLinearInterpolator extends LinearInterpolator<Integer> {
     }
 
     @Override
-    public Double apply(final int i) {
-        return getMin() + i / (getSize() - 1) * ((double) getMax() - getMin());
+    public Integer apply(final int i) {
+        return (int) (getMin() + i / (size() - 1) * ((double) getMax() - getMin()));
     }
 }

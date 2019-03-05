@@ -1,12 +1,12 @@
 package development.go.Indexed;
 
-public abstract class LinearInterpolator<A extends Number> implements Indexed<Double> {
+public abstract class LinearInterpolator<A extends Number> extends Interpolator<A> {
 
     public LinearInterpolator(final A min, final A max, final int size) {
         // todo checks, use setters
+        super(size);
         this.min = min;
         this.max = max;
-        this.size = size;
     }
 
     private A min;
@@ -27,19 +27,6 @@ public abstract class LinearInterpolator<A extends Number> implements Indexed<Do
         this.max = max;
     }
 
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(final int size) {
-        this.size = size;
-    }
-
     private A max;
-    private int size;
 
-    @Override
-    public int size() {
-        return size;
-    }
 }

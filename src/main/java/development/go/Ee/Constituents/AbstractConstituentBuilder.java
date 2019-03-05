@@ -1,7 +1,7 @@
-package development.go.Constituents;
+package development.go.Ee.Constituents;
 
 import development.go.Indexed.IndexConsumer;
-import timeseriesweka.classifiers.nn.NearestNeighbour;
+import timeseriesweka.classifiers.nn.Nn;
 import utilities.Utilities;
 import weka.core.Instances;
 
@@ -37,5 +37,5 @@ public abstract class AbstractConstituentBuilder {
         return Utilities.numCombinations(getParameterBins());
     }
 
-    public abstract NearestNeighbour build();
+    public abstract Nn build();
 }

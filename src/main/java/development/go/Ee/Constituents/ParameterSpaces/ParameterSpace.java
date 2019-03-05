@@ -1,12 +1,10 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import development.go.Indexed.IndexConsumer;
-import timeseriesweka.classifiers.nn.NearestNeighbour;
 import utilities.Utilities;
 import weka.core.Instances;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 public abstract class ParameterSpace<A> {
 
@@ -20,9 +18,20 @@ public abstract class ParameterSpace<A> {
 
     public void setCombination(int combination) {
         int[] parameterValueIndices = Utilities.fromCombination(combination, getParameterBins());
-        for(int i = 0; i < parameterValueIndices.length; i++) {
-            parameters.get(i).accept(parameterValueIndices[i]);
+        setCombination(parameterValueIndices);
+    }
+
+    public void setCombination(int[] combination) {
+        if(combination.length != parameters.size()) {
+            throw new IllegalArgumentException("wrong number of parameter indices in combination, expecting " + parameters.size() + ", given: " + Utilities.toString(combination));
         }
+        for(int i = 0; i < combination.length; i++) {
+            parameters.get(i).accept(combination[i]);
+        }
+    }
+
+    public int getNumParameters() {
+        return parameters.size();
     }
 
     private int[] getParameterBins() {

@@ -3,12 +3,21 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 
+import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import timeseriesweka.measures.erp.Erp;
+import timeseriesweka.measures.msm.Msm;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.MSMDistance;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  *
@@ -278,16 +287,32 @@ public class MSM1NN extends Efficient1NN{
         System.out.println("New timing: "+newTime);
         System.out.println("Relative Performance: " + ((double)newTime/oldTime));
     }
-    
-    
-    
-      
-    public static void main(String[] args) throws Exception{
-//        
-        for(int i = 0; i < 10; i++){
-            runComparison();
+
+
+
+    public static void main(String[] args) throws IOException {
+        MSM1NN orig = new MSM1NN();
+        MsmParameterSpace parameterSpace = new MsmParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        parameterSpace.useInstances(instances);
+        for(int i = 0; i < parameterSpace.size(); i++) {
+            orig.setParamsFromParamId(instances, i);
+            parameterSpace.setCombination(i);
+            Msm n = parameterSpace.build();
+            System.out.println(orig.c);
+            System.out.println(n.getPenalty() + " " + n.getWarpingWindow());
+            if(orig.c != n.getPenalty() || n.getWarpingWindow() != 1) {
+                throw new IllegalArgumentException();
+            }
         }
     }
+      
+//    public static void main(String[] args) throws Exception{
+////
+//        for(int i = 0; i < 10; i++){
+//            runComparison();
+//        }
+//    }
 
     @Override
     public void setParamsFromParamId(Instances train, int paramId) {

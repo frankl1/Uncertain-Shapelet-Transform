@@ -3,12 +3,21 @@
 
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
+import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import development.go.Ee.Constituents.ParameterSpaces.TweParameterSpace;
+import timeseriesweka.measures.msm.Msm;
+import timeseriesweka.measures.twe.Twe;
 import utilities.ClassifierTools;
+import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.TWEDistance;
+
+import java.io.File;
+import java.io.IOException;
 //import efficient_standalone_classifiers.Eff
 /**
  *
@@ -273,15 +282,30 @@ public class TWE1NN extends Efficient1NN{
         System.out.println("New timing: "+newTime);
         System.out.println("Relative Performance: " + ((double)newTime/oldTime));
     }
-    
-  
-    
-      
-    public static void main(String[] args) throws Exception{
-        for(int i = 0; i < 10; i++){
-            runComparison();
+
+    public static void main(String[] args) throws IOException {
+        TWE1NN orig = new TWE1NN();
+        TweParameterSpace parameterSpace = new TweParameterSpace();
+        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        parameterSpace.useInstances(instances);
+        for(int i = 0; i < parameterSpace.size(); i++) {
+            orig.setParamsFromParamId(instances, i);
+            parameterSpace.setCombination(i);
+            Twe n = parameterSpace.build();
+            System.out.println(orig.nu + " " + orig.lambda);
+            System.out.println(n.getStiffness() + " " + n.getPenalty());
+            if(orig.nu != n.getStiffness() || n.getPenalty() != orig.lambda) {
+                throw new IllegalArgumentException();
+            }
         }
     }
+    
+      
+//    public static void main(String[] args) throws Exception{
+//        for(int i = 0; i < 10; i++){
+//            runComparison();
+//        }
+//    }
 
     @Override
     public void setParamsFromParamId(Instances train, int paramId) {

@@ -112,24 +112,29 @@ public class Erp extends Dtw {
     }
 
     @Override
-    public String[] getOptions() {
-        return super.getOptions(); // todo not sure how this works yet
-//        String[] superOptions = super.getOptions();
-//        String[] options = new String[superOptions.length + 2];
-//        System.arraycopy(superOptions, 0, options, 0, superOptions.length);
-//        options[options.length - 2] = "-p";
-//        options[options.length - 1] = String.valueOf(penalty);
-//        return options;
-    }
-
-    @Override
     public String getRevision() {
         return "1";
     }
 
+    private static final String PENALTY_KEY = "-p";
+
     @Override
-    public void setOptions(final String[] options) throws Exception {
-        // todo not sure how this works yet
+    public String[] getOptions() {
+        String[] superOptions = super.getOptions();
+        String[] options = new String[superOptions.length + 2];
+        System.arraycopy(superOptions, 0, options, 0, superOptions.length);
+        options[options.length - 2] = PENALTY_KEY;
+        options[options.length - 1] = String.valueOf(penalty);
+        return options;
     }
 
+    @Override
+    public boolean setOption(final String key, final String value) {
+        if(key.equals(PENALTY_KEY)) {
+            setPenalty(Double.parseDouble(value));
+            return true;
+        } else {
+            return super.setOption(key, value);
+        }
+    }
 }

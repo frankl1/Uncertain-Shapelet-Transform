@@ -8,6 +8,13 @@ public class DoubleLinearInterpolator extends LinearInterpolator<Double> {
 
     @Override
     public Double apply(final int i) {
-        return getMin() + i / (getSize() - 1) * (getMax() - getMin()); // todo div zero
+        double proportion = (double) i / (size() - 1);
+        double max = getMax();
+        double min = getMin();
+        if(max == 1 && min == 0) {
+            return proportion;
+        } else {
+            return min + proportion * (max - min);
+        }
     }
 }

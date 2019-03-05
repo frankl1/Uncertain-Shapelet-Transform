@@ -1,4 +1,4 @@
-package development.go.Constituents.ParameterSpaces;
+package development.go.Ee.Constituents.ParameterSpaces;
 
 import development.go.Indexed.DoubleLinearInterpolator;
 import development.go.Indexed.IndexConsumer;

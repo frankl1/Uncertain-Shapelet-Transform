@@ -97,6 +97,26 @@ public class Wdtw extends Dtw {
         return "1";
     }
 
-    // todo getOptions and setOptions
+    private static final String WEIGHT_KEY = "-g";
+
+    @Override
+    public String[] getOptions() {
+        String[] superOptions = super.getOptions();
+        String[] options = new String[superOptions.length + 2];
+        System.arraycopy(superOptions, 0, options, 0, superOptions.length);
+        options[options.length - 2] = WEIGHT_KEY;
+        options[options.length - 1] = String.valueOf(weight);
+        return options;
+    }
+
+    @Override
+    public boolean setOption(final String key, final String value) {
+        if(key.equals(WEIGHT_KEY)) {
+            setWeight(Double.parseDouble(value));
+            return true;
+        } else {
+            return super.setOption(key, value);
+        }
+    }
 
 }

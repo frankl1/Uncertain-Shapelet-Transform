@@ -4,6 +4,7 @@ import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.CompressedCheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static utilities.Utilities.argMax;
 import static utilities.Utilities.trainAndTest;
 
-public class NearestNeighbour extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CompressedCheckpointClassifier, ContractClassifier {
+public class Nn extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CompressedCheckpointClassifier, ContractClassifier, OptionsSetter {
 
     // todo implement contracting
 
@@ -55,7 +56,13 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     private boolean testDone = false;
     private Sampler sampler = new RandomRoundRobinSampler();
 
-    public NearestNeighbour() {
+    @Override
+    public boolean setOption(final String key, final String value) {
+        reset();
+        return false; // todo + getOptions
+    }
+
+    public Nn() {
         setDistanceMeasure(new Dtw());
     }
 
@@ -93,9 +100,9 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
                         Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
                         Instances trainInstances = split[0];
                         Instances testInstances = split[1];
-//                        DTW1NN orig = new DTW1NN();
+                        DTW1NN orig = new DTW1NN();
 //                        Dtw1Nn2 orig2 = new Dtw1Nn2();
-                        NearestNeighbour nn = new NearestNeighbour();
+                        Nn nn = new Nn();
 //                        nn.setSavePath("/scratch/checkpoints/" + datasetName);
                         nn.setCvTrain(true);
                         nn.setUseEarlyAbandon(false);
@@ -108,42 +115,42 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
                         BufferedReader testReader = new BufferedReader(new FileReader(previousTestResult));
                         testReader.readLine();
                         int testParam = Integer.parseInt(testReader.readLine());
-//                        double testAcc = Double.parseDouble(testReader.readLine());
+                        double testAcc = Double.parseDouble(testReader.readLine());
                         testReader.close();
                         BufferedReader trainReader = new BufferedReader(new FileReader(previousTrainResult));
                         trainReader.readLine();
                         int trainParam = Integer.parseInt(trainReader.readLine());
-//                        double trainAcc = Double.parseDouble(trainReader.readLine());
+                        double trainAcc = Double.parseDouble(trainReader.readLine());
                         trainReader.close();
                         dtw.setWarpingWindow((double) trainParam / 100);
-//                        orig.setParamsFromParamId(trainInstances, testParam);
+                        orig.setParamsFromParamId(trainInstances, testParam);
 //                        orig2.setParamsFromParamId(trainInstances, testParam);
-//                        ClassifierResults origTestResults = trainAndTest(orig, trainInstances, testInstances);
+                        ClassifierResults origTestResults = trainAndTest(orig, trainInstances, testInstances);
 //                        ClassifierResults orig2TestResults = trainAndTest(orig2, trainInstances, testInstances);
                         nn.buildClassifier(trainInstances);
-                        ClassifierResults nnTestResults = nn.getTestPrediction(testInstances);
+                        ClassifierResults nnTestResults = nn.getTestPrediction(trainInstances, testInstances);
                         nnTestResults.findAllStatsOnce();
                         dtw.setWarpingWindow((double) trainParam / 100);
-//                        orig.setParamsFromParamId(trainInstances, trainParam);
+                        orig.setParamsFromParamId(trainInstances, trainParam);
 //                        orig2.setParamsFromParamId(trainInstances, trainParam);
                         ClassifierResults results = nn.getTrainPrediction(trainInstances);
                         results.findAllStatsOnce();
                         double nnLoocv = results.acc;
-//                        double origLoocv = orig.loocvAccAndPreds(trainInstances,  trainParam)[0];
+                        double origLoocv = orig.loocvAccAndPreds(trainInstances,  trainParam)[0];
 //                        double orig2Loocv = orig2.loocvAccAndPreds(trainInstances,  trainParam)[0];
 //                        System.out.println(orig2Loocv);
 //                        System.out.println("---");
 //                        System.out.println(nnLoocv);
 //                        System.out.println("---");
                         System.out.println(datasetName
-//                            + ", " + origLoocv
+                            + ", " + origLoocv
 //                            + ", " + orig2Loocv
                             + ", " + nnLoocv
-//                            + ", " + trainAcc
-//                            + ", " + origTestResults.acc
+                            + ", " + trainAcc
+                            + ", " + origTestResults.acc
 //                            + ", " + orig2TestResults.acc
                             + ", " + nnTestResults.acc
-//                            + ", " + testAcc
+                            + ", " + testAcc
                         );
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -188,29 +195,36 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 
     public void setSampler(final Sampler sampler) {
         this.sampler = sampler;
+        reset();
     }
 
     public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
         this.useRandomTieBreak = useRandomTieBreak;
+        reset();
     }
 
     public void setUseEarlyAbandon(final boolean useEarlyAbandon) {
         this.useEarlyAbandon = useEarlyAbandon;
+        reset();
     }
 
     public void setSeed(long seed) {
-        random.setSeed(seed);
+        this.seed = seed;
+        reset();
     }
 
     public void setRandom(Random random) {
         this.random = random;
+        reset();
     }
 
     public ClassifierResults getTrainPrediction(Instances trainInstances) throws Exception {
+        buildClassifier(trainInstances);
         return getPrediction(originalSampledTrainInstances, trainPredictions);
     }
 
-    public ClassifierResults getTestPrediction(Instances testInstances) throws Exception {
+    public ClassifierResults getTestPrediction(Instances trainInstances, Instances testInstances) throws Exception {
+        buildClassifier(trainInstances);
         double[][] allPredictions = distributionForInstances(testInstances);
         return getPrediction(testInstances, allPredictions);
     }
@@ -236,13 +250,17 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         return results;
     }
 
-    public void resetCheckpointing() {
+    public void reset() {
+        if(seed != null) {
+            random.setSeed(seed);
+        }
         trainDone = false;
         testDone = false;
         trainInitialised = false;
         testInitialised = false;
     }
 
+    private Long seed = null;
     private double[][] trainPredictions;
 
     @Override
@@ -330,6 +348,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     public void setSampleSizePercentage(final double percentage) {
         Utilities.percentageCheck(percentage);
         this.sampleSizePercentage = percentage;
+        reset();
     }
 
     private int getK() {
@@ -343,6 +362,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
     public void setKPercentage(final double percentage) {
         Utilities.percentageCheck(percentage);
         this.kPercentage = percentage;
+        reset();
     }
 
     public boolean isCvTrain() {
@@ -351,6 +371,7 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 
     public void setCvTrain(final boolean cvTrain) {
         this.cvTrain = cvTrain;
+        reset();
     }
 
     public boolean usesRandomTieBreak() {
@@ -436,10 +457,9 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         return distanceMeasure;
     }
 
-    // todo getOptions setOptions
-
     public void setDistanceMeasure(final DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
+        reset();
     }
 
     public boolean usesEarlyAbandon() {
@@ -452,11 +472,12 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         file.mkdirs();
         Utilities.setOpenPermissions(file);
         this.checkpointFilePath = file.getPath() + "/" + CHECKPOINT_FILE_NAME;
+        reset();
     }
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
-        NearestNeighbour other = (NearestNeighbour) obj;
+        Nn other = (Nn) obj;
         originalTestInstances = other.originalTestInstances;
         originalTrainInstances = other.originalTrainInstances;
         sampledTrainInstances = other.sampledTrainInstances;
@@ -490,11 +511,13 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
 
     public void setNeighbourWeighter(final NeighbourWeighter neighbourWeighter) {
         this.neighbourWeighter = neighbourWeighter;
+        reset();
     }
 
     @Override
     public void setTimeLimit(final long time) { // todo split to train time limit and test time limit
         trainDurationLimit = time;
+        reset();
     }
 
     public interface NeighbourWeighter extends Serializable {
@@ -542,11 +565,15 @@ public class NearestNeighbour extends AbstractClassifier implements Serializable
         }
 
         public double[] predict() {
-            int k = getK();
             double[] predictions = new double[instance.numClasses()];
             Iterator<Map.Entry<Double, List<Instance>>> iterator = nearestNeighbours.entrySet().iterator();
+            if(!iterator.hasNext()) {
+                predictions[random.nextInt(predictions.length)]++;
+                return predictions;
+            }
             Map.Entry<Double, List<Instance>> entry = iterator.next();
             neighbourCount = 0;
+            int k = getK();
             double distance = entry.getKey();
             List<Instance> neighbours = entry.getValue();
             while(neighbourCount + neighbours.size() <= k) {
