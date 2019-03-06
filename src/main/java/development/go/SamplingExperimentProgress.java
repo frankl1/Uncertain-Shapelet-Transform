@@ -3,6 +3,7 @@ package development.go;
 import development.go.Ee.Constituents.ParameterSpaces.*;
 import timeseriesweka.classifiers.nn.Nn;
 import timeseriesweka.measures.DistanceMeasure;
+import utilities.ClassifierTools;
 import utilities.InstanceTools;
 import utilities.Utilities;
 import weka.core.Instances;
@@ -45,12 +46,14 @@ public class SamplingExperimentProgress {
             for(String dataset : datasetNames) {
                 System.out.print(dataset);
                 String resultsDir = globalResultsDir.getPath() + "/" + dataset;
-                Instances instances = Utilities.loadDataset(new File(datasetDir, dataset));
                 int datasetProgress = 0;
                 int datasetMaxProgress = 0;
                 for (int seed : seeds) {
-                    Instances[] splitInstances = InstanceTools.resampleInstances(instances, seed, 0.5);
-                    Instances trainInstances = splitInstances[0];
+                    Instances trainInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TRAIN.arff"));
+                    Instances testInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TEST.arff"));
+                    Instances[] split = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+                    trainInstances = split[0];
+                    testInstances = split[1];
                     int seedProgress = 0;
                     int seedMaxProgress = 0;
                     for (ParameterSpace<? extends DistanceMeasure> parameterSpace : parameterSpaces) {
@@ -66,8 +69,10 @@ public class SamplingExperimentProgress {
                             File file = new File(resultsDir, path);
                             if(file.exists()) {
                                 seedProgress++;
+                            } else {
+//                                System.out.println(distanceMeasure.toString() + " " + distanceMeasure.getParameters());
                             }
-                            seedMaxProgress ++;
+                            seedMaxProgress++;
                         }
                     }
                     System.out.print(" ");
