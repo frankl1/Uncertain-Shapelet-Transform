@@ -38,7 +38,7 @@ public class Lcss extends Dtw {
 
         int[][] lcss = new int[m+1][n+1];
 
-        int warpingWindow = (int) this.getWarpingWindow() * first.length;
+        int warpingWindow = (int) (this.getWarpingWindow() * first.length);
 
         for(int i = 0; i < m; i++){ // another version which gives no diff in results!
             for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
