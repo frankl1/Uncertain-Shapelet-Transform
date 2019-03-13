@@ -1,8 +1,5 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
-import development.go.Ee.Constituents.ParameterSpaces.DtwParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
 import timeseriesweka.filters.DerivativeFilter;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.erp.Erp;
@@ -274,17 +271,17 @@ public class DTW1NN extends Efficient1NN {
 //    }
 
     public static void main(String[] args) throws Exception {
-        DTW1NN orig = new DTW1NN();
-        DtwParameterSpace parameterSpace = new DtwParameterSpace();
-        Instances train = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TRAIN.arff"));
-        DerivativeFilter derivativeFilter = new DerivativeFilter();
-        train = derivativeFilter.process(train);
-        Instances test = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TEST.arff"));
-        test = derivativeFilter.process(test);
-        parameterSpace.useInstances(train);
-        for(int i = 0; i < 10; i++) {
-            System.out.println(orig.loocvAccAndPreds(train, i)[0]);
-        }
+//        DTW1NN orig = new DTW1NN();
+//        DtwParameterSpace parameterSpace = new DtwParameterSpace();
+//        Instances train = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TRAIN.arff"));
+//        DerivativeFilter derivativeFilter = new DerivativeFilter();
+//        train = derivativeFilter.process(train);
+//        Instances test = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TEST.arff"));
+//        test = derivativeFilter.process(test);
+//        parameterSpace.useInstances(train);
+//        for(int i = 0; i < 10; i++) {
+//            System.out.println(orig.loocvAccAndPreds(train, i)[0]);
+//        }
 //        for(int i = 0; i < parameterSpace.size(); i++) {
 //            orig.setParamsFromParamId(train, i);
 //            parameterSpace.setCombination(i);

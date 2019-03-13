@@ -1,4 +1,4 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Indexed.IndexedValues;
 import weka.core.Instances;
@@ -8,7 +8,7 @@ import java.util.Collections;
 
 public class FullDtwBuilder extends DtwBuilder {
     @Override
-    protected void setUpParameters(final Instances instances) {
+    public void setUpParameters(final Instances instances) {
         setWarpingWindowValues(new IndexedValues<>(Collections.singletonList(1.0)));
     }
 }

@@ -1,4 +1,4 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Indexed.Indexed;

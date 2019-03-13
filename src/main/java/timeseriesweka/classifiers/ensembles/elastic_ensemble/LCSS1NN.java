@@ -3,9 +3,6 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 
-import development.go.Ee.Constituents.ParameterSpaces.DtwParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.LcssParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
 import timeseriesweka.classifiers.nn.Nn;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.lcss.Lcss;
@@ -120,50 +117,50 @@ public class LCSS1NN extends Efficient1NN{
 //    }
 
     public static void main(String[] args) throws Exception {
-        LCSS1NN orig = new LCSS1NN();
-        LcssParameterSpace parameterSpace = new LcssParameterSpace();
-        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
-        parameterSpace.useInstances(instances);
-//        for(int i = 0; i < parameterSpace.size(); i++) {
-//            orig.setParamsFromParamId(instances, i);
-//            parameterSpace.setCombination(i);
-//            Lcss n = parameterSpace.build();
-//            System.out.println(i);
-//            System.out.println(orig.epsilon + " " + orig.delta);
-//            int w = (int) Math.round(n.getWarpingWindow() * (instances.numAttributes() - 1));
-//            System.out.println(n.getTolerance() + " " + w);
-//            if(orig.delta != w || orig.epsilon != n.getTolerance()) {
-//                throw new IllegalArgumentException();
+//        LCSS1NN orig = new LCSS1NN();
+//        LcssParameterSpace parameterSpace = new LcssParameterSpace();
+//        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
+//        parameterSpace.useInstances(instances);
+////        for(int i = 0; i < parameterSpace.size(); i++) {
+////            orig.setParamsFromParamId(instances, i);
+////            parameterSpace.setCombination(i);
+////            Lcss n = parameterSpace.build();
+////            System.out.println(i);
+////            System.out.println(orig.epsilon + " " + orig.delta);
+////            int w = (int) Math.round(n.getWarpingWindow() * (instances.numAttributes() - 1));
+////            System.out.println(n.getTolerance() + " " + w);
+////            if(orig.delta != w || orig.epsilon != n.getTolerance()) {
+////                throw new IllegalArgumentException();
+////            }
+////        }
+//        int param = 21;
+//        orig.setParamsFromParamId(instances, 20);
+////        orig.buildClassifier(instances);
+//        parameterSpace.setCombination(20);
+//        Lcss lcss = parameterSpace.build();
+//        orig.delta = (instances.numAttributes() - 1) / 2;
+//        lcss.setWarpingWindow(0.5);
+//        for(Instance instance : instances) {
+//            for(Instance other : instances) {
+//                double a = lcss.distance(instance, other);
+//                double b = orig.distance(instance, other);
+//                System.out.print(a);
+//                System.out.print(", ");
+//                System.out.print(b);
+//                System.out.println();
+//                if(a != b) {
+//                    throw new Exception();
+//                }
 //            }
 //        }
-        int param = 21;
-        orig.setParamsFromParamId(instances, 20);
-//        orig.buildClassifier(instances);
-        parameterSpace.setCombination(20);
-        Lcss lcss = parameterSpace.build();
-        orig.delta = (instances.numAttributes() - 1) / 2;
-        lcss.setWarpingWindow(0.5);
-        for(Instance instance : instances) {
-            for(Instance other : instances) {
-                double a = lcss.distance(instance, other);
-                double b = orig.distance(instance, other);
-                System.out.print(a);
-                System.out.print(", ");
-                System.out.print(b);
-                System.out.println();
-                if(a != b) {
-                    throw new Exception();
-                }
-            }
-        }
-        Nn nn = new Nn();
-        nn.setUseRandomTieBreak(false);
-        nn.setCvTrain(true);
-        nn.setDistanceMeasure(lcss);
-        nn.buildClassifier(instances);
-        double o = orig.loocvAccAndPreds(instances, 20)[0];
-        System.out.println(nn.getTrainPrediction().acc);
-        System.out.println(o);
+//        Nn nn = new Nn();
+//        nn.setUseRandomTieBreak(false);
+//        nn.setCvTrain(true);
+//        nn.setDistanceMeasure(lcss);
+//        nn.buildClassifier(instances);
+//        double o = orig.loocvAccAndPreds(instances, 20)[0];
+//        System.out.println(nn.getTrainPrediction().acc);
+//        System.out.println(o);
 //        ClassifierResults results = new ClassifierResults();
 //        ClassifierResults origResult = new ClassifierResults();
 //        Instances test = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TEST.arff"));

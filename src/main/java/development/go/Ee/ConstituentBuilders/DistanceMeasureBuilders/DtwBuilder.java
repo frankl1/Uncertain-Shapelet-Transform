@@ -1,7 +1,6 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import development.go.Ee.ConstituentBuilders.NnBuilder;
 import development.go.Indexed.Indexed;
 import development.go.Indexed.IndexedValues;
 import timeseriesweka.classifiers.nn.Nn;
@@ -25,12 +24,12 @@ public class DtwBuilder extends ConstituentBuilder<Dtw> {
     private Indexed<Double> warpingWindowValues;
 
     @Override
-    protected void setUpParameters(final Instances instances) {
+    public void setUpParameters(final Instances instances) {
          warpingWindowValues = new Indexed<Double>() {
 
             @Override
             public Double apply(final int i) {
-                return (double) i / size();
+                return (double) i / 100;
             }
 
             @Override

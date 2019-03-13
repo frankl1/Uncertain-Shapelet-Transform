@@ -216,10 +216,9 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         reset();
     }
 
-    private ClassifierResults p;
+    // todo make sure same params on new dist meas / constit builders!
 
     public ClassifierResults getTrainPrediction() {
-        p = getPrediction(originalSampledTrainInstances, trainPredictions);
         return getPrediction(originalSampledTrainInstances, trainPredictions);
     }
 
@@ -314,7 +313,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "-" + distanceMeasure.toString();
+        return distanceMeasure.toString() + "-" + getClass().getSimpleName();
     }
 
     @Override

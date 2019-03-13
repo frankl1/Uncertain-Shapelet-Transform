@@ -1,7 +1,6 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import development.go.Ee.ConstituentBuilders.NnBuilder;
 import development.go.Indexed.Indexed;
 import development.go.Indexed.IndexedValues;
 import timeseriesweka.classifiers.nn.Nn;
@@ -26,7 +25,7 @@ public class LcssBuilder extends ConstituentBuilder<Lcss> {
     }
 
     @Override
-    protected void setUpParameters(final Instances instances) {
+    public void setUpParameters(final Instances instances) {
         double maxTolerance = StatisticUtilities.populationStandardDeviation(instances);
         double minTolerance = maxTolerance * 0.2;
         toleranceValues = new IndexedValues<>(incrementalDiffList(minTolerance, maxTolerance, 10));

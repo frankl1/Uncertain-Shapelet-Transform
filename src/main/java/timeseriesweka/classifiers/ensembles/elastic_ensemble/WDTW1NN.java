@@ -3,9 +3,6 @@
 
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
-import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.WdtwParameterSpace;
 import timeseriesweka.measures.msm.Msm;
 import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.ClassifierTools;
@@ -235,22 +232,22 @@ public class WDTW1NN extends Efficient1NN{
 //    }
 
     public static void main(String[] args) throws IOException {
-        WDTW1NN orig = new WDTW1NN();
-        WdtwParameterSpace parameterSpace = new WdtwParameterSpace();
-        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
-        parameterSpace.useInstances(instances);
-        orig.setParamsFromParamId(instances, 7);
-        parameterSpace.setCombination(7);
-        for(int i = 0; i < parameterSpace.size(); i++) {
-            orig.setParamsFromParamId(instances, i);
-            parameterSpace.setCombination(i);
-            Wdtw n = parameterSpace.build();
-            System.out.println(orig.g);
-            System.out.println(n.getWeight() + " " + n.getWarpingWindow());
-            if(orig.g != n.getWeight() || n.getWarpingWindow() != 1) {
-                throw new IllegalArgumentException();
-            }
-        }
+//        WDTW1NN orig = new WDTW1NN();
+//        WdtwParameterSpace parameterSpace = new WdtwParameterSpace();
+//        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
+//        parameterSpace.useInstances(instances);
+//        orig.setParamsFromParamId(instances, 7);
+//        parameterSpace.setCombination(7);
+//        for(int i = 0; i < parameterSpace.size(); i++) {
+//            orig.setParamsFromParamId(instances, i);
+//            parameterSpace.setCombination(i);
+//            Wdtw n = parameterSpace.build();
+//            System.out.println(orig.g);
+//            System.out.println(n.getWeight() + " " + n.getWarpingWindow());
+//            if(orig.g != n.getWeight() || n.getWarpingWindow() != 1) {
+//                throw new IllegalArgumentException();
+//            }
+//        }
     }
     
 }

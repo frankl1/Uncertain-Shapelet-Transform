@@ -45,7 +45,7 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements B
         return parameterPermutation;
     }
 
-    protected void setUpParameters(final Instances instances) {
+    public void setUpParameters(final Instances instances) {
 
     }
 
@@ -61,6 +61,10 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements B
 
     public void configureNn(Nn nn, List<Integer> parameterPermutation) {
 
+    }
+
+    public int size() {
+        return Utilities.numPermutations(getParameterSizes());
     }
 
     @Override

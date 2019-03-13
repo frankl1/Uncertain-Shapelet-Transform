@@ -6,8 +6,6 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Utilities {
@@ -174,7 +172,7 @@ public class Utilities {
 //    }
 
     public static int[] fromCombination(int combination, int... binSizes) {
-        int maxCombination = numCombinations(binSizes) - 1;
+        int maxCombination = numPermutations(binSizes) - 1;
         if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
             throw new IllegalArgumentException();
         }
@@ -194,29 +192,48 @@ public class Utilities {
         return result;
     }
 
-    public static int toCombinationOld(int... indices) {
-        if(indices.length % 2 != 0) {
-            throw new IllegalArgumentException("incorrect number of args, must be index followed by bin size");
+    public static List<Integer> fromCombination(int combination, List<Integer> binSizes) {
+        int maxCombination = numPermutations(binSizes) - 1;
+        if(combination > maxCombination || binSizes.size() == 0 || combination < 0) {
+            throw new IllegalArgumentException();
         }
-        int combination = 0;
-        for(int i = indices.length / 2 - 1; i >= 0; i--) {
-            int binSize = indices[i * 2 + 1];
-            int value = indices[i * 2];
-            combination *= binSize;
-            combination += value;
+        List<Integer> result = new ArrayList<>();
+        for(int index = 0; index < binSizes.size(); index++) {
+            int binSize = binSizes.get(index);
+            if(binSize > 1) {
+                result.add(combination % binSize);
+                combination /= binSize;
+            } else {
+                result.add(0);
+                if(binSize <= 0) {
+                    throw new IllegalArgumentException();
+                }
+            }
         }
-        return combination;
+        return result;
     }
 
-    public static int toCombination(int[] values, int[] binSizes) {
-        if(values.length != binSizes.length) {
+    public static List<Integer> primitiveArrayToList(int[] values) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < values.length; i++) {
+            list.add(i);
+        }
+        return list;
+    }
+
+    public static int toPermutation(int[] values, int[] binSizes) {
+        return toPermutation(primitiveArrayToList(values), primitiveArrayToList(binSizes));
+    }
+
+    public static int toPermutation(List<Integer> values, List<Integer> binSizes) {
+        if(values.size() != binSizes.size()) {
             throw new IllegalArgumentException("incorrect number of args");
         }
         int combination = 0;
-        for(int i = binSizes.length - 1; i >= 0; i--) {
-            int binSize = binSizes[i];
+        for(int i = binSizes.size() - 1; i >= 0; i--) {
+            int binSize = binSizes.get(i);
             if(binSize > 1) {
-                int value = values[i];
+                int value = values.get(i);
                 combination *= binSize;
                 combination += value;
             } else if(binSize <= 0) {
@@ -226,12 +243,24 @@ public class Utilities {
         return combination;
     }
 
-    public static int numCombinations(int[] binSizes) {
-        int[] maxValues = new int[binSizes.length];
-        for(int i = 0; i < binSizes.length; i++) {
-            maxValues[i] = binSizes[i] - 1;
+    public static int sum(List<Integer> array) {
+        int sum = 0;
+        for(Integer value : array) {
+            sum += value;
         }
-        return toCombination(maxValues, binSizes) + 1;
+        return sum;
+    }
+
+    public static int numPermutations(List<Integer> binSizes) {
+        List<Integer> maxValues = new ArrayList<>();
+        for(int i = 0; i < binSizes.size(); i++) {
+            maxValues.add(binSizes.get(i) - 1);
+        }
+        return toPermutation(maxValues, binSizes) + 1;
+    }
+
+    public static int numPermutations(int[] binSizes) {
+        return numPermutations(primitiveArrayToList(binSizes));
     }
 
     public static void main(String[] args) {

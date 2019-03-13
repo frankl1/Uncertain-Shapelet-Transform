@@ -1,4 +1,4 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Indexed.Indexed;
@@ -17,7 +17,7 @@ import static utilities.Utilities.incrementalDiffList;
 
 public class ErpBuilder extends ConstituentBuilder<Erp> {
     private Indexed<Double> penaltyValues;
-    private final Indexed<Double> warpingWindowValues = new IndexedValues<>(incrementalDiffList(0, 0.25, 10));
+    private final Indexed<Double> warpingWindowValues = new IndexedValues<>(incrementalDiffList(0, 0.25, 10)); // todo overhaul to lin interp
 
     @Override
     public List<Integer> getDistanceMeasureParameterSizes() {
@@ -25,7 +25,7 @@ public class ErpBuilder extends ConstituentBuilder<Erp> {
     }
 
     @Override
-    protected void setUpParameters(final Instances instances) {
+    public void setUpParameters(final Instances instances) {
         double maxTolerance = StatisticUtilities.populationStandardDeviation(instances);
         double minTolerance = maxTolerance * 0.2;
         penaltyValues = new IndexedValues<>(incrementalDiffList(minTolerance, maxTolerance, 10));

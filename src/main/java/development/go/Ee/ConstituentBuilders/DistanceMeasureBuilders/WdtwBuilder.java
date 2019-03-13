@@ -1,4 +1,4 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Indexed.Indexed;
@@ -16,7 +16,15 @@ import java.util.List;
 import static utilities.Utilities.incrementalDiffList;
 
 public class WdtwBuilder extends ConstituentBuilder<Wdtw> {
-    private final Indexed<Double> weightValues = new Indexed<Double>() {
+    public Indexed<Double> getWeightValues() {
+        return weightValues;
+    }
+
+    public void setWeightValues(final Indexed<Double> weightValues) {
+        this.weightValues = weightValues;
+    }
+
+    private Indexed<Double> weightValues = new Indexed<Double>() {
         @Override
         public int size() {
             return 101;
@@ -24,10 +32,10 @@ public class WdtwBuilder extends ConstituentBuilder<Wdtw> {
 
         @Override
         public Double apply(final int i) {
-            return (double) i / size();
+            return (double) i / 100;
         }
     };
-    private final Indexed<Double> warpingWindowValues = new IndexedValues<>(Collections.singletonList(1.0));
+    private Indexed<Double> warpingWindowValues = new IndexedValues<>(Collections.singletonList(1.0));
 
     @Override
     public List<Integer> getDistanceMeasureParameterSizes() {

@@ -1,4 +1,4 @@
-package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.old;
+package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import timeseriesweka.measures.wddtw.Wddtw;
 import timeseriesweka.measures.wdtw.Wdtw;

@@ -3,9 +3,6 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 
-import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
 import timeseriesweka.measures.erp.Erp;
 import timeseriesweka.measures.msm.Msm;
 import utilities.ClassifierTools;
@@ -291,21 +288,21 @@ public class MSM1NN extends Efficient1NN{
 
 
     public static void main(String[] args) throws IOException {
-        MSM1NN orig = new MSM1NN();
-        MsmParameterSpace parameterSpace = new MsmParameterSpace();
-        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
-        parameterSpace.useInstances(instances);
-        for(int i = 0; i < parameterSpace.size(); i++) {
-            orig.setParamsFromParamId(instances, i);
-            parameterSpace.setCombination(i);
-            Msm n = parameterSpace.build();
-            System.out.println(i);
-            System.out.println(orig.c);
-            System.out.println(n.getPenalty() + " " + n.getWarpingWindow());
-            if(orig.c != n.getPenalty() || n.getWarpingWindow() != 1) {
-                throw new IllegalArgumentException();
-            }
-        }
+//        MSM1NN orig = new MSM1NN();
+//        MsmParameterSpace parameterSpace = new MsmParameterSpace();
+//        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
+//        parameterSpace.useInstances(instances);
+//        for(int i = 0; i < parameterSpace.size(); i++) {
+//            orig.setParamsFromParamId(instances, i);
+//            parameterSpace.setCombination(i);
+//            Msm n = parameterSpace.build();
+//            System.out.println(i);
+//            System.out.println(orig.c);
+//            System.out.println(n.getPenalty() + " " + n.getWarpingWindow());
+//            if(orig.c != n.getPenalty() || n.getWarpingWindow() != 1) {
+//                throw new IllegalArgumentException();
+//            }
+//        }
     }
       
 //    public static void main(String[] args) throws Exception{

@@ -3,9 +3,6 @@
 
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
-import development.go.Ee.Constituents.ParameterSpaces.MsmParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
-import development.go.Ee.Constituents.ParameterSpaces.TweParameterSpace;
 import timeseriesweka.measures.msm.Msm;
 import timeseriesweka.measures.twe.Twe;
 import utilities.ClassifierTools;
@@ -284,21 +281,21 @@ public class TWE1NN extends Efficient1NN{
     }
 
     public static void main(String[] args) throws IOException {
-        TWE1NN orig = new TWE1NN();
-        TweParameterSpace parameterSpace = new TweParameterSpace();
-        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
-        parameterSpace.useInstances(instances);
-        for(int i = 0; i < parameterSpace.size(); i++) {
-            orig.setParamsFromParamId(instances, i);
-            parameterSpace.setCombination(i);
-            Twe n = parameterSpace.build();
-            System.out.println(i);
-            System.out.println(orig.nu + " " + orig.lambda);
-            System.out.println(n.getStiffness() + " " + n.getPenalty());
-            if(orig.nu != n.getStiffness() || n.getPenalty() != orig.lambda) {
-                throw new IllegalArgumentException();
-            }
-        }
+//        TWE1NN orig = new TWE1NN();
+//        TweParameterSpace parameterSpace = new TweParameterSpace();
+//        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
+//        parameterSpace.useInstances(instances);
+//        for(int i = 0; i < parameterSpace.size(); i++) {
+//            orig.setParamsFromParamId(instances, i);
+//            parameterSpace.setCombination(i);
+//            Twe n = parameterSpace.build();
+//            System.out.println(i);
+//            System.out.println(orig.nu + " " + orig.lambda);
+//            System.out.println(n.getStiffness() + " " + n.getPenalty());
+//            if(orig.nu != n.getStiffness() || n.getPenalty() != orig.lambda) {
+//                throw new IllegalArgumentException();
+//            }
+//        }
     }
     
       
