@@ -237,8 +237,10 @@ public class WDTW1NN extends Efficient1NN{
     public static void main(String[] args) throws IOException {
         WDTW1NN orig = new WDTW1NN();
         WdtwParameterSpace parameterSpace = new WdtwParameterSpace();
-        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
         parameterSpace.useInstances(instances);
+        orig.setParamsFromParamId(instances, 7);
+        parameterSpace.setCombination(7);
         for(int i = 0; i < parameterSpace.size(); i++) {
             orig.setParamsFromParamId(instances, i);
             parameterSpace.setCombination(i);

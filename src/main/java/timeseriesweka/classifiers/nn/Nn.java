@@ -23,8 +23,6 @@ import static utilities.Utilities.trainAndTest;
 
 public class Nn extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CompressedCheckpointClassifier, ContractClassifier, OptionsSetter {
 
-    // todo implement contracting
-
     public static final NeighbourWeighter WEIGHT_BY_DISTANCE = distance -> 1 / (1 + distance);
     public static final NeighbourWeighter WEIGHT_UNIFORM = distance -> 1;
     private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
@@ -133,7 +131,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
                         dtw.setWarpingWindow((double) trainParam / 100);
                         orig.setParamsFromParamId(trainInstances, trainParam);
 //                        orig2.setParamsFromParamId(trainInstances, trainParam);
-                        ClassifierResults results = nn.getTrainPrediction(trainInstances);
+                        ClassifierResults results = nn.getTrainPrediction();
                         results.findAllStatsOnce();
                         double nnLoocv = results.acc;
                         double origLoocv = orig.loocvAccAndPreds(trainInstances,  trainParam)[0];
@@ -218,8 +216,10 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         reset();
     }
 
-    public ClassifierResults getTrainPrediction(Instances trainInstances) throws Exception {
-        buildClassifier(trainInstances);
+    private ClassifierResults p;
+
+    public ClassifierResults getTrainPrediction() {
+        p = getPrediction(originalSampledTrainInstances, trainPredictions);
         return getPrediction(originalSampledTrainInstances, trainPredictions);
     }
 
@@ -247,6 +247,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         results.setParas(getParameters());
         results.setTrainTime(getTrainDuration());
         results.setTestTime(getTestDuration());
+        results.findAllStatsOnce();
         return results;
     }
 
@@ -313,7 +314,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
 
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getSimpleName() + "-" + distanceMeasure.toString();
     }
 
     @Override
@@ -389,6 +390,19 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         }
     }
 
+    @Override
+    public double[] distributionForInstance(final Instance testInstance) throws Exception {
+        NearestNeighbourFinder nearestNeighbourFinder = new NearestNeighbourFinder(testInstance);
+        sampledTrainInstances = new Instances(originalSampledTrainInstances);
+        while (!sampledTrainInstances.isEmpty()) {
+            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
+            nearestNeighbourFinder.addNeighbour(sampledTrainInstance);
+        }
+        double[] prediction = nearestNeighbourFinder.predict();
+        Utilities.normalise(prediction);
+        return prediction;
+    }
+
     public double[][] distributionForInstances(final Instances testInstances) throws Exception {
         long timeStamp;
         resumeFromCheckpoint();
@@ -408,7 +422,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         if(!testDone) {
             timeStamp = System.nanoTime();
             while (!sampledTrainInstances.isEmpty()) {
-                Instance sampledTrainInstance = sampledTrainInstances.remove(0);
+                Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
                 for (NearestNeighbourFinder testNearestNeighbourFinder : testNearestNeighbourFinders) {
                     testNearestNeighbourFinder.addNeighbour(sampledTrainInstance);
                 }
@@ -448,10 +462,6 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         }
     }
 
-    @Override
-    public double[] distributionForInstance(final Instance testInstance) throws Exception {
-        return distributionForInstances(Utilities.instanceToInstances(testInstance))[0];
-    }
 
     public DistanceMeasure getDistanceMeasure() {
         return distanceMeasure;

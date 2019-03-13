@@ -40,7 +40,7 @@ public class Msm extends Dtw {
         int m, n, i, j;
         m = timeSeriesA.length;
         n = timeSeriesB.length;
-        int warpingWindow = (int) getWarpingWindow() * timeSeriesA.length;
+        int warpingWindow = (int) (getWarpingWindow() * timeSeriesA.length);
         warpingWindow--;
         if(warpingWindow < 0) {
             warpingWindow = 0;

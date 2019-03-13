@@ -25,7 +25,8 @@ public class IndexConsumer<A> implements IntConsumer, Consumer<A> {
 
     @Override
     public final void accept(final int i) {
-        accept(indexed.apply(i));
+        A value = indexed.apply(i);
+        accept(value);
     }
 
     @Override

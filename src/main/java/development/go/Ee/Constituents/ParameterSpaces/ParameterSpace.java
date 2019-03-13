@@ -14,7 +14,7 @@ public abstract class ParameterSpace<A> {
         parameters = setupParameters(instances);
     }
 
-    protected abstract List<IndexConsumer<?>> setupParameters(Instances instances);
+    public abstract List<IndexConsumer<?>> setupParameters(Instances instances);
 
     public void setCombination(int combination) {
         int[] parameterValueIndices = Utilities.fromCombination(combination, getParameterBins());
@@ -55,4 +55,9 @@ public abstract class ParameterSpace<A> {
     protected abstract A get();
 
     protected abstract void configure(A subject);
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

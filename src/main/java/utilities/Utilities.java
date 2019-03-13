@@ -6,6 +6,8 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Utilities {
@@ -68,6 +70,14 @@ public class Utilities {
             array[i] /= against;
         }
         return array;
+    }
+
+    public static double divide(double a, double b) {
+        if(b == 0) {
+            return 0;
+        } else {
+            return a / b;
+        }
     }
 
     public static final double[] normalisePercentage(double[] array) {
@@ -141,6 +151,27 @@ public class Utilities {
     }
 
     // todo cleanup
+
+//    public static <B, A extends List<? extends B>> int[] fromCombination(int combination, A a, Function<B, Integer> func) {
+//        int maxCombination = numCombinations(binSizes) - 1;
+//        if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
+//            throw new IllegalArgumentException();
+//        }
+//        int[] result = new int[binSizes.length];
+//        for(int index = 0; index < binSizes.length; index++) {
+//            int binSize = binSizes[index];
+//            if(binSize > 1) {
+//                result[index] = combination % binSize;
+//                combination /= binSize;
+//            } else {
+//                result[index] = 0;
+//                if(binSize <= 0) {
+//                    throw new IllegalArgumentException();
+//                }
+//            }
+//        }
+//        return result;
+//    }
 
     public static int[] fromCombination(int combination, int... binSizes) {
         int maxCombination = numCombinations(binSizes) - 1;
@@ -368,6 +399,14 @@ public class Utilities {
             indicesCopy[i] = indices.get(i);
         }
         return indicesCopy;
+    }
+
+    public static int argMax(double[] array, Random random) {
+        int[] indices = argMax(array);
+        if(indices.length == 1) {
+            return indices[0];
+        }
+        return indices[random.nextInt(indices.length)];
     }
 
     public static void percentageCheck(double percentage) {

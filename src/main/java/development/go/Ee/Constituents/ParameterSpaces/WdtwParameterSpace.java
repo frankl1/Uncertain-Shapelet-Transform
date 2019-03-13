@@ -11,6 +11,11 @@ public class WdtwParameterSpace extends ParameterSpace<Wdtw> {
     private final DoubleLinearInterpolator weightValues = new DoubleLinearInterpolator(0d, 1d, 1);
     private double weightValue;
     private final IndexConsumer<Double> weightParameter = new IndexConsumer<>(weightValues, v -> weightValue = v);
+
+    protected DoubleLinearInterpolator getWeightValues() {
+        return weightValues;
+    }
+
     private DtwParameterSpace dtwParameterSpace = new DtwParameterSpace();
 
     public List<IndexConsumer<?>> setupParameters(Instances instances) {

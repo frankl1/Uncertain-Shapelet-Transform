@@ -20,7 +20,7 @@ public class DtwParameterSpace extends ParameterSpace<Dtw> {
     }
 
     @Override
-    protected List<IndexConsumer<?>> setupParameters(final Instances instances) {
+    public List<IndexConsumer<?>> setupParameters(final Instances instances) {
         warpingWindowValues.setSize(101);
         return new ArrayList<>(Collections.singletonList(warpingWindowParameter));
     }

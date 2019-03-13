@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public interface CompressedCheckpointClassifier extends CheckpointClassifier {
+public interface CompressedCheckpointClassifier extends CheckpointClassifier { // todo integrate this into checkpointClassifier
     @Override
     default void saveToFile(String path) throws IOException {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(path))));

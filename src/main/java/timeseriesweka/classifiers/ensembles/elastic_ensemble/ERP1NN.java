@@ -239,12 +239,13 @@ public class ERP1NN extends Efficient1NN{
     public static void main(String[] args) throws IOException {
         ERP1NN erp1NN = new ERP1NN();
         ErpParameterSpace erpParameterSpace = new ErpParameterSpace();
-        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
         erpParameterSpace.useInstances(instances);
         for(int i = 0; i < erpParameterSpace.size(); i++) {
             erp1NN.setParamsFromParamId(instances, i);
             erpParameterSpace.setCombination(i);
             Erp erp = erpParameterSpace.build();
+            System.out.println(i);
             System.out.println(erp1NN.bandSize + " " + erp1NN.g);
             System.out.println(erp.getWarpingWindow() + " " + erp.getPenalty());
             if(erp1NN.bandSize != erp.getWarpingWindow() || erp.getPenalty() != erp1NN.g) {

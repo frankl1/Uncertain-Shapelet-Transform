@@ -22,7 +22,7 @@ public class ErpParameterSpace extends ParameterSpace<Erp> {
     private final IndexConsumer<Double> warpingWindowParameter = new IndexConsumer<>(warpingWindowValues, v -> warpingWindowValue = v);
 
     @Override
-    protected List<IndexConsumer<?>> setupParameters(final Instances instances) {
+    public List<IndexConsumer<?>> setupParameters(final Instances instances) {
         List<IndexConsumer<?>> parameters = new ArrayList<>();
         double maxWarpingWindow = 0.25;
         double minWarpingWindow = 0;

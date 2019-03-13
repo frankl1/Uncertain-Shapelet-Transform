@@ -201,7 +201,8 @@ public class SamplingExperiment {
                                     System.out.println();
                                 }
                                 nn.setSampleSizePercentage((double) i / numTrainInstances);
-                                ClassifierResults trainResults = nn.getTrainPrediction(trainInstances);
+                                nn.buildClassifier(trainInstances);
+                                ClassifierResults trainResults = nn.getTrainPrediction();
                                 ClassifierResults testResults = nn.getTestPrediction(trainInstances, testInstances);
                                 writeResults(out, trainResults);
                                 writeResults(out, testResults);

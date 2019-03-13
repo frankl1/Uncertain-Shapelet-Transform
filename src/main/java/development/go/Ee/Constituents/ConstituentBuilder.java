@@ -1,5 +1,6 @@
 package development.go.Ee.Constituents;
 
+import development.go.Ee.Constituents.AbstractConstituentBuilder;
 import development.go.Ee.Constituents.ParameterSpaces.*;
 import development.go.Indexed.IndexConsumer;
 import timeseriesweka.classifiers.nn.Nn;
@@ -31,7 +32,7 @@ public class ConstituentBuilder extends AbstractConstituentBuilder {
 
     @Override
     protected List<IndexConsumer<?>> setupParameters(final Instances instances) {
-        return null;
+        return parameterSpace.setupParameters(instances);
     }
 
     @Override
@@ -65,5 +66,10 @@ public class ConstituentBuilder extends AbstractConstituentBuilder {
                 System.out.println(distanceMeasure.toString() + ": " + distanceMeasure.getParameters());
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " " + parameterSpace.toString();
     }
 }

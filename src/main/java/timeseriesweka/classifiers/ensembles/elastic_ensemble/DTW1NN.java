@@ -3,6 +3,7 @@ package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 import development.go.Ee.Constituents.ParameterSpaces.DtwParameterSpace;
 import development.go.Ee.Constituents.ParameterSpaces.ErpParameterSpace;
 import development.go.Ee.Constituents.ParameterSpaces.ParameterSpace;
+import timeseriesweka.filters.DerivativeFilter;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.erp.Erp;
 import utilities.ClassifierTools;
@@ -272,21 +273,28 @@ public class DTW1NN extends Efficient1NN {
 //        }
 //    }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         DTW1NN orig = new DTW1NN();
         DtwParameterSpace parameterSpace = new DtwParameterSpace();
-        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
-        parameterSpace.useInstances(instances);
-        for(int i = 0; i < parameterSpace.size(); i++) {
-            orig.setParamsFromParamId(instances, i);
-            parameterSpace.setCombination(i);
-            Dtw n = parameterSpace.build();
-            System.out.println(orig.r);
-            System.out.println(n.getWarpingWindow());
-            if(orig.r != n.getWarpingWindow()) {
-                throw new IllegalArgumentException();
-            }
+        Instances train = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TRAIN.arff"));
+        DerivativeFilter derivativeFilter = new DerivativeFilter();
+        train = derivativeFilter.process(train);
+        Instances test = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2015/GunPoint/GunPoint_TEST.arff"));
+        test = derivativeFilter.process(test);
+        parameterSpace.useInstances(train);
+        for(int i = 0; i < 10; i++) {
+            System.out.println(orig.loocvAccAndPreds(train, i)[0]);
         }
+//        for(int i = 0; i < parameterSpace.size(); i++) {
+//            orig.setParamsFromParamId(train, i);
+//            parameterSpace.setCombination(i);
+//            Dtw n = parameterSpace.build();
+//            System.out.println(orig.r);
+//            System.out.println(n.getWarpingWindow());
+//            if(orig.r != n.getWarpingWindow()) {
+//                throw new IllegalArgumentException();
+//            }
+//        }
     }
 
     @Override

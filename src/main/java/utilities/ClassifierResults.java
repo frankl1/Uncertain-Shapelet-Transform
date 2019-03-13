@@ -317,7 +317,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
 
     @Override
     public String toString() {
-//        findAllStatsOnce();
+        findAllStatsOnce();
         return writeResultsFileToString();
     }
 
@@ -707,16 +707,16 @@ base xi+1 to xi , that is, A
         str+="mcc,"+mcc+"\n"; 
         str+="nll,"+nll+"\n"; 
         str+="meanAUROC,"+meanAUROC+"\n"; 
-        str+="stddev,"+stddev+"\n"; 
-        str+="Count per class:\n";
-        for(int i=0;i<countPerClass.length;i++)
-            str+="Class "+i+","+countPerClass[i]+"\n";
-        str+="Confusion Matrix:\n";
-        for(int i=0;i<confusionMatrix.length;i++){
-            for(int j=0;j<confusionMatrix[i].length;j++)
-                str+=confusionMatrix[i][j]+",";
-            str+="\n";
-        }
+//        str+="stddev,"+stddev+"\n";
+//        str+="Count per class:\n";
+//        for(int i=0;i<countPerClass.length;i++)
+//            str+="Class "+i+","+countPerClass[i]+"\n";
+//        str+="Confusion Matrix:\n";
+//        for(int i=0;i<confusionMatrix.length;i++){
+//            for(int j=0;j<confusionMatrix[i].length;j++)
+//                str+=confusionMatrix[i][j]+",";
+//            str+="\n";
+//        }
         return str;
     }
    

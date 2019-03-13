@@ -293,12 +293,13 @@ public class MSM1NN extends Efficient1NN{
     public static void main(String[] args) throws IOException {
         MSM1NN orig = new MSM1NN();
         MsmParameterSpace parameterSpace = new MsmParameterSpace();
-        Instances instances = Utilities.loadDataset(new File("/scratch/Datasets/TSCProblems2015/GunPoint"));
+        Instances instances = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TRAIN.arff"));
         parameterSpace.useInstances(instances);
         for(int i = 0; i < parameterSpace.size(); i++) {
             orig.setParamsFromParamId(instances, i);
             parameterSpace.setCombination(i);
             Msm n = parameterSpace.build();
+            System.out.println(i);
             System.out.println(orig.c);
             System.out.println(n.getPenalty() + " " + n.getWarpingWindow());
             if(orig.c != n.getPenalty() || n.getWarpingWindow() != 1) {

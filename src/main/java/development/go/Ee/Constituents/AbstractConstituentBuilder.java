@@ -38,4 +38,9 @@ public abstract class AbstractConstituentBuilder {
     }
 
     public abstract Nn build();
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }
