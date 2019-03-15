@@ -113,16 +113,6 @@ public class Utilities {
         return result;
     }
 
-    public static final int maxIndex(double[] array) {
-        int maxIndex = 0;
-        for (int i = 1; i < array.length; i++) {
-            if(array[maxIndex] < array[i]) {
-                maxIndex = i;
-            }
-        }
-        return maxIndex;
-    }
-
     public static final void zeroOrMore(int i) {
         if(i < 0) {
             throw new IllegalArgumentException("less than zero");
@@ -150,7 +140,7 @@ public class Utilities {
 
     // todo cleanup
 
-//    public static <B, A extends List<? extends B>> int[] fromCombination(int combination, A a, Function<B, Integer> func) {
+//    public static <B, A extends List<? extends B>> int[] fromPermutation(int combination, A a, Function<B, Integer> func) {
 //        int maxCombination = numCombinations(binSizes) - 1;
 //        if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
 //            throw new IllegalArgumentException();
@@ -171,7 +161,7 @@ public class Utilities {
 //        return result;
 //    }
 
-    public static int[] fromCombination(int combination, int... binSizes) {
+    public static int[] fromPermutation(int combination, int... binSizes) {
         int maxCombination = numPermutations(binSizes) - 1;
         if(combination > maxCombination || binSizes.length == 0 || combination < 0) {
             throw new IllegalArgumentException();
@@ -192,7 +182,7 @@ public class Utilities {
         return result;
     }
 
-    public static List<Integer> fromCombination(int combination, List<Integer> binSizes) {
+    public static List<Integer> fromPermutation(int combination, List<Integer> binSizes) {
         int maxCombination = numPermutations(binSizes) - 1;
         if(combination > maxCombination || binSizes.size() == 0 || combination < 0) {
             throw new IllegalArgumentException();
@@ -265,7 +255,7 @@ public class Utilities {
 
     public static void main(String[] args) {
 //        for(int i = 0; i < 48; i++) {
-//            int[] result = fromCombination(i, 4, 3, 4);
+//            int[] result = fromPermutation(i, 4, 3, 4);
 //            for(int j : result) {
 //                System.out.print(j);
 //                System.out.print(", ");
@@ -275,22 +265,30 @@ public class Utilities {
         System.out.println(asDirectoryPath("abc/def"));
     }
 
-    public static Instances[] instancesByClass(Instances instances) {
-        Instances[] instancesByClass = new Instances[instances.numClasses()];
-        for(int i = 0; i < instancesByClass.length; i++) {
-            instancesByClass[i] = new Instances(instances, 0);
+    public static List<Integer> naturalNumbersFromZero(int size) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i <= size; i++) {
+            list.add(i);
+        }
+        return list;
+    }
+
+    public static List<List<Instance>> instancesByClass(Instances instances) {
+        List<List<Instance>> instancesByClass = new ArrayList<>();
+        for(int i = 0; i < instances.numClasses(); i++) {
+            instancesByClass.add(new ArrayList<>());
         }
         for(Instance instance : instances) {
-            instancesByClass[(int) instance.classValue()].add(instance);
+            instancesByClass.get((int) instance.classValue()).add(instance);
         }
         return instancesByClass;
     }
 
-    public static Map<Double, Instances> instancesByClassMap(Instances instances) {
-        Instances[] instancesByClass = instancesByClass(instances);
-        Map<Double, Instances> instancesByClassMap = new TreeMap<>();
-        for(int i = 0; i < instancesByClass.length; i++) {
-            instancesByClassMap.put((double) i, instancesByClass[i]);
+    public static Map<Double, List<Instance>> instancesByClassMap(Instances instances) {
+        List<List<Instance>> instancesByClass = instancesByClass(instances);
+        Map<Double, List<Instance>> instancesByClassMap = new TreeMap<>();
+        for(int i = 0; i < instancesByClass.size(); i++) {
+            instancesByClassMap.put((double) i, instancesByClass.get(i));
         }
         return instancesByClassMap;
     }
@@ -531,5 +529,12 @@ public class Utilities {
             stringBuilder.append(" ");
         }
         return stringBuilder.toString();
+    }
+
+    public static void mkdirParent(final File file) {
+        File parent = file.getParentFile();
+        if(parent != null) {
+            mkdir(parent);
+        }
     }
 }

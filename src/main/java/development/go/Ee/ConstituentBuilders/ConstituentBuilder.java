@@ -6,7 +6,6 @@ import utilities.Utilities;
 import weka.core.Instances;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public abstract class ConstituentBuilder<A extends DistanceMeasure> implements Builder<Nn> {
@@ -36,7 +35,7 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements B
     public abstract List<Integer> getDistanceMeasureParameterSizes();
 
     public void setParameterPermutation(int permutation) {
-        setParameterPermutation(Utilities.fromCombination(permutation, getParameterSizes()));
+        setParameterPermutation(Utilities.fromPermutation(permutation, getParameterSizes()));
     }
 
     protected List<Integer> getParameterPermutation() {

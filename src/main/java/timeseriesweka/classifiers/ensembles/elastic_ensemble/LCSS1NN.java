@@ -159,7 +159,7 @@ public class LCSS1NN extends Efficient1NN{
 //        nn.setDistanceMeasure(lcss);
 //        nn.buildClassifier(instances);
 //        double o = orig.loocvAccAndPreds(instances, 20)[0];
-//        System.out.println(nn.getTrainPrediction().acc);
+//        System.out.println(nn.getTrainResults().acc);
 //        System.out.println(o);
 //        ClassifierResults results = new ClassifierResults();
 //        ClassifierResults origResult = new ClassifierResults();

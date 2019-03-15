@@ -40,7 +40,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         this.selector = selector;
     }
 
-    private Selector<Nn, ConstituentBuilder<?>> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainPrediction().acc));
+    private Selector<Nn, ConstituentBuilder<?>> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().acc));
 
     public double getSampleSizePercentage() {
         return sampleSizePercentage;
@@ -55,7 +55,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
     private ClassifierResults trainResults;
     private List<Nn> constituents;
     private EnsembleModule[] modules;
-    private ModuleWeightingScheme weightingScheme = new TrainAcc();
+    private ModuleWeightingScheme weightingScheme = new TrainAcc(); // TODO CHANGE THIS!
     private ModuleVotingScheme votingScheme = new MajorityVote();
 
     private boolean withinContract() {
@@ -79,6 +79,28 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
             combinationMap.put(constituentBuilder, combinations);
         }
         trainResults = new ClassifierResults();
+//        constituents = new ArrayList<>(); // alt ver nn pairs
+//        for(int i = 0; i < trainInstances.size(); i++) {
+//            Instance a = trainInstances.get(i);
+//            for(int j = 0; j < i; j++) {
+//                Instance b = trainInstances.get(j);
+//                Instances instances = new Instances(trainInstances, 0);
+//                instances.add(a);
+//                instances.add(b);
+//                for(ConstituentBuilder<?> constituentBuilder : constituentBuilders) {
+//                    for(int k = 0; k < constituentBuilder.size(); k++) {
+////                        System.out.println(i + " " + j + " " + k);
+//                        constituentBuilder.setParameterPermutation(k);
+//                        Nn nn = constituentBuilder.build();
+//                        nn.setUseRandomTieBreak(false);
+//                        nn.setCvTrain(true);
+//                        nn.setNeighbourWeighter(Nn.WEIGHT_BY_DISTANCE);
+//                        nn.buildClassifier(instances);
+//                        constituents.add(nn);
+//                    }
+//                }
+//            }
+//        }
         while (!constituentBuilders.isEmpty() && withinContract()) {
             int constituentBuilderIndex = random.nextInt(constituentBuilders.size());
             ConstituentBuilder constituentBuilder = constituentBuilders.get(constituentBuilderIndex);
@@ -90,6 +112,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
             constituentBuilder.setParameterPermutation(combination);
             Nn nn = constituentBuilder.build(); // todo set checkpoint path
             nn.setSampleSizePercentage(sampleSizePercentage);
+            nn.setNeighbourWeighter(Nn.WEIGHT_UNIFORM);
             nn.setUseRandomTieBreak(false);
             nn.setCvTrain(trainCv);
 //            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
@@ -101,7 +124,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         for(int i = 0; i < modules.length; i++) { // todo if traincv?
             Nn constituent = constituents.get(i);
             modules[i] = new EnsembleModule(constituent.toString(), constituent, constituent.getParameters());
-            modules[i].trainResults = constituent.getTrainPrediction();
+            modules[i].trainResults = constituent.getTrainResults();
         }
         weightingScheme.defineWeightings(modules, trainInstances.numClasses());
         votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
@@ -129,8 +152,10 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
 
     public static void main(String[] args) throws Exception {
         // todo set seed / random
+        System.out.println("rf sampled");
         String datasetsDirPath = "/scratch/Datasets/TSCProblems2015/";
         File datasetsDir = new File(datasetsDirPath);
+//        List<String> datasetNames = Arrays.asList("OliveOil");
         List<String> datasetNames = datasetNamesFromFile(new File("/scratch/datasetList.txt"));
         datasetNames.sort((dA, dB) -> {
             Instances instancesA = ClassifierTools.loadData(datasetsDirPath + dA + "/" + dA + "_TRAIN.arff");
@@ -140,17 +165,28 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         for(String datasetName : datasetNames) {
-            threadPoolExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
+//            threadPoolExecutor.submit(new Runnable() {
+//                @Override
+//                public void run() {
                     try {
                         StringBuilder stringBuilder = new StringBuilder();
                         stringBuilder.append(datasetName);
                         stringBuilder.append(", ");
-                        List<Ee> eeList = Arrays.asList(Ee.newClassicConfiguration(), Ee.newFairConfiguration(), Ee.newFairRandomConfiguration());
+//                        BufferedReader reader = new BufferedReader(new FileReader("/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EE_proto/Predictions/" + datasetName + "/testFold0.csv"));
+//                        reader.readLine();
+//                        reader.readLine();
+//                        Double bakeoffAcc = Double.valueOf(reader.readLine());
+//                        reader.close();
+//                        stringBuilder.append(bakeoffAcc);
+//                        stringBuilder.append(", ");
+                        List<Ee> eeList = new ArrayList<>();//Arrays.asList(Ee.newFairRandomConfiguration()));
+                        for(int i = 0; i < 100; i += 10) {
+                            Ee ee = Ee.newFairRandomConfiguration();
+                            ee.setSampleSizePercentage((double) i / 100);
+                            eeList.add(ee);
+                        }
                         for (Ee ee : eeList) {
                             ee.random.setSeed(0);
-                            ee.setSampleSizePercentage(1);
                             Instances trainInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TRAIN.arff");
                             Instances testInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TEST.arff");
                             Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, 0);
@@ -158,7 +194,9 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
                             testInstances = splitInstances[1];
                             ee.buildClassifier(trainInstances);
                             ClassifierResults results = new ClassifierResults();
+//                            int i = 0;
                             for (Instance testInstance : testInstances) {
+//                                System.out.println(i++ + "/" + testInstances.numInstances());
                                 results.storeSingleResult(testInstance.classValue(), ee.distributionForInstance(testInstance));
                             }
                             results.setNumInstances(testInstances.numInstances());
@@ -167,14 +205,14 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
                             stringBuilder.append(results.acc);
                             stringBuilder.append(", ");
                         }
-                        stringBuilder.append(System.lineSeparator());
                         System.out.println(stringBuilder.toString());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                }
-            });
+//                }
+//            });
         }
+        threadPoolExecutor.shutdown();
     }
 
     public static Ee newClassicConfiguration() {
@@ -216,7 +254,21 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         ee.addConstituentBuilder(new ErpBuilder());
         ee.addConstituentBuilder(new TweBuilder());
         ee.addConstituentBuilder(new MsmBuilder());
-        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainPrediction().acc)));
+        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().acc)));
+        return ee;
+    }
+
+    public static Ee newFairRandomBalAccConfiguration() {
+        Ee ee = new Ee();
+        ee.addConstituentBuilder(new DtwBuilder());
+        ee.addConstituentBuilder(new DdtwBuilder());
+        ee.addConstituentBuilder(new WdtwBuilder());
+        ee.addConstituentBuilder(new WddtwBuilder());
+        ee.addConstituentBuilder(new LcssBuilder());
+        ee.addConstituentBuilder(new ErpBuilder());
+        ee.addConstituentBuilder(new TweBuilder());
+        ee.addConstituentBuilder(new MsmBuilder());
+        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().balancedAcc)));
         return ee;
     }
 }

@@ -202,7 +202,7 @@
 //                                }
 //                                nn.setSampleSizePercentage((double) i / numTrainInstances);
 //                                nn.buildClassifier(trainInstances);
-//                                ClassifierResults trainResults = nn.getTrainPrediction();
+//                                ClassifierResults trainResults = nn.getTrainResults();
 //                                ClassifierResults testResults = nn.getTestPrediction(trainInstances, testInstances);
 //                                writeResults(out, trainResults);
 //                                writeResults(out, testResults);
