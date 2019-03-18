@@ -1,4 +1,4 @@
-package timeseriesweka.classifiers.nn;
+package timeseriesweka.classifiers.nn.Sampling;
 
 import utilities.Utilities;
 import weka.core.Instance;
@@ -28,7 +28,7 @@ public class RandomRoundRobinSampler implements Sampler {
     }
 
     @Override
-    public void setInstances(final Instances instances) {
+    public void setInstances(final List<Instance> instances) {
         instancesByClass = Utilities.instancesByClass(instances);
         regenerateClassValues();
     }

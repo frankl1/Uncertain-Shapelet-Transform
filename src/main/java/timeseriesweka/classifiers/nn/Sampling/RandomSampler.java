@@ -1,16 +1,17 @@
-package timeseriesweka.classifiers.nn;
+package timeseriesweka.classifiers.nn.Sampling;
 
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.List;
 import java.util.Random;
 
 public class RandomSampler implements Sampler {
 
-    private Instances instances;
+    private List<Instance> instances;
 
     @Override
-    public void setInstances(final Instances instances) {
+    public void setInstances(final List<Instance> instances) {
         this.instances = instances;
     }
 
@@ -33,6 +34,6 @@ public class RandomSampler implements Sampler {
 
     @Override
     public Instance next() {
-        return instances.remove(random.nextInt(instances.numInstances()));
+        return instances.remove(random.nextInt(instances.size()));
     }
 }
