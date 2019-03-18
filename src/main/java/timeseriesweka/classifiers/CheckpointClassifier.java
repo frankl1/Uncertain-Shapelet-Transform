@@ -14,6 +14,8 @@ number
 package timeseriesweka.classifiers;
 
 import java.io.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  *
@@ -34,7 +36,7 @@ public interface CheckpointClassifier extends Serializable{
         file.mkdirs();
         FileOutputStream fos =
         new FileOutputStream(filename);
-        try (ObjectOutputStream out = new ObjectOutputStream(fos)) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(fos)))) {
             out.writeObject(this);
             fos.close();
             out.close();
@@ -42,7 +44,7 @@ public interface CheckpointClassifier extends Serializable{
     }
     public default void loadFromFile(String filename) throws Exception{
         FileInputStream fis = new FileInputStream(filename);
-        try (ObjectInputStream in = new ObjectInputStream(fis)) {
+        try (ObjectInputStream in = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(fis)))) {
             Object obj=in.readObject();
             copyFromSerObject(obj);
         }
