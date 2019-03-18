@@ -1,9 +1,13 @@
 package timeseriesweka.classifiers.nn;
 
 import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.CompressedCheckpointClassifier;
+import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.nn.NeighbourWeighting.NeighbourWeighter;
+import timeseriesweka.classifiers.nn.NeighbourWeighting.UniformWeighting;
+import timeseriesweka.classifiers.nn.Sampling.RandomRoundRobinSampler;
+import timeseriesweka.classifiers.nn.Sampling.Sampler;
 import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
@@ -18,10 +22,8 @@ import java.util.concurrent.TimeUnit;
 import static utilities.Utilities.argMax;
 import static utilities.Utilities.trainAndTest;
 
-public class Nn extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CompressedCheckpointClassifier, ContractClassifier, OptionsSetter {
+public class Nn extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
 
-    public static final NeighbourWeighter WEIGHT_BY_DISTANCE = distance -> 1 / (1 + distance);
-    public static final NeighbourWeighter WEIGHT_UNIFORM = distance -> 1;
     private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
     private final List<Instance> sampledTrainInstances = new ArrayList<>();
     private final List<NearestNeighbourFinder> trainNearestNeighbourFinders = new ArrayList<>();
@@ -30,34 +32,50 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     private String savePath;
     private Instances originalTrainInstances = null;
     private double sampleSizePercentage = 1;
+    private static final String SAMPLE_SIZE_PERCENTAGE_KEY = "ss";
     private Random random = new Random();
     private double kPercentage = 0;
+    private static final String K_PERCENTAGE_KEY = "k";
     private boolean cvTrain = false;
+    private static final String CV_TRAIN_KEY = "c";
     private boolean useRandomTieBreak = true;
+    private static final String RANDOM_TIE_BREAK_KEY = "r";
     private Instances originalTestInstances;
     private DistanceMeasure distanceMeasure;
+    private static final String DISTANCE_MEASURE_KEY = "d";
+    private static final String DISTANCE_MEASURE_PARAMETERS_KEY = "dp";
     private boolean useEarlyAbandon = false;
-    private NeighbourWeighter neighbourWeighter = WEIGHT_UNIFORM; // todo non static classes
-    // todo implement contract
+    private static final String USE_EARLY_ABANDON_KEY = "e";
+    private NeighbourWeighter neighbourWeighter = new UniformWeighting();
+    private static final String NEIGHBOUR_WEIGHTER_KEY = "w";
     private Sampler sampler = new RandomRoundRobinSampler();
+    private static final String SAMPLER_KEY = "sa";
     private String checkpointFilePath;
     private long predictionContract = -1;
-    private long trainContract = -1;
-    private long testContract = -1;
+    private static final String PREDICTION_CONTRACT_KEY = "pc";
+    private long trainContract;
+    private static final String TRAIN_CONTRACT_KEY = "trc";
+    private long testContract;
+    private static final String TEST_CONTRACT_KEY = "tec";
     private Long seed = null;
-    private boolean resetTrain = true; // todo resetTrain after specific setters, e.g. setTrainCv
+    private static final String SEED_KEY = "se";
+    private boolean resetTrain = true;
     private boolean resetTest = true;
     private long trainTime;
+    private static final String TRAIN_TIME_KEY = "trt";
+    private static final String TEST_TIME_KEY = "tet";
+    private static final String PREDICTION_TIME_KEY = "pt";
     private ClassifierResults trainResults;
     private ClassifierResults testResults;
     private long testTime;
     private boolean checkpointing = false;
     private long lastCheckpointTimeStamp = 0;
-    private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES); // todo getters / setters / ship out to parent class
+    private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
     private boolean useSettingsFromCheckpoint = false;
     private long testTimeStamp;
     private long trainTimeStamp;
     private long predictionTime;
+    // todo make contract use linear regression (order 2)
 
     public Nn() {
         setDistanceMeasure(new Dtw());
@@ -69,12 +87,14 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         }
         trainResults = null;
         resetTrain = true;
+        trainTime = -1;
         resetTest();
     }
 
     public void resetTest() {
         resetTest = true;
         testResults = null;
+        testTime = -1;
     }
 
     public static void main(String[] args) throws Exception {
@@ -240,6 +260,21 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         reset();
     }
 
+    @Override
+    public void setFindTrainAccuracyEstimate(final boolean setCV) {
+        setCvTrain(setCV);
+    }
+
+    @Override
+    public boolean findsTrainAccuracyEstimate() {
+        return cvTrain;
+    }
+
+    @Override
+    public void writeCVTrainToFile(final String train) {
+        throw new UnsupportedOperationException();
+    }
+
     public ClassifierResults getTrainResults() {
         return trainResults;
     }
@@ -269,11 +304,6 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     @Override
     public String toString() {
         return distanceMeasure.toString() + "-" + getClass().getSimpleName();
-    }
-
-    @Override
-    public String getParameters() {
-        return null; // todo delegate to getOptions
     }
 
     public long getTrainTime() {
@@ -627,8 +657,74 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         trainContract = nanoseconds;
     }
 
-    public interface NeighbourWeighter extends Serializable {
-        double weight(double distance);
+    @Override
+    public String getParameters() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(SAMPLE_SIZE_PERCENTAGE_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(sampleSizePercentage);
+        stringBuilder.append(",");
+        stringBuilder.append(K_PERCENTAGE_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(kPercentage);
+        stringBuilder.append(",");
+        if(cvTrain) {
+            stringBuilder.append(CV_TRAIN_KEY);
+            stringBuilder.append(",");
+        }
+        if(useRandomTieBreak) {
+            stringBuilder.append(RANDOM_TIE_BREAK_KEY);
+            stringBuilder.append(",");
+        }
+        stringBuilder.append(DISTANCE_MEASURE_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(distanceMeasure.getClass().getSimpleName());
+        stringBuilder.append(",");
+        stringBuilder.append(DISTANCE_MEASURE_PARAMETERS_KEY);
+        stringBuilder.append(",{");
+        stringBuilder.append(distanceMeasure.getParameters());
+        stringBuilder.append("},");
+        if(useEarlyAbandon) {
+            stringBuilder.append(USE_EARLY_ABANDON_KEY);
+            stringBuilder.append(",");
+        }
+        stringBuilder.append(NEIGHBOUR_WEIGHTER_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(neighbourWeighter.getClass().getSimpleName());
+        stringBuilder.append(",");
+        stringBuilder.append(SAMPLER_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(sampler.getClass().getSimpleName());
+        stringBuilder.append(",");
+        stringBuilder.append(PREDICTION_CONTRACT_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(predictionContract);
+        stringBuilder.append(",");
+        stringBuilder.append(TRAIN_CONTRACT_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(trainContract);
+        stringBuilder.append(",");
+        stringBuilder.append(TEST_CONTRACT_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(testContract);
+        stringBuilder.append(",");
+        stringBuilder.append(SEED_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(seed);
+        stringBuilder.append(",");
+        stringBuilder.append(PREDICTION_TIME_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(predictionTime);
+        stringBuilder.append(",");
+        stringBuilder.append(TRAIN_TIME_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(trainTime);
+        stringBuilder.append(",");
+        stringBuilder.append(TEST_TIME_KEY);
+        stringBuilder.append(",");
+        stringBuilder.append(testTime);
+        stringBuilder.append(",");
+        return stringBuilder.toString();
     }
 
     private class NearestNeighbourFinder implements Serializable {

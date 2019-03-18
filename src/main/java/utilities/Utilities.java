@@ -273,9 +273,10 @@ public class Utilities {
         return list;
     }
 
-    public static List<List<Instance>> instancesByClass(Instances instances) {
+    public static List<List<Instance>> instancesByClass(List<Instance> instances) {
         List<List<Instance>> instancesByClass = new ArrayList<>();
-        for(int i = 0; i < instances.numClasses(); i++) {
+        int numClasses = instances.get(0).numClasses();
+        for(int i = 0; i < numClasses; i++) {
             instancesByClass.add(new ArrayList<>());
         }
         for(Instance instance : instances) {

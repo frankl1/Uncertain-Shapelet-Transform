@@ -7,6 +7,7 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
+import timeseriesweka.classifiers.nn.NeighbourWeighting.UniformWeighting;
 import timeseriesweka.classifiers.nn.Nn;
 import utilities.*;
 import weka.classifiers.AbstractClassifier;
@@ -112,7 +113,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
             constituentBuilder.setParameterPermutation(combination);
             Nn nn = constituentBuilder.build(); // todo set checkpoint path
             nn.setSampleSizePercentage(sampleSizePercentage);
-            nn.setNeighbourWeighter(Nn.WEIGHT_UNIFORM);
+            nn.setNeighbourWeighter(new UniformWeighting());
             nn.setUseRandomTieBreak(false);
             nn.setCvTrain(trainCv);
 //            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
