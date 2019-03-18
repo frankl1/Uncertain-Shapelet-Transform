@@ -13,6 +13,8 @@ number
 */
 package timeseriesweka.classifiers;
 
+import utilities.Utilities;
+
 import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -33,7 +35,7 @@ public interface CheckpointClassifier extends Serializable{
     //Override both if not using Java serialisation    
     public default void saveToFile(String filename) throws IOException{
         File file = new File(filename);
-        file.mkdirs();
+        Utilities.mkdir(file);
         FileOutputStream fos =
         new FileOutputStream(filename);
         try (ObjectOutputStream out = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(fos)))) {
