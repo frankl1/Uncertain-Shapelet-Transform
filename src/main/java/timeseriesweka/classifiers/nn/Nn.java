@@ -279,27 +279,39 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         this.checkpointFilePath = file.getPath() + "/" + CHECKPOINT_FILE_NAME;
     }
 
+    public boolean usesSettingsFromCheckpoint() {
+        return useSettingsFromCheckpoint;
+    }
+
+    public void setUseSettingsFromCheckpoint(final boolean useSettingsFromCheckpoint) {
+        this.useSettingsFromCheckpoint = useSettingsFromCheckpoint;
+    }
+
+    private boolean useSettingsFromCheckpoint = false;
+
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
         reset();
         Nn other = (Nn) obj;
+        if(usesSettingsFromCheckpoint()) {
+            kPercentage = other.kPercentage;
+            cvTrain = other.cvTrain;
+            useRandomTieBreak = other.useRandomTieBreak;
+            useEarlyAbandon = other.useEarlyAbandon;
+            distanceMeasure = other.distanceMeasure;
+            neighbourWeighter = other.neighbourWeighter;
+            sampleSizePercentage = other.sampleSizePercentage;
+            sampler = other.sampler;
+        }
         originalTestInstances = other.originalTestInstances;
         originalTrainInstances = other.originalTrainInstances;
         sampledTrainInstances.addAll(other.sampledTrainInstances);
         originalSampledTrainInstances.addAll(other.originalSampledTrainInstances);
         trainNearestNeighbourFinders.addAll(other.trainNearestNeighbourFinders);
         trainTime = other.trainTime;
-        testTime = other.testTime; // todo setters as what is sampleperc changed but uses 50% checkpoint file? kra
+        testTime = other.testTime;
         random = other.random;
-        kPercentage = other.kPercentage;
-        cvTrain = other.cvTrain;
-        useRandomTieBreak = other.useRandomTieBreak;
         testNearestNeighbourFinders.addAll(other.testNearestNeighbourFinders);
-        distanceMeasure = other.distanceMeasure;
-        useEarlyAbandon = other.useEarlyAbandon;
-        neighbourWeighter = other.neighbourWeighter;
-        sampleSizePercentage = other.sampleSizePercentage;
-        sampler = other.sampler;
         trainContract = other.trainContract;
         testContract = other.testContract;
         predictionContract = other.predictionContract;
@@ -488,10 +500,16 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         return Utilities.argMax(distributionForInstance(testInstance), random);
     }
 
+    private long predictionTime;
+
+    private long getPredictionTime() {
+        return predictionTime;
+    }
+
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
         long timeStamp = System.nanoTime();
-        long predictionTime = 0;
+        predictionTime = 0;
         NearestNeighbourFinder nearestNeighbourFinder = new NearestNeighbourFinder(testInstance);
         List<Instance> sampledTrainInstances = new ArrayList<>(originalSampledTrainInstances);
         while (!sampledTrainInstances.isEmpty() &&
