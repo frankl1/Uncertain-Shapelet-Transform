@@ -1,52 +1,21 @@
 /*
-class to collate standard results files over multiple classifiers and problems
-
-Usage 
-(assuming Collate.jar has this as the main class): 
-java -jar Collate.jar ResultsDirectory/ ProblemDirectory/ NumberOfFolds Classifier1 Classifier2 .... ClassifierN NoParasC1 NoParasC2 .... NoParasCn
-e.g. java -jar -Xmx6000m Collate.jar Results/ UCIContinuous/ 30 RandF RotF 2 2 
-
-collates the results for 30 folds for RandF and RotF in the directory for Results 
-on all the problems in UCIContinous (as defined by having a directory in the folder)
-
-Stage 1: take all the single fold files, work out the diagnostics on test data: 
-Accuracy, BalancedAccuracy, NegLogLikelihood, AUROC and F1 and store the TrainCV accuracy. 
-all done by call to collateFolds();
-Combine folds into a single file for each statistic in ResultsDirectory/ClassifierName
-these are
-Counts: counts.csv, number per problem (max number is NumberOfFolds, it does not check for more).
-Diagnostics: TestAcc.csv, TestF1.csv, TestBAcc.csv, TestNLL.csv, TestAUROC.csv, TrainCVAcc.csv
-Timings: Timings.csv
-Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tuning occurs, all tuning values).
-
-Stage 2: 
-Output: Classifier Summary: call to method averageOverFolds() 
-Creates average and standard deviation over all folds based on the files created at stage 1 with the addition of the mean difference
-per fold.
-All put in a single directory.
-
-Stage 3
-Final Comparison Summary: call to method basicSummaryComparisons();        
-a single file in ResultsDirectory directory called summaryTests<ClassifierNames>.csv
-contains pairwise comparisons of all the classifiers. 
-
-1. All Pairwise Comparisons for TestAccDiff, TestAcc, TestBAcc, TestNLL.csv and TestAUROC
-
-1. Wins/Draws/Loses
-2. Mean (and std dev) difference
-3. Two sample tests of the mean values 
-
-
-
-
-
-
-
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package experiments;
 
-import statistics.tests.MultipleClassifiersPairwiseTest;
-import statistics.tests.MultipleClassifierEvaluation;
+import evaluation.MultipleClassifiersPairwiseTest;
+import evaluation.MultipleClassifierEvaluation;
 import fileIO.InFile;
 import fileIO.OutFile;
 import java.io.File;
@@ -56,12 +25,55 @@ import java.util.Arrays;
 import java.util.Collections;
 import statistics.distributions.BinomialDistribution;
 import statistics.tests.OneSampleTests;
-import utilities.ClassifierResults;
+import evaluation.storage.ClassifierResults;
 
 /**
- *
- * @author ajb
- */
+ * Class to collate results from any classifier creating standard output 
+ * There are two ways to collate results. 
+ * 1. (Tony Bagnall) The code in this class creates summary info for individual classifiers. 
+ * It does not do comparisons between classifiers, and it will build with incomplete
+ * data, ignoring incomplete data sets. This can be run on the cluster (see below). 
+ * See method individualClassifiersCollate() for example usage
+ * 2 (James Large) Using the MultipleClassifierEvaluation class, detailed  
+ * comparisons between classifier can be conducted. This can create matlab driven
+ * critical difference diagrams
+
+**On the cluster usage:**
+* Class to collate standard results files over multiple classifiers and problems
+* Usage 
+* (assuming Collate.jar has this as the main class): 
+* java -jar Collate.jar ResultsDirectory/ ProblemDirectory/ NumberOfFolds Classifier1 Classifier2 .... ClassifierN NoParasC1 NoParasC2 .... NoParasCn
+* e.g. java -jar -Xmx6000m Collate.jar Results/ UCIContinuous/ 30 RandF RotF 2 2 
+
+* collates the results for 30 folds for RandF and RotF in the directory for Results 
+* on all the problems in UCIContinous (as defined by having a directory in the folder)
+* How it works:
+* 
+* Stage 1: take all the single fold files, work out the diagnostics on test data: 
+* Accuracy, BalancedAccuracy, NegLogLikelihood, AUROC and F1 and store the TrainCV accuracy. 
+* all done by call to collateFolds();
+* Combine folds into a single file for each statistic in ResultsDirectory/ClassifierName
+* these are
+* Counts: counts.csv, number per problem (max number is NumberOfFolds, it does not check for more).
+* Diagnostics: TestAcc.csv, TestF1.csv, TestBAcc.csv, TestNLL.csv, TestAUROC.csv, TrainCVAcc.csv, Timings.csv
+* Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tuning occurs, all tuning values).
+* 
+* Stage 2: 
+* Output: Classifier Summary: call to method averageOverFolds() 
+* Creates average and standard deviation over all folds based on the   
+* created at stage 1 with the addition of the mean difference per fold. All put in a single directory.
+* 
+* Stage 3
+* Final Comparison Summary: call to method basicSummaryComparisons();        
+* a single file in ResultsDirectory directory called summaryTests<ClassifierNames>.csv
+* contains pairwise comparisons of all the classifiers. 
+* 1. All Pairwise Comparisons for TestAccDiff, TestAcc, TestBAcc, TestNLL.csv and TestAUROC
+*   1. Wins/Draws/Loses
+*   2. Mean (and std dev) difference
+*   3. Two sample tests of the mean values 
+*
+* @author ajb
+**/
 public class CollateResults {
     public static File[] dir;
     static String basePath;
@@ -201,9 +213,12 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                 OutFile nllResults=new OutFile(filePath+cls+"TestNLL.csv");
                 OutFile AUROCResults=new OutFile(filePath+cls+"TestAUROC.csv");
                 OutFile trainResults=new OutFile(filePath+cls+"TrainCVAcc.csv");
-                OutFile[] paraFiles=new OutFile[numParas[i]];
-                for(int j=0;j<paraFiles.length;j++)
-                    paraFiles[j]=new OutFile(filePath+cls+"Parameter"+(j+1)+".csv");
+                OutFile[] paraFiles=null;
+                if(numParas[i]>0){
+                    paraFiles=new OutFile[numParas[i]];
+                    for(int j=0;j<paraFiles.length;j++)
+                        paraFiles[j]=new OutFile(filePath+cls+"Parameter"+(j+1)+".csv");
+                }
                 OutFile timings=new OutFile(filePath+cls+"Timings.csv");
                 OutFile mem=new OutFile(filePath+cls+"Memory.csv");
                 OutFile allAccSearchValues=new OutFile(filePath+cls+"AllTuningAccuracies.csv");
@@ -226,8 +241,10 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                     allAccSearchValues.writeString(name);
                     timings.writeString(name);
                     mem.writeString(name);
-                    for(OutFile out:paraFiles)
-                        out.writeString(name+",");
+                    if(numParas[i]>0){
+                        for(OutFile out:paraFiles)
+                            out.writeString(name+",");
+                    }
 //GAVIN HACK                    
 //                    String path=basePath+cls+"/"+name+"/results/";
                     String path=basePath+cls+"//Predictions//"+name;
@@ -289,8 +306,8 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
   //                              System.out.println("Number of items in bag "+(j+1)+" = "+temp);
 //                                caseCount+=temp;
                                 ClassifierResults res=new ClassifierResults();
-                                res.loadFromFile(path+"//testFold"+j+".csv");
-                                mergedResults.writeLine(res.writeInstancePredictions());                                
+                                res.loadResultsFromFile(path+"//testFold"+j+".csv");
+                                mergedResults.writeLine(res.instancePredictionsToString());                                
                                 res.findAllStats();
                                 f1Results.writeString(","+res.f1);
                                 BAccResults.writeString(","+res.balancedAcc);
@@ -303,7 +320,6 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                                     System.out.println(" second line read has "+trainRes.length+" entries :");
                                     for(String str:trainRes)
                                         System.out.print(str+",");
-                                    System.out.println("XX"+trainRes[1]+"XX AND TRIMMED: XX"+trainRes[1].trim()+"XX");
                                     of.writeLine(name+","+j);
                                     e.printStackTrace();
                                     System.exit(1);
@@ -348,12 +364,12 @@ Parameter info: Parameter1.csv, Parameter2.csv...AllTuningAccuracies.csv (if tun
                     timings.writeString("\n");
                     allAccSearchValues.writeString("\n");
                     
-                    for(int k=0;k<paraFiles.length;k++)
+                    for(int k=0;k<numParas[i];k++)
                         paraFiles[k].writeString("\n");
                 }
                 clsResults.closeFile();
                 trainResults.closeFile();
-                    for(int k=0;k<paraFiles.length;k++)
+                    for(int k=0;k<numParas[i];k++)
                         paraFiles[k].closeFile();
             }
             else{
@@ -639,252 +655,57 @@ public static void basicSummaryComparisons(){
         basicSummaryComparisons();        
         
     }
-   public static void untunedVsTuned() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "XBBoost", 5);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {"XGBoost"},
-               "E://Results//UCI//Untuned");
-       m.readInClassifiers(new String[] {"TunedXGBoost"}, 
-               "E://Results//UCI//Tuned");
-           m.runComparison(); 
-       
-   }
-
-   public static void collateTuned() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
-               "E://Results/UCI/Tuned");
-       
-       
-//       m.readInClassifiers(new String[] {"TunedSVMPolynomial","TunedSVMRBF","TunedXGBoost","TunedMLP","TunedSingleLayerMLP","TunedTWoLayerMLP","TunedRandF","TunedRotF","RotF"}, 
-//               "E://Results//UCI//Tuned");
-       m.runComparison(); 
-
-       
-   }
-      public static void collateRotFSensitivity() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "RotFGroupSize", 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {
-           "RotFG3","RotFG4","RotFG5","RotFG6","RotFG7","RotFG8","RotFG9","RotFG10","RotFG11","RotFG12"}, 
-               "E://Results/UCI/RotFSize");
-       
-       
-//       m.readInClassifiers(new String[] {"TunedSVMPolynomial","TunedSVMRBF","TunedXGBoost","TunedMLP","TunedSingleLayerMLP","TunedTWoLayerMLP","TunedRandF","TunedRotF","RotF"}, 
-//               "E://Results//UCI//Tuned");
-       m.runComparison(); 
-
-       
-   }
-
-      public static void collateRotFSensitivity2() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "RotFProp", 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
-       m.readInClassifiers(new String[] {
-           "RotRP1","RotRP2","RotRP3","RotRP4","RotRP5","RotRP6","RotRP7","RotRP8","RotRP9"}, 
-               "E://Results/UCI/RotFPercentRemoved");
-       
-       
-//       m.readInClassifiers(new String[] {"TunedSVMPolynomial","TunedSVMRBF","TunedXGBoost","TunedMLP","TunedSingleLayerMLP","TunedTWoLayerMLP","TunedRandF","TunedRotF","RotF"}, 
-//               "E://Results//UCI//Tuned");
-       m.runComparison(); 
-
-       
-   }
-
-   public static void collateUntuned() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation(
-               "E://Results//UCI//Analysis//", "RandF10000", 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousFileNames, 0, 121));
-       
-       m.readInClassifiers(new String[] {"RandF","RotF","RandF10000"},//"SVMRBF","UBMLP 
-               "E://Results//UCI//Untuned");
-
-       m.runComparison(); 
-
-       
-   }
-   public static void ucrComparison() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCR//Analysis//", "RotFvsRandF", 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
-       m.readInClassifiers(new String[] {"RotF","RandF"},"E://Results//UCR//Untuned");
-//       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
-       m.setTestResultsOnly(true);
-           m.runComparison(); 
-       
-   }
-   public static void stucrComparison() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//STUCR//Analysis//", "STRotFvsRandF", 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
-       m.readInClassifiers(new String[] {"RotF","RandF","SVMQ"},"E://Results//STUCR");
-//       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
-       m.setTestResultsOnly(true);
-           m.runComparison(); 
-       
-   }
-
-   public static void tunedVuntuned() throws Exception{
-       String classifier ="SVMRBF";
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", classifier, 30);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousFileNames, 0, 121));
-       m.readInClassifiers(new String[] {classifier},"E://Results//UCI//Untuned");
-       m.readInClassifiers(new String[] {"Tuned"+classifier},"E://Results//UCI//Tuned");
-               
-               
-               
-               //"//cmptscsvr.cmp.uea.ac.uk/ueatsc/Results/FinalisedUCIContinuous/");
-       m.setTestResultsOnly(true);
-           m.runComparison(); 
-       
-   }
-    public static void collateBags() {
-         int folds=45;
-         String[] classifiers={"BOSS","DTWCV","ED","EE","RandF","RISE","RotF","ST","TSF"};
-         for(String str:classifiers){   
-            String source="E:/Results/Bags/BagsTwoClassHistogramProblem/"+str+"/Predictions/BagsTwoClassHistogramProblem";
-            String dest="E:/Results/Bags/BagsTwoClassHistogramProblem/"+str+"/Predictions/BagsTwoClassHistogramProblem";
-            OutFile outfTest=new OutFile(dest+"/"+str+"TestAll.csv");
-            OutFile outfTrain=new OutFile(dest+"/"+str+"TrainAll.csv");
-            for(int i=0;i<folds;i++){
-                System.out.println("Formatting "+str+" fold "+i);
-                InFile infTest=new InFile(source+"/testFold"+i+".csv");
-                InFile infTrain=new InFile(source+"/trainFold"+i+".csv");
-                String line = infTest.readLine();
-                line = infTest.readLine();
-                line = infTest.readLine();
-                line = infTest.readLine();
-                while(line!=null){
-                    outfTest.writeLine(line);
-                    line = infTest.readLine();
-                }
-                 line = infTrain.readLine();
-                 line = infTrain.readLine();
-                 line = infTrain.readLine();
-                 line = infTrain.readLine();
-                while(line!=null){
-                    outfTrain.writeLine(line);
-                    line = infTrain.readLine();
-                }
-            }
-        }
-    }  
-   public static void bagsStats() throws Exception{
-       MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//STUCR//Analysis//", "PCA", 45);
-       m.setBuildMatlabDiagrams(true);
-       m.setDebugPrinting(true);
-       m.setUseAllStatistics();
-       m.setDatasets(Arrays.copyOfRange(experiments.DataSets.tscProblems85, 0, 85));
-       m.readInClassifiers(new String[] {"RotF","RandF","SVMQ"},"E://Results//STUCR");
-//       m.readInClassifiers(new String[] {"DTWCV"},"E://Results//UCR//Tuned");
-       m.setTestResultsOnly(true);
-           m.runComparison(); 
-       
-   } 
-//First argument: String path to results directories
-//Second argument: path to directory with problem allStats to look for
-//Third argument: number of folds    
-//Next x arguments: x Classifiers to collate    
-//Next x arguments: number of numParas stored for each classifier    
-    public static void main(String[] args) throws Exception {
- //collateRotFSensitivity();
- //collateRotFSensitivity2();
- //System.exit(0);
-//collateBags();
- //ucrRotFvsRandFtestOnly();
-//        collateUntuned();
-//       collateTuned();
-//     ucrComparison();
-//        jamesStats();
-//  reformatUBMLP();
-//ucrComparison();
-//stucrComparison();
-//BMLPtunedVuntuned();
-//untunedVsTuned();
-
-// System.exit(0);
-
-//NOTE TO SELF
-//Below is using my stats generator not james. To use James put in a static
-//method and exit, as above
-//    String[] classifiers={"BOSS","CAWPE","CAWPE_AS_COTE","ED","RandF","RotF","SLOWDTWCV","ST","TSF","RISE","XGBoost"};
-    String[] classifiers={"TunedSVMQuad"};
+/**
+ * 
+ *First argument: String path to results directories
+ * Second argument: path to directory with problem allStats to look for
+ * Third argument: number of folds    
+ * Next x arguments: x Classifiers to collate    
+ * Next x arguments: number of numParas stored for each classifier    
+   **/
+   public static void exampleCollateResultsMethod1(String[] args) throws Exception{
+    String[] classifiers={"TSF"};
     for(String classifier:classifiers){
-        String parameters="1";
+        String parameters="0";
         if(args.length>1)
             collate(args);
         else{ 
-            String[] str={"Z:\\BagsSDM\\Results\\",
-                "Z:\\BagsSDM\\Data\\","45","false",classifier,parameters};
+            String[] str={"E:\\Results\\Java\\",
+                "Z:\\Data\\TSCProblems2018\\","30","false",classifier,parameters};
             collate(str);
         }
     }
-}
-    public static void reformatUBMLP()//Insert an extra comma
-    {
-        int folds=30;
-        String source="E:\\Results\\UCI\\Untuned\\UBMLP_OLD\\Predictions";
-        String dest="E:\\Results\\UCI\\Untuned\\UBMLP\\Predictions";
+
+   }
+
+    
+/**
+ * Usage of MultipleClassifierEvaluation. See the class for more info
+ * @throws Exception 
+ */
+   public static void exampleCollateResultsMethod2(String[] args) throws Exception{
+       if(args.length>0){
+//TO DO           
+       }
+       else{ //Example manual setting
+            MultipleClassifierEvaluation m=new MultipleClassifierEvaluation("E://Results//UCI//Analysis//", "Tuned", 5);
+            m.setBuildMatlabDiagrams(true);
+            m.setDebugPrinting(true);
+            m.setUseAllStatistics();
+            m.setDatasets(Arrays.copyOfRange(experiments.DataSets.UCIContinuousWithoutBigFour, 0, 117));
+            m.readInClassifiers(new String[] {"MLP2","SVMRBF","SVMP","RandF","RotF","XGBoost"}, 
+                    "E://Results/UCI/Tuned");
+            m.runComparison(); 
+       }
+   }
+
+
+    public static void main(String[] args) throws Exception {
+        boolean singleClassifierStats=true;
+        if(singleClassifierStats)
+            exampleCollateResultsMethod1(args);
+        else
+            exampleCollateResultsMethod2(args);
+    }            
         
-        for(String str: DataSets.UCIContinuousFileNames){
-            for(int i=0;i<folds;i++){
-                System.out.println("Formatting "+str+" fold "+i);
-                InFile infTest=new InFile(source+"/"+str+"/testFold"+i+".csv");
-                InFile infTrain=new InFile(source+"/"+str+"/trainFold"+i+".csv");
-                File out=new File(dest+"/"+str);
-                if(!out.isDirectory())
-                    out.mkdirs();
-                OutFile outfTest=new OutFile(dest+"/"+str+"/testFold"+i+".csv");
-                OutFile outfTrain=new OutFile(dest+"/"+str+"/trainFold"+i+".csv");
-                for(int j=0;j<3;j++){
-                    outfTest.writeLine(infTest.readLine());
-                    outfTrain.writeLine(infTrain.readLine());
-                }
-                String line = infTest.readLine();
-                while(line!=null){
-                    String[] split=line.split(",");
-                    outfTest.writeString(split[0]+","+split[1]+",");
-                    for(int j=2;j<split.length;j++)
-                        outfTest.writeString(","+split[j]);
-                    outfTest.writeString("\n");
-                    line = infTest.readLine();
-                }
-                 line = infTrain.readLine();
-                while(line!=null){
-                    String[] split=line.split(",");
-                    outfTrain.writeString(split[0]+","+split[1]+",");
-                    for(int j=2;j<split.length;j++)
-                        outfTrain.writeString(","+split[j]);
-                    outfTrain.writeString("\n");
-                    line = infTrain.readLine();
-                }
-            }
-                    
-        }
-        
-    }    
 }

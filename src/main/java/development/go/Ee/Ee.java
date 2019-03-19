@@ -2,6 +2,13 @@ package development.go.Ee;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.*;
+import development.go.Ee.ParameterIteration.IterationStrategy;
+import development.go.Ee.ParameterIteration.RandomRoundRobinIterationStrategy;
+import development.go.Ee.Selection.BestPerType;
+import development.go.Ee.Selection.FirstBestPerType;
+import development.go.Ee.Selection.Selector;
+import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
@@ -9,20 +16,21 @@ import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.classifiers.nn.NeighbourWeighting.UniformWeighting;
 import timeseriesweka.classifiers.nn.Nn;
-import utilities.*;
+
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
+import utilities.OptionsSetter;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.zip.GZIPInputStream;
 
-public class Ee extends AbstractClassifier implements OptionsSetter {
+public class Ee extends AbstractClassifier implements OptionsSetter, ParameterSplittable {
 
 
     private final List<ConstituentBuilder<?>> originalConstituentBuilders = new ArrayList<>();
@@ -33,15 +41,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
 
     private Random random = new Random();
 
-    public Selector<Nn, ConstituentBuilder<?>> getSelector() {
-        return selector;
-    }
-
-    public void setSelector(final Selector<Nn, ConstituentBuilder<?>> selector) {
-        this.selector = selector;
-    }
-
-    private Selector<Nn, ConstituentBuilder<?>> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().acc));
+    private Selector<EnsembleModule, String> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.trainResults.getAcc()));
 
     public double getSampleSizePercentage() {
         return sampleSizePercentage;
@@ -54,10 +54,11 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
     private double sampleSizePercentage = 1;
     private boolean trainCv = true;
     private ClassifierResults trainResults;
-    private List<Nn> constituents;
+    private List<EnsembleModule> constituents;
     private EnsembleModule[] modules;
-    private ModuleWeightingScheme weightingScheme = new TrainAcc(); // TODO CHANGE THIS!
+    private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVote();
+    private IterationStrategy iterationStrategy = new RandomRoundRobinIterationStrategy();
 
     private boolean withinContract() {
         return true; // todo contract
@@ -102,34 +103,54 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
 //                }
 //            }
 //        }
-        while (!constituentBuilders.isEmpty() && withinContract()) {
-            int constituentBuilderIndex = random.nextInt(constituentBuilders.size());
-            ConstituentBuilder constituentBuilder = constituentBuilders.get(constituentBuilderIndex);
-            List<Integer> combinations = combinationMap.get(constituentBuilder);
-            int combination = combinations.remove(0);//random.nextInt(combinations.size()));
-            if(combinations.isEmpty()) {
-                constituentBuilders.remove(constituentBuilderIndex);
-            }
-            constituentBuilder.setParameterPermutation(combination);
-            Nn nn = constituentBuilder.build(); // todo set checkpoint path
+        while (iterationStrategy.hasNext() && withinContract()) {
+            Nn nn = iterationStrategy.next();
             nn.setSampleSizePercentage(sampleSizePercentage);
             nn.setNeighbourWeighter(new UniformWeighting());
             nn.setUseRandomTieBreak(false);
             nn.setCvTrain(trainCv);
 //            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
-            nn.buildClassifier(trainInstances);
-            selector.consider(nn, constituentBuilder);
+            EnsembleModule ensembleModule = new EnsembleModule();
+            if(buildFromFile) {
+                String path = resultsFilePath
+                    + "/Predictions/"
+                    + trainInstances.relationName()
+                    + "/" + nn.getDistanceMeasure().toString()
+                    + "/" + nn.getDistanceMeasure().getParameters()
+                    + "/fold" + seed + ".csv.gzip";
+                ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(path))));
+                double percentage;
+                String trainResultsString;
+                String testResultsString;
+                do {
+                    percentage = objectInputStream.readDouble();
+                    trainResultsString = (String) objectInputStream.readObject();
+                    testResultsString = (String) objectInputStream.readObject();
+                } while (percentage != sampleSizePercentage);
+                ClassifierResults trainResults = ClassifierResults.parse(trainResultsString);
+                ClassifierResults testResults = ClassifierResults.parse(testResultsString);
+                ensembleModule.trainResults = trainResults;
+                ensembleModule.testResults = testResults;
+                ensembleModule.setClassifier(nn);
+            } else {
+                nn.buildClassifier(trainInstances);
+                ensembleModule.setClassifier(nn);
+                ensembleModule.trainResults = nn.getTrainResults();
+            }
+            selector.consider(ensembleModule, nn.getDistanceMeasure().toString());
         }
         constituents = selector.getSelected();
         modules = new EnsembleModule[constituents.size()];
         for(int i = 0; i < modules.length; i++) { // todo if traincv?
-            Nn constituent = constituents.get(i);
-            modules[i] = new EnsembleModule(constituent.toString(), constituent, constituent.getParameters());
-            modules[i].trainResults = constituent.getTrainResults();
+            modules[i] = constituents.get(i);
         }
         weightingScheme.defineWeightings(modules, trainInstances.numClasses());
         votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
     }
+
+    private Long seed = 0L;
+    private boolean buildFromFile = true;
+    private String resultsFilePath = "/scratch/results";
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
@@ -139,6 +160,10 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
     @Override
     public boolean setOption(final String key, final String value) {
         throw new UnsupportedOperationException(); // todo setoptiosn
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
     }
 
     private static List<String> datasetNamesFromFile(File file) throws IOException {
@@ -152,68 +177,79 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
     }
 
     public static void main(String[] args) throws Exception {
-        // todo set seed / random
-        System.out.println("rf sampled");
-        String datasetsDirPath = "/scratch/Datasets/TSCProblems2015/";
-        File datasetsDir = new File(datasetsDirPath);
-//        List<String> datasetNames = Arrays.asList("OliveOil");
-        List<String> datasetNames = datasetNamesFromFile(new File("/scratch/datasetList.txt"));
-        datasetNames.sort((dA, dB) -> {
-            Instances instancesA = ClassifierTools.loadData(datasetsDirPath + dA + "/" + dA + "_TRAIN.arff");
-            Instances instancesB = ClassifierTools.loadData(datasetsDirPath + dB + "/" + dB + "_TRAIN.arff");
-            return instancesA.numInstances() * instancesA.numAttributes() - instancesB.numInstances() * instancesB.numAttributes();
-        });
-        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        for(String datasetName : datasetNames) {
-//            threadPoolExecutor.submit(new Runnable() {
-//                @Override
-//                public void run() {
-                    try {
-                        StringBuilder stringBuilder = new StringBuilder();
-                        stringBuilder.append(datasetName);
-                        stringBuilder.append(", ");
-//                        BufferedReader reader = new BufferedReader(new FileReader("/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EE_proto/Predictions/" + datasetName + "/testFold0.csv"));
-//                        reader.readLine();
-//                        reader.readLine();
-//                        Double bakeoffAcc = Double.valueOf(reader.readLine());
-//                        reader.close();
-//                        stringBuilder.append(bakeoffAcc);
+        File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
+        int seed = 0;
+        String datasetName = datasetFile.getName();
+        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
+        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
+        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+        trainInstances = splitInstances[0];
+        testInstances = splitInstances[1];
+        Ee ee = Ee.newClassicConfiguration();
+
+
+//        // todo set seed / random
+//        System.out.println("rf sampled");
+//        String datasetsDirPath = "/scratch/Datasets/TSCProblems2015/";
+//        File datasetsDir = new File(datasetsDirPath);
+////        List<String> datasetNames = Arrays.asList("OliveOil");
+//        List<String> datasetNames = datasetNamesFromFile(new File("/scratch/datasetList.txt"));
+//        datasetNames.sort((dA, dB) -> {
+//            Instances instancesA = ClassifierTools.loadData(datasetsDirPath + dA + "/" + dA + "_TRAIN.arff");
+//            Instances instancesB = ClassifierTools.loadData(datasetsDirPath + dB + "/" + dB + "_TRAIN.arff");
+//            return instancesA.numInstances() * instancesA.numAttributes() - instancesB.numInstances() * instancesB.numAttributes();
+//        });
+//        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+//        threadPoolExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+//        for(String datasetName : datasetNames) {
+////            threadPoolExecutor.submit(new Runnable() {
+////                @Override
+////                public void run() {
+//                    try {
+//                        StringBuilder stringBuilder = new StringBuilder();
+//                        stringBuilder.append(datasetName);
 //                        stringBuilder.append(", ");
-                        List<Ee> eeList = new ArrayList<>();//Arrays.asList(Ee.newFairRandomConfiguration()));
-                        for(int i = 0; i < 100; i += 10) {
-                            Ee ee = Ee.newFairRandomConfiguration();
-                            ee.setSampleSizePercentage((double) i / 100);
-                            eeList.add(ee);
-                        }
-                        for (Ee ee : eeList) {
-                            ee.random.setSeed(0);
-                            Instances trainInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TRAIN.arff");
-                            Instances testInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TEST.arff");
-                            Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, 0);
-                            trainInstances = splitInstances[0];
-                            testInstances = splitInstances[1];
-                            ee.buildClassifier(trainInstances);
-                            ClassifierResults results = new ClassifierResults();
-//                            int i = 0;
-                            for (Instance testInstance : testInstances) {
-//                                System.out.println(i++ + "/" + testInstances.numInstances());
-                                results.storeSingleResult(testInstance.classValue(), ee.distributionForInstance(testInstance));
-                            }
-                            results.setNumInstances(testInstances.numInstances());
-                            results.setNumClasses(testInstances.numClasses());
-                            results.findAllStatsOnce();
-                            stringBuilder.append(results.acc);
-                            stringBuilder.append(", ");
-                        }
-                        System.out.println(stringBuilder.toString());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-//                }
-//            });
-        }
-        threadPoolExecutor.shutdown();
+////                        BufferedReader reader = new BufferedReader(new FileReader("/run/user/33190/gvfs/smb-share:server=cmptscsvr.cmp.uea.ac.uk,share=ueatsc/Results_7_2_19/JayMovingInProgress/EE_proto/Predictions/" + datasetName + "/testFold0.csv"));
+////                        reader.readLine();
+////                        reader.readLine();
+////                        Double bakeoffAcc = Double.valueOf(reader.readLine());
+////                        reader.close();
+////                        stringBuilder.append(bakeoffAcc);
+////                        stringBuilder.append(", ");
+//                        List<Ee> eeList = new ArrayList<>();//Arrays.asList(Ee.newFairRandomConfiguration()));
+//                        for(int i = 0; i < 100; i += 10) {
+//                            Ee ee = Ee.newFairRandomConfiguration();
+//                            ee.setSampleSizePercentage((double) i / 100);
+//                            eeList.add(ee);
+//                        }
+//                        for (Ee ee : eeList) {
+//                            ee.random.setSeed(0);
+//                            Instances trainInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TRAIN.arff");
+//                            Instances testInstances = ClassifierTools.loadData(datasetsDirPath + datasetName + "/" + datasetName + "_TEST.arff");
+//                            Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, 0);
+//                            trainInstances = splitInstances[0];
+//                            testInstances = splitInstances[1];
+//                            ee.buildClassifier(trainInstances);
+//                            ClassifierResults results = new ClassifierResults();
+////                            int i = 0;
+//                            for (Instance testInstance : testInstances) {
+////                                System.out.println(i++ + "/" + testInstances.numInstances());
+//                                results.storeSingleResult(testInstance.classValue(), ee.distributionForInstance(testInstance));
+//                            }
+//                            results.setNumInstances(testInstances.numInstances());
+//                            results.setNumClasses(testInstances.numClasses());
+//                            results.findAllStatsOnce();
+//                            stringBuilder.append(results.acc);
+//                            stringBuilder.append(", ");
+//                        }
+//                        System.out.println(stringBuilder.toString());
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+////                }
+////            });
+//        }
+//        threadPoolExecutor.shutdown();
     }
 
     public static Ee newClassicConfiguration() {
@@ -255,7 +291,7 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         ee.addConstituentBuilder(new ErpBuilder());
         ee.addConstituentBuilder(new TweBuilder());
         ee.addConstituentBuilder(new MsmBuilder());
-        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().acc)));
+        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().getAcc())));
         return ee;
     }
 
@@ -271,5 +307,33 @@ public class Ee extends AbstractClassifier implements OptionsSetter {
         ee.addConstituentBuilder(new MsmBuilder());
         ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().balancedAcc)));
         return ee;
+    }
+
+    @Override
+    public void setParamSearch(final boolean b) {
+
+    }
+
+    @Override
+    public void setParametersFromIndex(final int x) {
+
+    }
+
+    @Override
+    public String getParas() {
+        return null;
+    }
+
+    @Override
+    public double getAcc() {
+        return 0;
+    }
+
+    public IterationStrategy getIterationStrategy() {
+        return iterationStrategy;
+    }
+
+    public void setIterationStrategy(final IterationStrategy iterationStrategy) {
+        this.iterationStrategy = iterationStrategy;
     }
 }

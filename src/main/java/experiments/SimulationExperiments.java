@@ -1,6 +1,17 @@
 /*
-Class to run one of various simulations.  
-*/
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package experiments;
 
 import experiments.DataSets;
@@ -47,8 +58,11 @@ import weka.core.Instances;
 import utilities.ClassifierTools;
 import weka.classifiers.lazy.kNN;
 import weka.core.Instance;
-import weka.filters.NormalizeCase;
+import timeseriesweka.filters.NormalizeCase;
 /*
+
+Class to run one of various simulations.  
+
 AJB Oct 2016
 
 Model to simulate data where matrix profile should be optimal.
@@ -201,18 +215,6 @@ public class SimulationExperiments {
             case "HIVECOTE":
                 c=new HiveCote();
 //                ((HiveCote)c).setNosHours(2);
-                break;
-            case "RISE":
-                c=new RISE();
-                ((RISE)c).setTransformType("PS_ACF");
-                ((RISE)c).setNosBaseClassifiers(500);
-                break;
-            case "RISE_HESCA":
-                c=new RISE();
-                ((RISE)c).setTransformType("PS_ACF");
-                Classifier base=new CAWPE();
-                ((RISE)c).setBaseClassifier(base);
-                ((RISE)c).setNosBaseClassifiers(20);
                 break;
             default:
                 throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);
@@ -507,7 +509,7 @@ public class SimulationExperiments {
         seriesLength=300;
         casesPerClass=new int[]{50,50};
         String[] classifiers={"RotF","DTW","FastShapelets","ST","BOSS"};
-//            "EE","CAWPE","TSF","TSBF","FastShapelets","ST","LearnShapelets","BOP","BOSS","RISE","COTE"};
+//            "EE","CAWPE","TSF","TSBF","FastShapelets","ST","LearnShapelets","BOP","BOSS","C_RISE","COTE"};
         OutFile of=new OutFile("C:\\Temp\\ShapeletSimExperiment.csv");
         setStandardGlobalParameters("Shapelet");
         of.writeLine("Shapelet Sim, series length= "+seriesLength+" cases class 0 ="+casesPerClass[0]+" class 1"+casesPerClass[0]+" train proportion = "+trainProp);
@@ -559,11 +561,6 @@ public class SimulationExperiments {
                         break;
                     case "COTE":
                         c=new FlatCote();
-                        break;
-                    case "RISE":
-                        c=new RISE();
-                        ((RISE)c).setTransformType("PS_ACF");
-                        ((RISE)c).setNosBaseClassifiers(500);
                         break;
                     default:
                         throw new RuntimeException(" UNKNOWN CLASSIFIER "+str);

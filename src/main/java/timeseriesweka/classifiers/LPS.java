@@ -1,4 +1,16 @@
 /*
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package timeseriesweka.classifiers;
 
@@ -51,7 +63,7 @@ import weka.core.WeightedInstancesHandler;
 
  * 
  */
-public class LPS extends AbstractClassifierWithTrainingData implements ParameterSplittable{
+public class LPS extends AbstractClassifierWithTrainingInfo implements ParameterSplittable{
     RandomRegressionTree[] trees;
     
     public static final int PARASEARCH_NOS_TREES=25;
@@ -306,7 +318,7 @@ public class LPS extends AbstractClassifierWithTrainingData implements Parameter
     
     @Override
     public void buildClassifier(Instances data) throws Exception {
-         trainResults.buildTime=System.currentTimeMillis();
+         long startTime=System.currentTimeMillis();
         
 //determine minimum and maximum possible segment length
         if(paramSearch){
@@ -429,7 +441,7 @@ public class LPS extends AbstractClassifierWithTrainingData implements Parameter
         }
   */      
         sequences=null;
-        trainResults.buildTime=System.currentTimeMillis()-trainResults.buildTime;
+        trainResults.setBuildTime(System.currentTimeMillis()-startTime);
         
         System.gc();
      }

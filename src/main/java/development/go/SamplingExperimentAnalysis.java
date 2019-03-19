@@ -1,57 +1,59 @@
-//package development.go;
-//
-//import development.go.Ee.Constituents.ParameterSpaces.*;
-//import scala.tools.nsc.interpreter.Results;
-//import timeseriesweka.measures.DistanceMeasure;
-//import utilities.*;
-//import weka.core.Instance;
-//import weka.core.Instances;
-//
-//import java.io.*;
-//import java.util.*;
-//import java.util.concurrent.Callable;
-//import java.util.concurrent.Executors;
-//import java.util.concurrent.ThreadPoolExecutor;
-//import java.util.zip.GZIPInputStream;
-//import java.util.zip.GZIPOutputStream;
-//
-//public class SamplingExperimentAnalysis {
-//
-//    private static String parseFileName(String str) {
-//        int index = str.lastIndexOf(".");
-//        if(index >= 0) {
-//            return str.substring(0, index);
-//        } else {
-//            throw new IllegalArgumentException();
-//        }
-//    }
-//
-//    public static String parseVariable(String str, String variableName) {
-//        if(variableName.equalsIgnoreCase("q")) {
-//            int index = str.indexOf("{");
-//            if(index >= 0) {
-//                str = str.substring(index + 1);
-//                index = str.lastIndexOf("}");
-//                str = str.substring(0, index);
-//                return str;
-//            }
-//        } else {
-//            str = str.substring(0, str.indexOf("{")) + str.substring(str.lastIndexOf("}") + 1, str.length());
-//            int index = str.indexOf(variableName + "=");
-//            if(index >= 0) {
-//                str = str.substring(index);
-//                int nextIndex = str.indexOf(",");
-//                if(nextIndex < 0) {
-//                    nextIndex = str.lastIndexOf(".");
-//                }
-//                if (nextIndex >= 0) {
-//                    return str.substring(1 + variableName.length(), nextIndex);
-//                }
-//            }
-//        }
-//        throw new IllegalArgumentException();
-//    }
-//
+package development.go;
+
+import evaluation.storage.ClassifierResults;
+import scala.tools.nsc.interpreter.Results;
+import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.dtw.Dtw;
+import utilities.*;
+import weka.core.Instance;
+import weka.core.Instances;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+public class SamplingExperimentAnalysis {
+
+    private static String parseFileName(String str) {
+        int index = str.lastIndexOf(".");
+        if(index >= 0) {
+            return str.substring(0, index);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public static String parseVariable(String str, String variableName) {
+        if(variableName.equalsIgnoreCase("q")) {
+            int index = str.indexOf("{");
+            if(index >= 0) {
+                str = str.substring(index + 1);
+                index = str.lastIndexOf("}");
+                str = str.substring(0, index);
+                return str;
+            }
+        } else {
+            str = str.substring(0, str.indexOf("{")) + str.substring(str.lastIndexOf("}") + 1, str.length());
+            int index = str.indexOf(variableName + "=");
+            if(index >= 0) {
+                str = str.substring(index);
+                int nextIndex = str.indexOf(",");
+                if(nextIndex < 0) {
+                    nextIndex = str.lastIndexOf(".");
+                }
+                if (nextIndex >= 0) {
+                    return str.substring(1 + variableName.length(), nextIndex);
+                }
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
 //    private static ClassifierStats loadStats(File file) throws IOException, ClassNotFoundException {
 //        ObjectInputStream in = new ObjectInputStream(
 //            new GZIPInputStream(
@@ -64,21 +66,67 @@
 //        in.close();
 //        return (ClassifierStats) object;
 //    }
-//
-//    private static List<String> datasetNamesFromFile(File file) throws IOException {
-//        BufferedReader reader = new BufferedReader(new FileReader(file));
-//        String line;
-//        List<String> datasetNames = new ArrayList<>();
-//        while ((line = reader.readLine()) != null) {
-//            datasetNames.add(line.trim());
+
+
+    public static void main(String[] args) throws Exception {
+
+//        Nn nn = new Nn();
+//        int seed =0;
+//        Dtw dtw = new Dtw();
+//        dtw.setWarpingWindow(0);
+//        nn.setDistanceMeasure(dtw);
+//            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
+//            nn.setSeed(seed);
+//            nn.setCvTrain(true);
+//            nn.setUseEarlyAbandon(false);
+//            nn.setKPercentage(0);
+//            nn.setUseRandomTieBreak(false);
+//            File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
+//        String datasetName = datasetFile.getName();
+//        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
+//        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
+//        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+//        trainInstances = splitInstances[0];
+//        testInstances = splitInstances[1];
+//        nn.buildClassifier(trainInstances);
+//        ClassifierResults trainResults = nn.getTrainResults();
+//        ClassifierResults testResults = nn.getTestResults(testInstances);
+//        System.out.println(trainResults.writeFullResultsToString());
+//        System.out.println();
+//        System.out.println(testResults.writeFullResultsToString());
+
+        String resultsPath = "/scratch/results/Predictions/GunPoint/dtw/-w 0.0/fold0.csv.gzip";
+        ObjectInputStream reader = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(resultsPath))));
+        for(int i = 0; i <= 100; i += 10) {
+            double percentage = reader.readDouble();
+            System.out.println(percentage);
+            String trainResultsString = (String) reader.readObject();
+            ClassifierResults trainResults = ClassifierResults.parse(trainResultsString);
+            System.out.println(trainResults.getAcc());
+//            System.out.println();
+            String testResultsString = (String) reader.readObject();
+            ClassifierResults testResults = ClassifierResults.parse(testResultsString);
+            System.out.println(testResults.getAcc());
+//            System.out.println();
+            System.out.println();
+        }
+
+//        File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
+//        String datasetName = datasetFile.getName();
+//        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
+//        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
+//        int seed = 0;
+//        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+//        trainInstances = splitInstances[0];
+//        testInstances = splitInstances[1];
+//        for(int i = 0; i < trainInstances.size(); i++) {
+//            System.out.println(reader.readLine());
 //        }
-//        return datasetNames;
-//    }
-//
-//    public static void main(String[] args) {
+
+
 //        try {
-//            final File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/snn2");
-//            final File datasetDir = new File("/scratch/Datasets/TSCProblems2019");
+//            final File resultsDir = new File("/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/sample");
+//            final File datasetDir = new File("/scratch/Datasets/TSCProblems2015");
 //            final File dataScripts = new File("/scratch/dataScripts");
 //            final int numFolds = 1;
 //            Utilities.mkdir(dataScripts);
@@ -195,34 +243,34 @@
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
+
+
+//        for(int distanceMeasureIndex = 0; distanceMeasureIndex < parameterSpaces.size(); distanceMeasureIndex++) {
+//            ParameterSpace<? extends DistanceMeasure> parameterSpace = parameterSpaces.get(distanceMeasureIndex);
+//            for(int datasetIndex = 0; datasetIndex < datasetNames.size(); datasetIndex++) {
+//                String dataset = datasetNames.get(datasetIndex);
+//                Instances trainInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TRAIN.arff"));
+//                Instances testInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TEST.arff"));
+//                BufferedReader[] readers = new BufferedReader[numFolds];
+//                for(int i = 0; i < readers.length; i++) {
+//                    Instances[] split = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, i);
+//                    trainInstances = split[0];
+//                    testInstances = split[1];
+//                    parameterSpace.useInstances(trainInstances);
+//                    parameterSpace.setCombination();
+//                    DistanceMeasure distanceMeasure = parameterSpace.build();
+//                    readers[i] = new BufferedReader(new FileReader(new File(resultsDir, dataset + "/" + i + "/" + parameterSpace.build().toString() + )))
+//                }
+//                for(int instanceIndex = 0; instanceIndex <= trainInstances.numInstances(); instanceIndex++) {
+//                    double sum = 0;
+//                    for(int seed = 0; seed < numFolds; seed++) {
 //
-//
-////        for(int distanceMeasureIndex = 0; distanceMeasureIndex < parameterSpaces.size(); distanceMeasureIndex++) {
-////            ParameterSpace<? extends DistanceMeasure> parameterSpace = parameterSpaces.get(distanceMeasureIndex);
-////            for(int datasetIndex = 0; datasetIndex < datasetNames.size(); datasetIndex++) {
-////                String dataset = datasetNames.get(datasetIndex);
-////                Instances trainInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TRAIN.arff"));
-////                Instances testInstances = ClassifierTools.loadData(new File(datasetDir, dataset + "/" + dataset + "_TEST.arff"));
-////                BufferedReader[] readers = new BufferedReader[numFolds];
-////                for(int i = 0; i < readers.length; i++) {
-////                    Instances[] split = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, i);
-////                    trainInstances = split[0];
-////                    testInstances = split[1];
-////                    parameterSpace.useInstances(trainInstances);
-////                    parameterSpace.setCombination();
-////                    DistanceMeasure distanceMeasure = parameterSpace.build();
-////                    readers[i] = new BufferedReader(new FileReader(new File(resultsDir, dataset + "/" + i + "/" + parameterSpace.build().toString() + )))
-////                }
-////                for(int instanceIndex = 0; instanceIndex <= trainInstances.numInstances(); instanceIndex++) {
-////                    double sum = 0;
-////                    for(int seed = 0; seed < numFolds; seed++) {
-////
-////                    }
-////                }
-////            }
-////        }
-//    }
-//
+//                    }
+//                }
+//            }
+//        }
+    }
+
 //    private static ClassifierResults readResults(ObjectInputStream objectInputStream) throws IOException {
 //        ClassifierResults results = new ClassifierResults();
 //        results.acc = objectInputStream.readDouble();
@@ -240,4 +288,4 @@
 //        results.memory = objectInputStream.readLong();
 //        return results;
 //    }
-//}
+}

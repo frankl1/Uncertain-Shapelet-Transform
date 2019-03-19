@@ -14,13 +14,11 @@ import utilities.*;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
+import evaluation.storage.ClassifierResults;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import static utilities.Utilities.argMax;
-import static utilities.Utilities.trainAndTest;
 
 public class Nn extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
 
@@ -53,9 +51,9 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     private String checkpointFilePath;
     private long predictionContract = -1;
     private static final String PREDICTION_CONTRACT_KEY = "pc";
-    private long trainContract;
+    private long trainContract = -1;
     private static final String TRAIN_CONTRACT_KEY = "trc";
-    private long testContract;
+    private long testContract = -1;
     private static final String TEST_CONTRACT_KEY = "tec";
     private Long seed = null;
     private static final String SEED_KEY = "se";
@@ -119,9 +117,9 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         nn.buildClassifier(trainInstances);
         ClassifierResults testResults = nn.getTestResults(testInstances);
         ClassifierResults trainResults = nn.getTrainResults();
-        System.out.print(trainResults.acc);
+        System.out.print(trainResults.getAcc());
         System.out.print(", ");
-        System.out.println(testResults.acc);
+        System.out.println(testResults.getAcc());
 //        for(int i = 0; i <= trainInstances.numInstances(); i++) {
 //            if(i == trainInstances.numInstances() - 2) {
 //                boolean b = true;
@@ -275,30 +273,9 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public ClassifierResults getTrainResults() {
         return trainResults;
-    }
-
-    private ClassifierResults getResults(Instances instances, double[][] allPredictions) {
-        ClassifierResults results = new ClassifierResults();
-        results.setNumClasses(instances.numClasses());
-        results.setNumInstances(instances.numInstances());
-        for (int i = 0; i < allPredictions.length; i++) {
-            double classValue = instances.get(i).classValue();
-            double[] predictions = allPredictions[i];
-            results.storeSingleResult(classValue, predictions);
-        }
-        try {
-            results.memory = SizeOf.deepSizeOf(this);
-        } catch (Exception e) {
-
-        }
-        results.setName(toString());
-        results.setParas(getParameters());
-        results.setTrainTime(getTrainTime());
-        results.setTestTime(getTestTime());
-        results.findAllStatsOnce();
-        return results;
     }
 
     @Override
@@ -426,6 +403,31 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         reset();
     }
 
+    private ClassifierResults getResults(List<NearestNeighbourFinder> nearestNeighbourFinders) throws Exception {
+        ClassifierResults results = new ClassifierResults();
+        results.setNumClasses(nearestNeighbourFinders.get(0).getInstance().numClasses());
+        for (int i = 0; i < nearestNeighbourFinders.size(); i++) {
+            NearestNeighbourFinder nearestNeighbourFinder = nearestNeighbourFinders.get(i);
+            double classValue = nearestNeighbourFinder.getInstance().classValue();
+            long predictionTimeStamp = System.nanoTime();
+            double[] predictions = nearestNeighbourFinder.predict();
+            long predictionTime = System.nanoTime() - predictionTimeStamp;
+            results.addPrediction(classValue, predictions, Utilities.argMax(predictions, random), predictionTime, null);
+        }
+        try {
+            results.setMemory(SizeOf.deepSizeOf(this));
+        } catch (Exception e) {
+
+        }
+        results.setClassifierName(toString());
+        results.setParas(getParameters());
+        results.setTimeUnit(TimeUnit.NANOSECONDS);
+        results.setBuildTime(getTrainTime());
+        results.setTestTime(getTestTime());
+        results.findAllStatsOnce();
+        return results;
+    }
+
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
         resumeFromCheckpoint();
@@ -464,15 +466,12 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
             trainCheckpoint();
         }
         if(trainResults == null) {
+            resetTest();
             long timeStamp = System.nanoTime();
             trainTime += timeStamp - trainTimeStamp;
             trainTimeStamp = timeStamp;
             if(cvTrain) {
-                double[][] trainPredictions = new double[trainNearestNeighbourFinders.size()][];
-                for(int i = 0; i < trainPredictions.length; i++) {
-                    trainPredictions[i] = trainNearestNeighbourFinders.get(i).predict();
-                }
-                this.trainResults = getResults(trainInstances, trainPredictions);
+                trainResults = getResults(trainNearestNeighbourFinders);
             }
             checkpoint(true);
         }
@@ -571,11 +570,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
             testCheckpoint();
         }
         if(testResults == null) {
-            double[][] testPredictions = new double[testNearestNeighbourFinders.size()][];
-            for(int i = 0; i < testPredictions.length; i++) {
-                testPredictions[i] = testNearestNeighbourFinders.get(i).predict();
-            }
-            testResults = getResults(testInstances, testPredictions);
+            testResults = getResults(testNearestNeighbourFinders);
             checkpoint(true);
         }
         return testResults;

@@ -29,13 +29,10 @@ hs_err_pid*
 .gradle/
 build/
 gradle/
+/nbproject/private/
+/dist/
 
-# java compiled sources
-out/
-resources/
-
-# results
-results/
-*.csv
-*.txt
-*.arff
+# netbeans
+build.xml
+nbproject/
+manifest.mf

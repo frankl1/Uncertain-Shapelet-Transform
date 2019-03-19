@@ -1,76 +1,77 @@
-//package development.go;
-//
-//import com.beust.jcommander.JCommander;
-//import com.beust.jcommander.Parameter;
-//import com.beust.jcommander.converters.FileConverter;
-//import development.go.Ee.Constituents.ParameterSpaces.*;
-//import timeseriesweka.classifiers.nn.Nn;
-//import timeseriesweka.measures.DistanceMeasure;
-//import utilities.ClassifierResults;
-//import utilities.ClassifierTools;
-//import utilities.InstanceTools;
-//import utilities.Utilities;
-//import weka.core.Instances;
-//
-//import java.io.*;
-//import java.util.*;
-//import java.util.concurrent.TimeUnit;
-//import java.util.zip.GZIPInputStream;
-//import java.util.zip.GZIPOutputStream;
-//
-//public class SamplingExperiment {
-//
-//    private SamplingExperiment() {}
-//
-//    // todo param validation
-//    @Parameter(names={"-r"}, description="results globalResultsDir", converter= FileConverter.class, required=true)
-//    private File globalResultsDir;
-//    @Parameter(names={"-f"}, description="dataset fold index", required=true)
-//    private List<Integer> foldIndices;
-//    @Parameter(names={"-d"}, description="datasets", required=true)
-//    private List<File> datasets;
-//    @Parameter(names={"-k"}, description="killswitch")
-//    private String killSwitchPath;
-//
-//    public static void main(String[] args) {
-//        SamplingExperiment samplingExperiment = new SamplingExperiment();
-//        new JCommander(samplingExperiment).parse(args);
-//        samplingExperiment.run();
-//    }
-//
-//    private long benchmark = -1;
-//    private Nn nn;
-//
-//    public void run() {
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                File killswitch = new File(killSwitchPath);
-//                boolean stop = false;
-//                while (!stop) {
-//                    stop = !killswitch.exists();
-//                    if(!stop) {
-//                        try {
-//                            Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
-//                        } catch (InterruptedException e) {
-//                            stop = true;
-//                        }
-//                    }
-//                }
-//                System.out.println("killing");
-//                System.exit(2);
-//            }
-//        }).start();
-//        try {
-//            experiment(true);
-////            System.out.println("verification");
-////            experiment(false);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        System.exit(0);
-//    }
-//
+package development.go;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.converters.FileConverter;
+import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
+import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.*;
+import evaluation.storage.ClassifierResults;
+import net.sourceforge.sizeof.SizeOf;
+import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.measures.DistanceMeasure;
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
+import utilities.Utilities;
+import weka.core.Instances;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+public class SamplingExperiment {
+
+    // todo param validation
+    @Parameter(names={"-r"}, description="results globalResultsDir", converter= FileConverter.class, required=true)
+    private File globalResultsDir;
+    @Parameter(names={"-s"}, description="dataset fold index", required=true)
+    private Integer seed;
+    @Parameter(names={"-d"}, description="datasets", required=true)
+    private File datasetFile;
+    @Parameter(names={"-k"}, description="killswitch", required=true)
+    private String killSwitchPath;
+    @Parameter(names={"-p"}, description="sampling percentages", required=true)
+    private List<Double> samplingPercentages;
+
+    private SamplingExperiment() {}
+
+    public static void main(String[] args) {
+        SamplingExperiment samplingExperiment = new SamplingExperiment();
+        new JCommander(samplingExperiment).parse(args);
+        samplingExperiment.run();
+    }
+
+    public void run() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                File killswitch = new File(killSwitchPath);
+                boolean stop = false;
+                while (!stop) {
+                    stop = !killswitch.exists();
+                    if(!stop) {
+                        try {
+                            Thread.sleep(TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES));
+                        } catch (InterruptedException e) {
+                            stop = true;
+                        }
+                    }
+                }
+                System.out.println("killing");
+                System.exit(2);
+            }
+        }).start();
+        try {
+            experiment();
+//            System.out.println("verification");
+//            experiment(false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.exit(0);
+    }
+
 //    private static void writeDouble(ObjectOutputStream objectOutputStream, double d) throws IOException {
 //        if(Double.isNaN(d)) {
 //            d = 0;
@@ -125,7 +126,7 @@
 //        results.memory = memory;
 //        return results;
 //    }
-//
+
 //    private List<ClassifierResults> readResultsSequence(InputStream inputStream, int size) throws IOException {
 //        ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(inputStream)));
 //        List<ClassifierResults> list = new ArrayList<>();
@@ -137,81 +138,83 @@
 //        }
 //        return list;
 //    }
-//
-//    public void experiment(boolean skip) throws Exception {
-//        if(benchmark < 0) {
-//            System.out.println("benchmarking");
-//            benchmark = ClassifierResults.benchmark();
-//        }
-//        System.out.println("experimenting");
-//        List<ParameterSpace<? extends DistanceMeasure>> parameterSpaces = new ArrayList<>();
-//        parameterSpaces.add(new DtwParameterSpace());
-//        parameterSpaces.add(new DdtwParameterSpace());
-//        parameterSpaces.add(new WdtwParameterSpace());
-//        parameterSpaces.add(new WddtwParameterSpace());
-//        parameterSpaces.add(new LcssParameterSpace());
-//        parameterSpaces.add(new MsmParameterSpace());
-//        parameterSpaces.add(new TweParameterSpace());
-//        parameterSpaces.add(new ErpParameterSpace());
-//        Random random = new Random();
-//        Collections.shuffle(datasets,random);
-//        for(Integer foldIndex : foldIndices) {
-//            for(File datasetFile : datasets) {
-//                String datasetName = datasetFile.getName();
-//                Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
-//                Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
-//                Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, foldIndex);
-//                trainInstances = splitInstances[0];
-//                testInstances = splitInstances[1];
-//                for(ParameterSpace<? extends DistanceMeasure> parameterSpace : parameterSpaces) {
-//                    parameterSpace.useInstances(trainInstances);
-//                    int numCombinations = parameterSpace.size();
-//                    List<Integer> combinations = new ArrayList<>();
-//                    for(int i = 0; i < numCombinations; i++) {
-//                        combinations.add(i);
-//                    }
-//                    Collections.shuffle(combinations, random);
-//                    parameterSpace.setCombination(0);
-//                    System.out.println(datasetName + " " + foldIndex
-//                        + " " + parameterSpace.build());
-//                    for(Integer combination : combinations) {
-//                        parameterSpace.setCombination(combination);
-//                        DistanceMeasure distanceMeasure = parameterSpace.build();
-//                        nn = new Nn();
-//                        nn.setDistanceMeasure(distanceMeasure);
-//                        nn.setSeed(foldIndex);
-//                        nn.setCvTrain(true);
-//                        nn.setUseEarlyAbandon(false);
-//                        nn.setKPercentage(0);
-//                        nn.setUseRandomTieBreak(false); // todo version with rand tie break
-//                        int numTrainInstances = trainInstances.numInstances();
-//                        String path = globalResultsDir
-//                            + "/" + datasetName
-//                            + "/" + foldIndex
-//                            + "/" + nn.getDistanceMeasure()
-//                            + "/" + nn.getDistanceMeasure().getParameters() + ".gzip";
-//                        File file = new File(path);
-//                        Utilities.mkdir(file.getParentFile());
-//                        if(file.createNewFile()) {
-//                            ObjectOutputStream out = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file))));
-//                            out.writeLong(benchmark);
-//                            for(int i = 0; i <= numTrainInstances; i++) {
-////                                System.out.println(i + " of " + numTrainInstances);
-//                                if(i == numTrainInstances) {
-//                                    System.out.println();
-//                                }
-//                                nn.setSampleSizePercentage((double) i / numTrainInstances);
-//                                nn.buildClassifier(trainInstances);
-//                                ClassifierResults trainResults = nn.getTrainResults();
-//                                ClassifierResults testResults = nn.getTestPrediction(trainInstances, testInstances);
-//                                writeResults(out, trainResults);
-//                                writeResults(out, testResults);
-//                            }
-//                            out.close();
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
+
+    private static long benchmark() {
+        Random random = new Random();
+        List<Long> times = new ArrayList<>();
+        for(int i = 0; i < 101; i++) {
+            random.setSeed(0);
+            List<Integer> list = new ArrayList<>();
+            for(int j = 0; j < 1000000; j++) {
+                list.add(random.nextInt());
+            }
+            long startTime = System.nanoTime();
+            Collections.sort(list);
+            long endTime = System.nanoTime();
+            times.add(endTime - startTime);
+        }
+        Collections.sort(times);
+        return times.get(times.size() / 2);
+    }
+
+    public void experiment() throws Exception {
+        System.out.println(datasetFile.getName());
+        System.out.println(seed);
+        Utilities.mkdir(globalResultsDir);
+        System.out.println("benchmarking");
+        long benchmark = benchmark();
+        System.out.println("experimenting");
+        List<ConstituentBuilder> constituentBuilders = new ArrayList<>();
+        constituentBuilders.add(new DtwBuilder());
+        constituentBuilders.add(new DdtwBuilder());
+        constituentBuilders.add(new WddtwBuilder());
+        constituentBuilders.add(new WdtwBuilder());
+        constituentBuilders.add(new LcssBuilder());
+        constituentBuilders.add(new MsmBuilder());
+        constituentBuilders.add(new TweBuilder());
+        constituentBuilders.add(new ErpBuilder());
+        String datasetName = datasetFile.getName();
+        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
+        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
+        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+        trainInstances = splitInstances[0];
+        testInstances = splitInstances[1];
+        Collections.sort(samplingPercentages);
+        for(ConstituentBuilder constituentBuilder : constituentBuilders) {
+            constituentBuilder.setUpParameters(trainInstances);
+        }
+        for(ConstituentBuilder constituentBuilder : constituentBuilders) {
+            for(int combination = 0; combination < constituentBuilder.size(); combination++) {
+                constituentBuilder.setParameterPermutation(combination);
+                Nn nn = constituentBuilder.build();
+                File file = new File(globalResultsDir
+                    + "/Predictions/" + datasetName
+                    + "/" + nn.getDistanceMeasure()
+                    + "/" + nn.getDistanceMeasure().getParameters()
+                    + "/fold" + seed + ".csv.gzip");
+                Utilities.mkdir(file.getParentFile());
+                if(file.createNewFile()) {
+                    System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
+                    nn.setSeed(seed);
+                    nn.setCvTrain(true);
+                    nn.setUseEarlyAbandon(false);
+                    nn.setKPercentage(0);
+                    nn.setUseRandomTieBreak(false);
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file))));
+                    for(Double samplingPercentage : samplingPercentages) {
+                        nn.setSampleSizePercentage(samplingPercentage);
+                        objectOutputStream.writeDouble(samplingPercentage);
+                        nn.buildClassifier(trainInstances);
+                        ClassifierResults trainResults = nn.getTrainResults();
+                        trainResults.setBenchmarkTime(benchmark);
+                        objectOutputStream.writeObject(trainResults.writeFullResultsToString());
+                        ClassifierResults testResults = nn.getTestResults(testInstances);
+                        testResults.setBenchmarkTime(benchmark);
+                        objectOutputStream.writeObject(testResults.writeFullResultsToString());
+                    }
+                    objectOutputStream.close();
+                }
+            }
+        }
+    }
+}
