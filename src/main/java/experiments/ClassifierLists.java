@@ -15,6 +15,8 @@
 package experiments;
 
 
+import development.go.Ee.ConstituentBuilders.BuilderClassifier;
+import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.DtwBuilder;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -82,7 +84,12 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            
+            case "GDTW":
+                BuilderClassifier builderClassifier = new BuilderClassifier(new DtwBuilder());
+                c = builderClassifier;
+                break;
+
+
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();
 //Default to 1 day max run: could do this better
