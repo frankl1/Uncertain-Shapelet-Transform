@@ -279,6 +279,44 @@ public class Utilities {
         System.out.println(asDirectoryPath("abc/def"));
     }
 
+
+
+    public static void sortDatasetNames(String datasetsDirPath, List<String> datasetNames, Comparator<Instances> comparator) {
+        datasetNames.sort((datasetNameA, datasetNameB) -> {
+            File datasetFileA = new File(datasetsDirPath, datasetNameA);
+            File datasetFileB = new File(datasetsDirPath, datasetNameB);
+            try {
+                Instances datasetA = Utilities.loadDataset(datasetFileA);
+                Instances datasetB = Utilities.loadDataset(datasetFileB);
+                return comparator.compare(datasetA, datasetB);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    public static List<String> readDatasetNameList(String datasetNameListPath) throws IOException {
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(datasetNameListPath));
+        List<String> datasetNames = new ArrayList<>();
+        String datasetName = bufferedReader.readLine();
+        while (datasetName != null) {
+            datasetNames.add(datasetName);
+            datasetName = bufferedReader.readLine();
+        }
+        bufferedReader.close();
+        return datasetNames;
+    }
+
+    public static void writeDatasetNameList(String datasetNameListPath, List<String> datasetNames) throws IOException {
+        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(datasetNameListPath));
+        for(String datasetName : datasetNames) {
+            bufferedWriter.write(datasetName);
+            bufferedWriter.write("\n");
+        }
+        bufferedWriter.close();
+    }
+
     public static List<Integer> naturalNumbersFromZero(int size) {
         List<Integer> list = new ArrayList<>();
         for(int i = 0; i <= size; i++) {
