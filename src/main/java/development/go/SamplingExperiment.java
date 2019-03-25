@@ -179,6 +179,10 @@ public class SamplingExperiment {
         Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
         trainInstances = splitInstances[0];
         testInstances = splitInstances[1];
+        samplingPercentages.clear();
+        for(int i = 0; i <= trainInstances.size(); i++) {
+            samplingPercentages.add((double) i / trainInstances.size());
+        }
         Collections.sort(samplingPercentages);
         for(ConstituentBuilder constituentBuilder : constituentBuilders) {
             constituentBuilder.setUpParameters(trainInstances);

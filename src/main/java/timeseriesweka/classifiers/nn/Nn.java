@@ -69,7 +69,6 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     private boolean checkpointing = false;
     private long lastCheckpointTimeStamp = 0;
     private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
-    private boolean useSettingsFromCheckpoint = false;
     private long testTimeStamp;
     private long trainTimeStamp;
     private long predictionTime;
@@ -86,6 +85,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         trainResults = null;
         resetTrain = true;
         trainTime = -1;
+        hasResumedFromCheckpoint = false;
         resetTest();
     }
 
@@ -294,8 +294,6 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     public String getSavePath() {
         return savePath;
     }
-    // todo generify sampler?
-    // todo time prediction of train?
 
     @Override
     public void setSavePath(String path) {
@@ -309,16 +307,14 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     public void copyFromSerObject(final Object obj) throws Exception {
         reset();
         Nn other = (Nn) obj;
-        if(usesSettingsFromCheckpoint()) {
-            kPercentage = other.kPercentage;
-            cvTrain = other.cvTrain;
-            useRandomTieBreak = other.useRandomTieBreak;
-            useEarlyAbandon = other.useEarlyAbandon;
-            distanceMeasure = other.distanceMeasure;
-            neighbourWeighter = other.neighbourWeighter;
-            sampleSizePercentage = other.sampleSizePercentage;
-            sampler = other.sampler;
-        }
+        kPercentage = other.kPercentage;
+        cvTrain = other.cvTrain;
+        useRandomTieBreak = other.useRandomTieBreak;
+        useEarlyAbandon = other.useEarlyAbandon;
+        distanceMeasure = other.distanceMeasure;
+        neighbourWeighter = other.neighbourWeighter;
+        sampleSizePercentage = other.sampleSizePercentage;
+        sampler = other.sampler;
         originalTestInstances = other.originalTestInstances;
         originalTrainInstances = other.originalTrainInstances;
         sampledTrainInstances.addAll(other.sampledTrainInstances);
@@ -336,14 +332,6 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         resetTrain = other.resetTrain;
         resetTest = other.resetTest;
         testResults = other.testResults;
-    }
-
-    public boolean usesSettingsFromCheckpoint() {
-        return useSettingsFromCheckpoint;
-    }
-
-    public void setUseSettingsFromCheckpoint(final boolean useSettingsFromCheckpoint) {
-        this.useSettingsFromCheckpoint = useSettingsFromCheckpoint;
     }
 
     public long getMinCheckpointInterval() {
@@ -547,6 +535,7 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
     }
 
     public ClassifierResults getTestResults(Instances testInstances) throws Exception {
+        resumeFromCheckpoint();
         testTimeStamp = System.nanoTime();
         if(resetTest) {
             resetTest = false;
@@ -576,10 +565,13 @@ public class Nn extends AbstractClassifier implements Serializable, Reproducible
         return testResults;
     }
 
+    private boolean hasResumedFromCheckpoint = false;
+
     private void resumeFromCheckpoint() throws Exception {
-        if(isCheckpointing()) {
+        if(isCheckpointing() && !hasResumedFromCheckpoint) {
             try {
                 loadFromFile(checkpointFilePath);
+                hasResumedFromCheckpoint = true;
             } catch (FileNotFoundException e) {
 
             }

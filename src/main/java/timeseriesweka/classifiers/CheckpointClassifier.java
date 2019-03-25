@@ -31,7 +31,6 @@ Requires two methods
 number 
 
 */
-package timeseriesweka.classifiers;
 
 import utilities.Utilities;
 

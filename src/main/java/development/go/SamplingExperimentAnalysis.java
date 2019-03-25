@@ -95,7 +95,7 @@ public class SamplingExperimentAnalysis {
 //        System.out.println();
 //        System.out.println(testResults.writeFullResultsToString());
 
-        String resultsPath = "/scratch/results/Predictions/GunPoint/dtw/-w 0.0/fold0.csv.gzip";
+        String resultsPath = "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nn2/Predictions/GunPoint/dtw/-w 0.0/fold0.csv.gzip";
         ObjectInputStream reader = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(resultsPath))));
         for(int i = 0; i <= 100; i += 10) {
             double percentage = reader.readDouble();
