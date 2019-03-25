@@ -45,7 +45,6 @@ public class Ee extends AdvancedAbstractClassifier
     private IterationStrategy iterationStrategy = new RandomRoundRobinIterationStrategy();
     private boolean buildFromFile = true;
     private String resultsFilePath = "/scratch/results";
-    private String checkpointFilePath = null;
     private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
     private boolean useRandomTieBreak = false;
 

@@ -348,7 +348,7 @@ public class Nn extends AdvancedAbstractClassifier implements  CheckpointClassif
             long predictionTime = System.nanoTime() - predictionTimeStamp;
             results.addPrediction(classValue, predictions, Utilities.argMax(predictions, random), predictionTime, null);
         }
-        setResultsMetaData(nearestNeighbourFinders.size(), results);
+        setResultsMetaData(nearestNeighbourFinders.get(0).getInstance().numClasses(), results);
         return results;
     }
 
