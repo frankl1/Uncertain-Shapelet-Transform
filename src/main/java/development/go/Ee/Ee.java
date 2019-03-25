@@ -8,6 +8,7 @@ import development.go.Ee.Selection.FirstBestPerType;
 import development.go.Ee.Selection.Selector;
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
+import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.SaveParameterInfo;
@@ -29,42 +30,23 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
-public class Ee extends AbstractClassifier implements SaveParameterInfo
-    , OptionsSetter
-    , Serializable
-    , Reproducible
+public class Ee extends AdvancedAbstractClassifier
 //    , ParameterSplittable
-    , TrainAccuracyEstimate
-    , CheckpointClassifier
-    , ContractClassifier
 {
 
 
     private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
     private final List<ConstituentBuilder<?>> originalConstituentBuilders = new ArrayList<>();
-    private Random random = new Random();
     private Selector<EnsembleModule, String> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.trainResults.getAcc()));
     private double sampleSizePercentage = 1;
-    private boolean trainCv = true;
-    private ClassifierResults trainResults;
     private EnsembleModule[] modules;
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVote();
     private IterationStrategy iterationStrategy = new RandomRoundRobinIterationStrategy();
-    private Long seed = 0L;
     private boolean buildFromFile = true;
     private String resultsFilePath = "/scratch/results";
-    private long trainTime;
-    private long trainContract = -1;
-    private long testContract = -1;
-    private long testTime;
-    private long predictionTime;
-    private long predictionContract = -1;
-    private long trainTimeStamp;
     private String checkpointFilePath = null;
     private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
-    private long lastCheckpointTimeStamp = -1;
-    private boolean isCheckpointing = false;
     private boolean useRandomTieBreak = false;
 
     private Ee() {
@@ -72,9 +54,7 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
     }
 
     public void reset() {
-        trainTime = -1;
-        predictionTime = -1;
-        testTime = -1;
+        super.reset();
         originalConstituentBuilders.clear();
     }
 
@@ -234,50 +214,6 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
     }
 
     @Override
-    public void setFindTrainAccuracyEstimate(final boolean setCV) {
-        setTrainCv(setCV);
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate() {
-        return true;
-    }
-
-    @Override
-    public void writeCVTrainToFile(final String train) {
-        throw new UnsupportedOperationException();
-    }
-
-    public ClassifierResults getTrainResults() {
-        return trainResults;
-    }
-
-    private void trainCheckpoint() throws IOException {
-        trainCheckpoint(false);
-    }
-
-    public boolean isCheckpointing() {
-        return isCheckpointing;
-    }
-
-    public void setCheckpointing(boolean on) {
-        isCheckpointing = on;
-    }
-
-    private void checkpoint(boolean force) throws IOException {
-        if(isCheckpointing() && (force || System.nanoTime() - lastCheckpointTimeStamp > minCheckpointInterval)) {
-            saveToFile(checkpointFilePath);
-        }
-    }
-
-    private void trainCheckpoint(boolean force) throws IOException {
-        long timeStamp = System.nanoTime();
-        trainTime += timeStamp - trainTimeStamp;
-        checkpoint(force);
-        trainTimeStamp = System.nanoTime();
-    }
-
-    @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
         resumeFromCheckpoint();
         trainTimeStamp = System.nanoTime();
@@ -287,9 +223,9 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
         }
         trainResults = new ClassifierResults();
         trainCheckpoint();
-        while (iterationStrategy.hasNext() && (trainContract < 0 || trainTime < trainContract)) {
+        while (iterationStrategy.hasNext() && withinTrainContract()) {
             Nn nn = iterationStrategy.next();
-            nn.setCvTrain(trainCv);
+            nn.setCvTrain(isCvTrain());
             nn.setCheckpointing(isCheckpointing());
             nn.setTrainContract(trainContract - trainTime);
             // todo below should be offloaded to constituent builders perhaps?
@@ -297,9 +233,7 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
 //            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
             EnsembleModule ensembleModule = new EnsembleModule();
             if(buildFromFile) {
-                long timeStamp = System.nanoTime();
-                trainTime += timeStamp - trainTimeStamp;
-                trainTimeStamp = timeStamp;
+                updateTrainTime();
                 String path = resultsFilePath // todo this string probs need adjusting for running consistuents individually
                     + "/Predictions/"
                     + trainInstances.relationName()
@@ -344,38 +278,12 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
         trainCheckpoint(true);
     }
 
-    private void resumeFromCheckpoint() throws Exception {
-        if(isCheckpointing()) {
-            try {
-                loadFromFile(checkpointFilePath);
-            } catch (FileNotFoundException e) {
-
-            }
-        }
-    }
-
-    public Random getRandom() {
-        return random;
-    }
-
-    public void setRandom(final Random random) {
-        this.random = random;
-    }
-
     public Selector<EnsembleModule, String> getSelector() {
         return selector;
     }
 
     public void setSelector(final Selector<EnsembleModule, String> selector) {
         this.selector = selector;
-    }
-
-    public boolean isTrainCv() {
-        return trainCv;
-    }
-
-    public void setTrainCv(final boolean trainCv) {
-        this.trainCv = trainCv;
     }
 
     public ModuleWeightingScheme getWeightingScheme() {
@@ -394,19 +302,6 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
         this.votingScheme = votingScheme;
     }
 
-    public Long getSeed() {
-        return seed;
-    }
-
-    public void setSeed(final Long seed) {
-        this.seed = seed;
-        random.setSeed(seed); // todo reset
-    }
-
-    public void setSeed(long seed) {
-        this.seed = seed;
-    }
-
     public boolean isBuildFromFile() { // todo rename these
         return buildFromFile;
     }
@@ -421,38 +316,6 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
 
     public void setResultsFilePath(final String resultsFilePath) {
         this.resultsFilePath = resultsFilePath;
-    }
-
-    public long getTrainContract() {
-        return trainContract;
-    }
-
-    public void setTrainContract(final long trainContract) {
-        this.trainContract = trainContract;
-    }
-
-    public long getTestContract() {
-        return testContract;
-    }
-
-    public void setTestContract(final long testContract) {
-        this.testContract = testContract;
-    }
-
-    public long getPredictionContract() {
-        return predictionContract;
-    }
-
-    public void setPredictionContract(final long predictionContract) {
-        this.predictionContract = predictionContract;
-    }
-
-    public long getMinCheckpointInterval() {
-        return minCheckpointInterval;
-    }
-
-    public void setMinCheckpointInterval(final long minCheckpointInterval) {
-        this.minCheckpointInterval = minCheckpointInterval;
     }
 
     public boolean isUseRandomTieBreak() {
@@ -478,7 +341,7 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
             }
             results.addPrediction(testInstance.classValue(), prediction, predictedClass, predictionTime, null);
         }
-        setResultsMetaData(testInstances, results);
+        setResultsMetaData(testInstances.numClasses(), results);
         return results;
     }
 
@@ -487,53 +350,14 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
         return votingScheme.distributionForInstance(modules, testInstance);
     }
 
-    private ClassifierResults setResultsMetaData(final Instances instances, ClassifierResults results) throws Exception {
-        results.setNumClasses(instances.numClasses());
-        try {
-            results.setMemory(SizeOf.deepSizeOf(this));
-        } catch (Exception e) {
 
-        }
-        results.setClassifierName(toString());
-        results.setParas(getParameters());
-        results.setTimeUnit(TimeUnit.NANOSECONDS);
-        results.setBuildTime(getTrainTime());
-        results.setTestTime(getTestTime());
-        results.findAllStatsOnce();
-        return results;
-    }
 
     @Override
     public String getParameters() {
-        return null; // todo
-    }
-
-    public long getTrainTime() {
-        return trainTime;
-    }
-
-//    @Override
-//    public void setParamSearch(final boolean b) {
-//
-//    }
-//
-//    @Override
-//    public void setParametersFromIndex(final int x) {
-//
-//    }
-//
-//    @Override
-//    public String getParas() {
-//        return null;
-//    }
-//
-//    @Override
-//    public double getAcc() {
-//        return 0;
-//    }
-
-    public long getTestTime() {
-        return testTime;
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(super.getParameters());
+        throw new UnsupportedOperationException();
+//        return stringBuilder.toString(); // todo
     }
 
     public boolean usesRandomTieBreak() {
@@ -542,6 +366,9 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
 
     @Override
     public boolean setOption(final String key, final String value) {
+        if(!super.setOption(key, value)) {
+
+        }
         throw new UnsupportedOperationException(); // todo setoptiosn
     }
 
@@ -555,12 +382,13 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
 
     @Override
     public void setSavePath(final String path) {
+        super.setSavePath(path);
         checkpointFilePath = new File(path, CHECKPOINT_FILE_NAME).getPath();
     }
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
-        reset();
+        super.copyFromSerObject(obj);
         Ee other = (Ee) obj;
         seed = other.seed;
         random = other.random;
@@ -581,10 +409,5 @@ public class Ee extends AbstractClassifier implements SaveParameterInfo
         predictionContract = other.predictionContract;
         minCheckpointInterval = other.minCheckpointInterval;
         useRandomTieBreak = other.useRandomTieBreak;
-    }
-
-    @Override
-    public void setTimeLimit(final long nanoseconds) {
-        trainContract = nanoseconds;
     }
 }
