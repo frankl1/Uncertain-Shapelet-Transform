@@ -15,8 +15,8 @@
 package experiments;
 
 
-import development.go.Ee.ConstituentBuilders.BuilderClassifier;
-import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.DtwBuilder;
+import development.go.Ee.PG;
+import development.go.Ee.TSEF;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
 import multivariate_timeseriesweka.classifiers.NN_DTW_A;
 import multivariate_timeseriesweka.classifiers.NN_DTW_D;
@@ -28,6 +28,8 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
+import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.classifiers.nn.Tuning.TunedLcss;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -84,10 +86,24 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            case "GDTW":
-                BuilderClassifier builderClassifier = new BuilderClassifier(new DtwBuilder());
-                c = builderClassifier;
+            case "TUNEDLCSS":
+                c = new TunedLcss();
                 break;
+            case "PG":
+                c = new PG();
+                break;
+            case "TSEF":
+                c = new TSEF();
+                break;
+//            case "GDTW":
+////                ClassifierBuilder classifierBuilder = new ClassifierBuilder(new DtwBuilder());
+////                classifierBuilder.setCvTrain(true);
+////                c = classifierBuilder;
+//                AbstractNn nn = new AbstractNn();
+//                nn.setUseRandomTieBreak(false);
+//                c = nn;
+//                break;
+
 
 
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1

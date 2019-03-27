@@ -6,6 +6,7 @@ import com.beust.jcommander.converters.FileConverter;
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.*;
 import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.nn.AbstractNn;
 import timeseriesweka.classifiers.nn.Nn;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -121,7 +122,7 @@ public class SamplingExperiment {
             for(ConstituentBuilder constituentBuilder : constituentBuilders) {
                 for(int combination = 0; combination < constituentBuilder.size(); combination++) {
                     constituentBuilder.setParameterPermutation(combination);
-                    Nn nn = constituentBuilder.build();
+                    Nn nn = (Nn) constituentBuilder.build(); // todo will break
                     File file = new File(globalResultsDir
                         + "/Predictions/" + datasetName
                         + "/" + nn.getDistanceMeasure()

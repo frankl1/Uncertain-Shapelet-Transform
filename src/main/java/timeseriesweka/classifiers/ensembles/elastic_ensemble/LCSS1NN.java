@@ -15,21 +15,12 @@
 package timeseriesweka.classifiers.ensembles.elastic_ensemble;
 
 
-import timeseriesweka.classifiers.nn.Nn;
-import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.lcss.Lcss;
-import utilities.ClassifierResults;
 import utilities.ClassifierTools;
-import utilities.Utilities;
 import weka.classifiers.lazy.kNN;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import timeseriesweka.elastic_distance_measures.LCSSDistance;
-import weka.core.neighboursearch.NearestNeighbourSearch;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * checked April l16

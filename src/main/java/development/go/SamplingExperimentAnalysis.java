@@ -1,21 +1,9 @@
 package development.go;
 
 import evaluation.storage.ClassifierResults;
-import scala.tools.nsc.interpreter.Results;
-import timeseriesweka.classifiers.nn.Nn;
-import timeseriesweka.measures.DistanceMeasure;
-import timeseriesweka.measures.dtw.Dtw;
-import utilities.*;
-import weka.core.Instance;
-import weka.core.Instances;
 
 import java.io.*;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public class SamplingExperimentAnalysis {
 
