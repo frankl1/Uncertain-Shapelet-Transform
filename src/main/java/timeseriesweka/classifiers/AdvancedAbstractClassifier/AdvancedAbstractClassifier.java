@@ -4,6 +4,7 @@ import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
+import timeseriesweka.classifiers.ParameterSplittable;
 import timeseriesweka.classifiers.SaveParameterInfo;
 import utilities.OptionsSetter;
 import utilities.Reproducible;
@@ -12,10 +13,7 @@ import utilities.Utilities;
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instances;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -37,7 +35,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     protected long testTimeStamp;
     protected long trainTimeStamp;
     protected long predictionTime;
-    protected boolean cvTrain = false;
+    protected boolean cvTrain = true;
     protected String checkpointFilePath;
     protected long predictionContract = -1;
     protected Random random = new Random();
@@ -115,6 +113,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         resetTrain = other.resetTrain;
         resetTest = other.resetTest;
         testResults = other.testResults;
+        trainFilePath = other.trainFilePath; // todo should this be here?
     }
 
     public void reset() {
@@ -234,9 +233,11 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         return cvTrain;
     }
 
+    protected String trainFilePath;
+
     @Override
     public void writeCVTrainToFile(final String train) {
-        throw new UnsupportedOperationException();
+        trainFilePath = train;
     }
 
     @Override
