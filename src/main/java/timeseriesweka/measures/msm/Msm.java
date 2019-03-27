@@ -2,7 +2,7 @@ package timeseriesweka.measures.msm;
 
 import timeseriesweka.measures.dtw.Dtw;
 
-public class Msm extends Dtw {
+public class Msm extends Dtw implements MsmInterface {
 
     public double getPenalty() {
         return penalty;

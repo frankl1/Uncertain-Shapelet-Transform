@@ -2,7 +2,9 @@ package timeseriesweka.measures.dtw;
 
 import timeseriesweka.measures.DistanceMeasure;
 
-public class Dtw extends DistanceMeasure {
+public class Dtw extends DistanceMeasure implements DtwInterface {
+
+    public static double DEFAULT_WARPING_WINDOW = 1;
 
     /**
      * get the current warpingWindowPercentage percentage

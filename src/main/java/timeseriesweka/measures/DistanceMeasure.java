@@ -23,7 +23,7 @@ import static utilities.Utilities.*;
 
 
 
-public abstract class DistanceMeasure extends NormalizableDistance implements SaveParameterInfo, Serializable, OptionsSetter {
+public abstract class DistanceMeasure extends NormalizableDistance implements MeasurableDistance {
 
     public DistanceMeasure() {
         setDontNormalize(true); // disable WEKA's normalisation - shouldn't use it anyway but just in case!
@@ -70,7 +70,7 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      * @param timeSeriesB time series
      * @return distance between two time series
      */
-    public final double distance(double[] timeSeriesA, double[] timeSeriesB) {
+    public double distance(double[] timeSeriesA, double[] timeSeriesB) {
         return distance(timeSeriesA, timeSeriesB, Double.POSITIVE_INFINITY);
     }
 
@@ -80,7 +80,7 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      * @param instanceB second instance
      * @return distance between the two instances
      */
-    public final double distance(Instance instanceA, Instance instanceB) {
+    public double distance(Instance instanceA, Instance instanceB) {
         return distance(instanceA, instanceB, Double.POSITIVE_INFINITY);
     }
 
@@ -91,9 +91,10 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      * @param cutOff cut off value to abandon distance measurement early
      * @return distance between the two instances
      */
-    public final double distance(Instance instanceA, Instance instanceB, double cutOff) {
-        return measureDistance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
+    public double distance(Instance instanceA, Instance instanceB, double cutOff) {
+        return distance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
     }
+
 
     /**
      * get the parameters
@@ -120,6 +121,6 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Sa
      */
     @Override
     public String toString() {
-        return getClass().getSimpleName().toLowerCase();
+        return getClass().getSimpleName();
     }
 }

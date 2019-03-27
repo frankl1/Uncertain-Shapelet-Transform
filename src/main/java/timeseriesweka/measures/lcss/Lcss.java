@@ -2,9 +2,11 @@ package timeseriesweka.measures.lcss;
 
 import timeseriesweka.measures.dtw.Dtw;
 
-public class Lcss extends Dtw {
+public class Lcss extends Dtw implements LcssInterface {
 
-    public Lcss(double tolerance, int warpingWindowPercentage) {
+    public static final double DEFAULT_TOLERANCE = 0.01;
+
+    public Lcss(double tolerance, double warpingWindowPercentage) {
         super(warpingWindowPercentage);
         setTolerance(tolerance);
     }
@@ -13,7 +15,7 @@ public class Lcss extends Dtw {
     // epsilon === diff between two values before they're considered the same AKA tolerance
 
     public Lcss() {
-        this(0.01, 1);
+        this(DEFAULT_TOLERANCE, DEFAULT_WARPING_WINDOW);
     }
 
     private double tolerance;

@@ -5,7 +5,7 @@ import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
 
-public class Ddtw extends Dtw {
+public class Ddtw extends Dtw implements DdtwInterface {
 
     @Override
     protected double measureDistance(final double[] timeSeriesA, final double[] timeSeriesB, final double cutOff) {

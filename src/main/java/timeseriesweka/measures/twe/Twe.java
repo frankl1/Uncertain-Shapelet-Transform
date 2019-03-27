@@ -2,7 +2,7 @@ package timeseriesweka.measures.twe;
 
 import timeseriesweka.measures.DistanceMeasure;
 
-public class Twe extends DistanceMeasure {
+public class Twe extends DistanceMeasure implements TweInterface {
 
     @Override
     protected double measureDistance(double[] a, double[] b, double cutOff) {

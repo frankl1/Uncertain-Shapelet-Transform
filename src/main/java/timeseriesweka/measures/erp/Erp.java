@@ -4,7 +4,7 @@ import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import weka.core.Option;
 
-public class Erp extends Dtw {
+public class Erp extends Dtw implements ErpInterface {
 
     private double penalty; // penalty for ee gap, 0 best according to paper
 

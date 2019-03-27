@@ -2,7 +2,7 @@ package timeseriesweka.measures.wdtw;
 
 import timeseriesweka.measures.dtw.Dtw;
 
-public class Wdtw extends Dtw {
+public class Wdtw extends Dtw implements WdtwInterface {
 
     public double getWeight() {
         return weight;
