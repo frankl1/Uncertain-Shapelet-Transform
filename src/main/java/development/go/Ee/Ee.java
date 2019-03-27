@@ -7,21 +7,16 @@ import development.go.Ee.ParameterIteration.RandomRoundRobinIterationStrategy;
 import development.go.Ee.Selection.FirstBestPerType;
 import development.go.Ee.Selection.Selector;
 import evaluation.storage.ClassifierResults;
-import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
-import timeseriesweka.classifiers.SaveParameterInfo;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.classifiers.nn.NeighbourWeighting.UniformWeighting;
-import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.classifiers.nn.AbstractNn;
 
+import timeseriesweka.classifiers.nn.Nn;
 import utilities.*;
-import weka.classifiers.AbstractClassifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -223,7 +218,7 @@ public class Ee extends AdvancedAbstractClassifier
         trainResults = new ClassifierResults();
         trainCheckpoint();
         while (iterationStrategy.hasNext() && withinTrainContract()) {
-            Nn nn = iterationStrategy.next();
+            Nn nn = (Nn) iterationStrategy.next(); // todo will break
             nn.setCvTrain(isCvTrain());
             nn.setCheckpointing(isCheckpointing());
             nn.setTrainContract(trainContract - trainTime);
@@ -275,6 +270,7 @@ public class Ee extends AdvancedAbstractClassifier
         weightingScheme.defineWeightings(modules, trainInstances.numClasses());
         votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
         trainCheckpoint(true);
+        getTrainResults().writeFullResultsToFile(trainFilePath);
     }
 
     public Selector<EnsembleModule, String> getSelector() {

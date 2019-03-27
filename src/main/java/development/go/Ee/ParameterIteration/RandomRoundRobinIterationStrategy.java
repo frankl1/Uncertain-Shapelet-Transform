@@ -1,7 +1,7 @@
 package development.go.Ee.ParameterIteration;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.classifiers.nn.AbstractNn;
 
 import java.util.*;
 
@@ -30,14 +30,14 @@ public class RandomRoundRobinIterationStrategy implements IterationStrategy {
     }
 
     @Override
-    public Nn next() {
+    public AbstractNn next() {
         int constituentBuilderIndex = random.nextInt(constituentBuilders.size());
         ConstituentBuilder constituentBuilder = constituentBuilders.remove(constituentBuilderIndex);
         List<Integer> parameters = map.get(constituentBuilder);
         int parameterIndex = random.nextInt(parameters.size());
         int parameter = parameters.remove(parameterIndex);
         constituentBuilder.setParameterPermutation(parameter);
-        Nn nn = constituentBuilder.build();
+        AbstractNn nn = constituentBuilder.build();
         if(parameters.isEmpty()) {
             map.remove(constituentBuilder);
         }
