@@ -3,18 +3,12 @@ package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Indexed.Indexed;
 import development.go.Indexed.IndexedValues;
-import timeseriesweka.classifiers.nn.Nn;
-import timeseriesweka.measures.lcss.Lcss;
 import timeseriesweka.measures.msm.Msm;
-import utilities.StatisticUtilities;
-import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static utilities.Utilities.incrementalDiffList;
 
 public class MsmBuilder extends ConstituentBuilder<Msm> {
     private final Indexed<Double> warpingWindowValues = new IndexedValues<>(Collections.singletonList(1.0));

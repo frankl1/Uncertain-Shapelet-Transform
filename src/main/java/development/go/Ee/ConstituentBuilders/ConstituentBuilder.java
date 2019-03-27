@@ -1,5 +1,6 @@
 package development.go.Ee.ConstituentBuilders;
 
+import timeseriesweka.classifiers.nn.AbstractNn;
 import timeseriesweka.classifiers.nn.Nn;
 import timeseriesweka.measures.DistanceMeasure;
 import utilities.Utilities;
@@ -8,7 +9,7 @@ import weka.core.Instances;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ConstituentBuilder<A extends DistanceMeasure> implements PermutedBuilder<Nn> {
+public abstract class ConstituentBuilder<A extends DistanceMeasure> implements PermutedBuilder<AbstractNn> {
 
     private List<Integer> parameterPermutation;
     private Integer parameterPermutationSingular;
@@ -53,7 +54,7 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements P
         return new Nn();
     }
 
-    public void configureNn(Nn nn, List<Integer> parameterPermutation) {
+    public void configureNn(AbstractNn nn, List<Integer> parameterPermutation) {
 
     }
 
@@ -72,7 +73,7 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements P
     }
 
     @Override
-    public Nn build() {
+    public AbstractNn build() {
         if(parameterPermutation == null) {
             parameterPermutation = Utilities.fromPermutation(parameterPermutationSingular, getParameterSizes());
             parameterPermutationSingular = null;

@@ -1,19 +1,12 @@
 package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import development.go.Indexed.Indexed;
 import development.go.Indexed.IndexedValues;
-import timeseriesweka.classifiers.nn.Nn;
-import timeseriesweka.measures.erp.Erp;
 import timeseriesweka.measures.twe.Twe;
-import utilities.StatisticUtilities;
-import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static utilities.Utilities.incrementalDiffList;
 
 public class TweBuilder extends ConstituentBuilder<Twe> {
     private final IndexedValues<Double> stiffnessValues = new IndexedValues<>(Arrays.asList(

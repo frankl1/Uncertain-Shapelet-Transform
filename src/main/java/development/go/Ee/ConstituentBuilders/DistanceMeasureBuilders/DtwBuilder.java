@@ -2,10 +2,7 @@ package development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Indexed.Indexed;
-import development.go.Indexed.IndexedValues;
-import timeseriesweka.classifiers.nn.Nn;
 import timeseriesweka.measures.dtw.Dtw;
-import timeseriesweka.measures.lcss.Lcss;
 import weka.core.Instances;
 
 import java.util.ArrayList;

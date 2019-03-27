@@ -1,12 +1,13 @@
 package development.go.Ee.ConstituentBuilders;
 
+import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import weka.core.Instance;
 import weka.core.Instances;
 
-public class BuilderClassifier extends AdvancedAbstractClassifier implements ParameterSplittable {
-    public BuilderClassifier(final PermutedBuilder<? extends AdvancedAbstractClassifier> builder) {
+public class ClassifierBuilder extends AdvancedAbstractClassifier implements ParameterSplittable {
+    public ClassifierBuilder(final PermutedBuilder<? extends AdvancedAbstractClassifier> builder) {
         this.builder = builder;
     }
 
@@ -17,6 +18,11 @@ public class BuilderClassifier extends AdvancedAbstractClassifier implements Par
     public void buildClassifier(final Instances trainInstances) throws Exception {
         builder.useInstances(trainInstances);
         classifier = builder.build();
+        try {
+            classifier.copyFromSerObject(this);
+        } catch (Exception e) {
+
+        }
         classifier.buildClassifier(trainInstances);
     }
 
@@ -35,6 +41,11 @@ public class BuilderClassifier extends AdvancedAbstractClassifier implements Par
     @Override
     public void setParamSearch(final boolean b) {
 
+    }
+
+    @Override
+    public ClassifierResults getTrainResults() {
+        return classifier.getTrainResults();
     }
 
     @Override
