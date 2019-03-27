@@ -1794,7 +1794,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
         List<Long> copy = new ArrayList<>(predTimes);
         Collections.sort(copy);
         
-        int mid = copy.size()/2;
+        int mid = (copy.size() - 1)/2;
         if (copy.size() % 2 == 0)
             return (copy.get(mid) + copy.get(mid+1)) / 2;
         else 
