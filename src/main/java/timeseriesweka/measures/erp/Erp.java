@@ -116,7 +116,7 @@ public class Erp extends Dtw implements ErpInterface {
         return "1";
     }
 
-    private static final String PENALTY_KEY = "-p";
+    private static final String PENALTY_KEY = "penalty";
 
     @Override
     public String[] getOptions() {

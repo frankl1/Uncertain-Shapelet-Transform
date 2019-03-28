@@ -1,7 +1,7 @@
 package development.go.Ee.ConstituentBuilders;
 
-import timeseriesweka.classifiers.nn.AbstractNn;
-import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.classifiers.Nn.AbstractNn;
+import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.measures.DistanceMeasure;
 import utilities.Utilities;
 import weka.core.Instances;

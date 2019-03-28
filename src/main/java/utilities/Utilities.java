@@ -524,7 +524,7 @@ public class Utilities {
         for(int i = 1; i < list.size(); i++) {
             I other = list.get(i);
             C otherConversion = converter.apply(other);
-            double comparisonResult = comparator.compare(conversion, otherConversion);
+            double comparisonResult = comparator.compare(otherConversion, conversion);
             if(comparisonResult >= 0) {
                 if(comparisonResult > 0) {
                     draws.clear();
@@ -552,7 +552,7 @@ public class Utilities {
         for(int i = 1; i < list.size(); i++) {
             I other = list.get(i);
             C otherConversion = converter.apply(other);
-            double comparisonResult = comparator.compare(best, otherConversion);
+            double comparisonResult = comparator.compare(otherConversion, best);
             if(comparisonResult >= 0) {
                 if(comparisonResult > 0) {
                     draws.clear();

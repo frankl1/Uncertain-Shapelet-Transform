@@ -1,6 +1,6 @@
 package timeseriesweka.measures;
 
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.SaveParameterInfoOptions;
 import utilities.OptionsSetter;
 import weka.core.Instance;
 
@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 import static utilities.Utilities.extractTimeSeries;
 
-public interface MeasurableDistance extends SaveParameterInfo, Serializable, OptionsSetter {
+public interface MeasurableDistance extends SaveParameterInfoOptions, Serializable, OptionsSetter {
     double distance(double[] timeSeriesA, double[] timeSeriesB, double cutOff);
 
     /**

@@ -19,7 +19,6 @@ import java.io.Serializable;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier.TEST_TIME_KEY;
 
 public interface AdvancedAbstractClassifierInterface extends Serializable, Reproducible, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier {
 

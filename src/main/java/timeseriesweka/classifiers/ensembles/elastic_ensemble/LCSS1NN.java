@@ -156,19 +156,19 @@ public class LCSS1NN extends Efficient1NN{
 //                }
 //            }
 //        }
-//        Nn nn = new Nn();
-//        nn.setUseRandomTieBreak(false);
-//        nn.setCvTrain(true);
-//        nn.setDistanceMeasure(lcss);
-//        nn.buildClassifier(instances);
+//        Nn Nn = new Nn();
+//        Nn.setUseRandomTieBreak(false);
+//        Nn.setCvTrain(true);
+//        Nn.setDistanceMeasure(lcss);
+//        Nn.buildClassifier(instances);
 //        double o = orig.loocvAccAndPreds(instances, 20)[0];
-//        System.out.println(nn.getTrainResults().acc);
+//        System.out.println(Nn.getTrainResults().acc);
 //        System.out.println(o);
 //        ClassifierResults results = new ClassifierResults();
 //        ClassifierResults origResult = new ClassifierResults();
 //        Instances test = ClassifierTools.loadData(new File("/scratch/Datasets/TSCProblems2019/GunPoint/GunPoint_TEST.arff"));
 //        for(Instance instance : test) {
-//            results.storeSingleResult(instance.classValue(), nn.distributionForInstance(instance));
+//            results.storeSingleResult(instance.classValue(), Nn.distributionForInstance(instance));
 //            origResult.storeSingleResult(instance.classValue(), orig.distributionForInstance(instance));
 //        }
 //        results.setNumInstances(test.numInstances());

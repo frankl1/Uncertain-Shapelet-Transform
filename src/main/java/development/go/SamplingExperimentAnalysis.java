@@ -58,17 +58,17 @@ public class SamplingExperimentAnalysis {
 
     public static void main(String[] args) throws Exception {
 
-//        Nn nn = new Nn();
+//        Nn Nn = new Nn();
 //        int seed =0;
 //        Dtw dtw = new Dtw();
 //        dtw.setWarpingWindow(0);
-//        nn.setDistanceMeasure(dtw);
-//            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
-//            nn.setSeed(seed);
-//            nn.setCvTrain(true);
-//            nn.setUseEarlyAbandon(false);
-//            nn.setKPercentage(0);
-//            nn.setUseRandomTieBreak(false);
+//        Nn.setDistanceMeasure(dtw);
+//            System.out.println(Nn.toString() + " " + Nn.getDistanceMeasure().getParameters());
+//            Nn.setSeed(seed);
+//            Nn.setCvTrain(true);
+//            Nn.setUseEarlyAbandon(false);
+//            Nn.setKPercentage(0);
+//            Nn.setUseRandomTieBreak(false);
 //            File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
 //        String datasetName = datasetFile.getName();
 //        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
@@ -76,9 +76,9 @@ public class SamplingExperimentAnalysis {
 //        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
 //        trainInstances = splitInstances[0];
 //        testInstances = splitInstances[1];
-//        nn.buildClassifier(trainInstances);
-//        ClassifierResults trainResults = nn.getTrainResults();
-//        ClassifierResults testResults = nn.getTestResults(testInstances);
+//        Nn.buildClassifier(trainInstances);
+//        ClassifierResults trainResults = Nn.getTrainResults();
+//        ClassifierResults testResults = Nn.getTestResults(testInstances);
 //        System.out.println(trainResults.writeFullResultsToString());
 //        System.out.println();
 //        System.out.println(testResults.writeFullResultsToString());

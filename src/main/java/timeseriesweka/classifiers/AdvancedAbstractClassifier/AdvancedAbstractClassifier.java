@@ -2,10 +2,7 @@ package timeseriesweka.classifiers.AdvancedAbstractClassifier;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
-import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.*;
 import utilities.OptionsSetter;
 import utilities.Reproducible;
 import utilities.TrainAccuracyEstimate;
@@ -18,16 +15,21 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public abstract class AdvancedAbstractClassifier extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
+public abstract class AdvancedAbstractClassifier extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfoOptions, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
 
-    public static final String CV_TRAIN_KEY = "c";
-    public static final String PREDICTION_CONTRACT_KEY = "pc";
-    public static final String TRAIN_CONTRACT_KEY = "trc";
-    public static final String TEST_CONTRACT_KEY = "tec";
-    public static final String SEED_KEY = "se";
-    public static final String TRAIN_TIME_KEY = "trt";
-    public static final String TEST_TIME_KEY = "tet";
-    public static final String PREDICTION_TIME_KEY = "pt";
+    @Override
+    public void setOptions(final String[] options) throws Exception {
+        OptionsSetter.setOptions(this, options);
+    }
+
+    public static final String CV_TRAIN_KEY = "cvTrain";
+    public static final String PREDICTION_CONTRACT_KEY = "predictionContract";
+    public static final String TRAIN_CONTRACT_KEY = "trainContract";
+    public static final String TEST_CONTRACT_KEY = "testContract";
+    public static final String SEED_KEY = "seed";
+    //    public static final String TRAIN_TIME_KEY = "trainTime";
+//    public static final String TEST_TIME_KEY = "testTime";
+//    public static final String PREDICTION_TIME_KEY = "predictionTime";
     protected boolean hasResumedFromCheckpoint = false;
     protected long testTime;
     protected long trainTime;
@@ -118,7 +120,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
 
     public void reset() {
         trainTime = -1;
-        if(seed != null) {
+        if (seed != null) {
             random.setSeed(seed);
         }
         trainResults = null;
@@ -159,42 +161,36 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         return results;
     }
 
+
     @Override
-    public String getParameters() {
-        StringBuilder stringBuilder = new StringBuilder();
-        if(cvTrain) {
-            stringBuilder.append(CV_TRAIN_KEY);
-            stringBuilder.append(",");
+    public String[] getOptions() {
+        return new String[]{
+            CV_TRAIN_KEY, String.valueOf(cvTrain),
+            PREDICTION_CONTRACT_KEY, String.valueOf(predictionContract),
+            TRAIN_CONTRACT_KEY, String.valueOf(trainContract),
+            TEST_CONTRACT_KEY, String.valueOf(testContract),
+            SEED_KEY, String.valueOf(seed),
+//            PREDICTION_TIME_KEY, String.valueOf(predictionTime),
+//            TRAIN_TIME_KEY, String.valueOf(trainTime),
+//            TEST_TIME_KEY, String.valueOf(testTime) // only need these if experiments isn't recording this
+        };
+    }
+
+    public boolean setOption(String key, String value) {
+        if (key.equalsIgnoreCase(CV_TRAIN_KEY)) {
+            setCvTrain(Boolean.parseBoolean(value));
+        } else if (key.equalsIgnoreCase(PREDICTION_CONTRACT_KEY)) {
+            setPredictionContract(Long.parseLong(value));
+        } else if (key.equalsIgnoreCase(TRAIN_CONTRACT_KEY)) {
+            setTrainContract(Long.parseLong(value));
+        } else if (key.equalsIgnoreCase(TEST_CONTRACT_KEY)) {
+            setTestContract(Long.parseLong(value));
+        } else if(key.equalsIgnoreCase(SEED_KEY)) {
+            setSeed(Long.parseLong(value));
+        } else {
+            return false;
         }
-        stringBuilder.append(",");
-        stringBuilder.append(PREDICTION_CONTRACT_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(predictionContract);
-        stringBuilder.append(",");
-        stringBuilder.append(TRAIN_CONTRACT_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(trainContract);
-        stringBuilder.append(",");
-        stringBuilder.append(TEST_CONTRACT_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(testContract);
-        stringBuilder.append(",");
-        stringBuilder.append(SEED_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(seed);
-        stringBuilder.append(",");
-        stringBuilder.append(PREDICTION_TIME_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(predictionTime);
-        stringBuilder.append(",");
-        stringBuilder.append(TRAIN_TIME_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(trainTime);
-        stringBuilder.append(",");
-        stringBuilder.append(TEST_TIME_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(testTime);
-        return stringBuilder.toString();
+        return true;
     }
 
     public long getTrainTime() {
@@ -246,7 +242,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     }
 
     protected void resumeFromCheckpoint() throws Exception {
-        if(isCheckpointing() && !hasResumedFromCheckpoint) {
+        if (isCheckpointing() && !hasResumedFromCheckpoint) {
             try {
                 loadFromFile(checkpointFilePath);
                 hasResumedFromCheckpoint = true;
@@ -301,16 +297,12 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     }
 
     protected void checkpoint(boolean force) throws IOException {
-        if(isCheckpointing() && (force || System.nanoTime() - lastCheckpointTimeStamp > minCheckpointInterval)) {
+        if (isCheckpointing() && (force || System.nanoTime() - lastCheckpointTimeStamp > minCheckpointInterval)) {
             saveToFile(checkpointFilePath);
             lastCheckpointTimeStamp = System.nanoTime();
         }
     }
 
-    public boolean setOption(String key, String value) {
-        reset();
-        throw new UnsupportedOperationException(); // todo
-    }
 
     protected void testCheckpoint() throws IOException {
         testCheckpoint(false);

@@ -13,9 +13,8 @@ import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.classifiers.nn.AbstractNn;
 
-import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.classifiers.Nn.Nn;
 import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -224,7 +223,7 @@ public class Ee extends AdvancedAbstractClassifier
             nn.setTrainContract(trainContract - trainTime);
             // todo below should be offloaded to constituent builders perhaps?
             nn.setSampleSizePercentage(sampleSizePercentage);
-//            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
+//            System.out.println(Nn.toString() + " " + Nn.getDistanceMeasure().getParameters());
             EnsembleModule ensembleModule = new EnsembleModule();
             if(buildFromFile) {
                 updateTrainTime();

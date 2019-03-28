@@ -1,10 +1,9 @@
 package development.go.Ee;
 
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import timeseriesweka.classifiers.nn.NeighbourWeighting.WeightByDistance;
-import timeseriesweka.classifiers.nn.AbstractNn;
-import timeseriesweka.classifiers.nn.Nn;
-import timeseriesweka.classifiers.nn.Sampling.PredefinedSampler;
+import timeseriesweka.classifiers.Nn.NeighbourWeighting.WeightByDistance;
+import timeseriesweka.classifiers.Nn.Nn;
+import timeseriesweka.Sampling.PredefinedSampler;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
 import utilities.Utilities;

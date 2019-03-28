@@ -1,7 +1,7 @@
 package development.go.Ee.ParameterIteration;
 
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.classifiers.Nn.AbstractNn;
 
 import java.util.Iterator;
 import java.util.List;

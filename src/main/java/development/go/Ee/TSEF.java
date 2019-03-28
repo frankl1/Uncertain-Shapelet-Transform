@@ -1,9 +1,8 @@
 package development.go.Ee;
 
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import timeseriesweka.classifiers.nn.NeighbourWeighting.WeightByDistance;
-import timeseriesweka.classifiers.nn.AbstractNn;
-import timeseriesweka.classifiers.nn.Nn;
+import timeseriesweka.classifiers.Nn.NeighbourWeighting.WeightByDistance;
+import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.ArrayUtilities;
 import weka.classifiers.AbstractClassifier;
@@ -49,7 +48,7 @@ public class TSEF extends AbstractClassifier {
         for(int i = 0; i < modules.length; i++) {
             Nn nn = new Nn();
             nn.setNeighbourWeighter(new WeightByDistance());
-//            nn.setSampleSizePercentage((double) trainInstances.numClasses() / trainInstances.numInstances());
+//            Nn.setSampleSizePercentage((double) trainInstances.numClasses() / trainInstances.numInstances());
             Dtw dtw = new Dtw();
             dtw.setWarpingWindow(1);
             nn.setDistanceMeasure(dtw);

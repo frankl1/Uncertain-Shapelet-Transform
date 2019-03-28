@@ -95,32 +95,12 @@ public abstract class DistanceMeasure extends NormalizableDistance implements Me
         return distance(extractTimeSeries(instanceA), extractTimeSeries(instanceB), cutOff);
     }
 
-
-    /**
-     * get the parameters
-     * @return string of parameters
-     */
-    @Override
-    public String getParameters() {
-        StringBuilder stringBuilder = new StringBuilder();
-        String[] parameters = getOptions();
-        if(parameters.length == 0) {
-            return "";
-        }
-        for(int i = 0; i < parameters.length - 1; i++) {
-            stringBuilder.append(parameters[i]);
-            stringBuilder.append(" ");
-        }
-        stringBuilder.append(parameters[parameters.length - 1]);
-        return stringBuilder.toString();
-    }
-
     /**
      * string representation of this class, i.e. the distance measure name
      * @return distance measure name
      */
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getSimpleName().toUpperCase();
     }
 }

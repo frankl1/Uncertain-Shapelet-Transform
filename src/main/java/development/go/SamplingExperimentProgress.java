@@ -1,7 +1,7 @@
 //package development.go;
 //
 //import development.go.Ee.Constituents.ParameterSpaces.*;
-//import timeseriesweka.classifiers.nn.Nn;
+//import timeseriesweka.classifiers.Nn.Nn;
 //import timeseriesweka.measures.DistanceMeasure;
 //import utilities.ClassifierTools;
 //import utilities.InstanceTools;

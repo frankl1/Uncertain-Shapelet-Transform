@@ -28,8 +28,7 @@ import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.nn.AbstractNn;
-import timeseriesweka.classifiers.nn.Tuning.TunedLcss;
+import timeseriesweka.classifiers.Nn.Specialised.Lcss.TunedLcss;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -99,9 +98,9 @@ public class ClassifierLists {
 ////                ClassifierBuilder classifierBuilder = new ClassifierBuilder(new DtwBuilder());
 ////                classifierBuilder.setCvTrain(true);
 ////                c = classifierBuilder;
-//                AbstractNn nn = new AbstractNn();
-//                nn.setUseRandomTieBreak(false);
-//                c = nn;
+//                AbstractNn Nn = new AbstractNn();
+//                Nn.setUseRandomTieBreak(false);
+//                c = Nn;
 //                break;
 
 
