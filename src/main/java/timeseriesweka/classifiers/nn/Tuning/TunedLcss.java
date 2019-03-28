@@ -21,9 +21,10 @@ import static utilities.Utilities.incrementalDiffList;
 
 public class TunedLcss extends AbstractTuned<LcssNn> {
 
-    private final ParameterSpace tolerance = new ParameterSpace(Lcss.TOLERANCE_KEY);
-    private final ParameterSpace warpingWindow = new ParameterSpace(Dtw.WARPING_WINDOW_KEY, incrementalDiffList(0, 0.25, 10));
-    private ParameterValuesFinder toleranceValuesFinder = trainInstances -> {
+    private final LcssNn lcssNn = new LcssNn();
+    private final ParameterSpace<Double> tolerance = new ParameterSpace<>(lcssNn::setTolerance);
+    private final ParameterSpace<Double> warpingWindow = new ParameterSpace<>(lcssNn::setWarpingWindow, incrementalDiffList(0, 0.25, 10));
+    private ParameterValuesFinder<Double> toleranceValuesFinder = trainInstances -> {
         double maxTolerance = StatisticUtilities.populationStandardDeviation(trainInstances);
         double minTolerance = maxTolerance * 0.2;
         return incrementalDiffList(minTolerance, maxTolerance, 10);
@@ -77,6 +78,6 @@ public class TunedLcss extends AbstractTuned<LcssNn> {
 
     @Override
     protected LcssNn getClassifierInstance() {
-        return new LcssNn();
+        return lcssNn;
     }
 }

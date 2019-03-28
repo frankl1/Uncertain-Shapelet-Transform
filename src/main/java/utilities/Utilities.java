@@ -20,6 +20,7 @@ import weka.core.Instances;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Utilities {
@@ -484,6 +485,85 @@ public class Utilities {
         }
         return indices[random.nextInt(indices.length)];
     }
+
+    public static <A> A randomElement(List<A> list, Random random) {
+        if(list.size() <= 0) {
+            throw new IllegalArgumentException();
+        } else if(list.size() == 1) {
+            return list.get(0);
+        } else {
+            return list.get(random.nextInt(list.size()));
+        }
+    }
+
+    public static <I, C> I best(List<I> list, Comparator<C> comparator, Function<I, C> converter, Random random) {
+        return randomElement(best(list, comparator, converter), random);
+    }
+
+    public static <I, C> Integer argBest(List<I> list, Comparator<C> comparator, Function<I, C> converter, Random random) {
+        return randomElement(argBest(list, comparator, converter), random);
+    }
+
+    public static <I, C> List<I> best(List<I> list, Comparator<C> comparator, Function<I, C> converter) {
+        List<Integer> argBest = argBest(list, comparator, converter);
+        List<I> best = new ArrayList<>();
+        for(Integer i : argBest) {
+            best.add(list.get(i));
+        }
+        return best;
+    }
+
+    public static <I, C> List<Integer> argBest(List<I> list, Comparator<C> comparator, Function<I, C> converter) {
+        if(list.size() <= 0) {
+            throw new IllegalArgumentException();
+        }
+        I best = list.get(0);
+        C conversion = converter.apply(best);
+        List<Integer> draws = new ArrayList<>();
+        draws.add(0);
+        for(int i = 1; i < list.size(); i++) {
+            I other = list.get(i);
+            C otherConversion = converter.apply(other);
+            double comparisonResult = comparator.compare(conversion, otherConversion);
+            if(comparisonResult >= 0) {
+                if(comparisonResult > 0) {
+                    draws.clear();
+                    best = other;
+                    conversion = otherConversion;
+                }
+                draws.add(i);
+            }
+        }
+        return draws;
+    }
+
+    public static <I, C> C bestConvertion(List<I> list, Comparator<C> comparator, Function<I, C> converter, Random random) {
+        List<C> bestConvertions = bestConvertion(list, comparator, converter);
+        return randomElement(bestConvertions, random);
+    }
+
+    public static <I, C> List<C> bestConvertion(List<I> list, Comparator<C> comparator, Function<I, C> converter) {
+        if(list.size() <= 0) {
+            throw new IllegalArgumentException();
+        }
+        C best = converter.apply(list.get(0));
+        List<C> draws = new ArrayList<>();
+        draws.add(best);
+        for(int i = 1; i < list.size(); i++) {
+            I other = list.get(i);
+            C otherConversion = converter.apply(other);
+            double comparisonResult = comparator.compare(best, otherConversion);
+            if(comparisonResult >= 0) {
+                if(comparisonResult > 0) {
+                    draws.clear();
+                    best = otherConversion;
+                }
+                draws.add(otherConversion);
+            }
+        }
+        return draws;
+    }
+
 
     public static void percentageCheck(double percentage) {
         if(percentage < 0) {

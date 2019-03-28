@@ -6,13 +6,13 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class ParametersSpace {
-    private final List<ParameterSpace> parameterSpaceSet = new ArrayList<>();
+    private final List<ParameterSpace<?>> parameterSpaceSet = new ArrayList<>();
 
-    public boolean add(ParameterSpace parameterSpace) {
+    public boolean add(ParameterSpace<?> parameterSpace) {
         return parameterSpaceSet.add(parameterSpace);
     }
 
-    public boolean remove(ParameterSpace parameterSpace) {
+    public boolean remove(ParameterSpace<?> parameterSpace) {
         return parameterSpaceSet.remove(parameterSpace);
     }
 
@@ -32,17 +32,11 @@ public class ParametersSpace {
         return parameterSpaceSet.size();
     }
 
-    public ParameterPermutation getPermutation(final int index) {
-        ParameterPermutation parameterPermutation = new ParameterPermutation();
+    public void setParameterPermutation(final int index) {
         List<Integer> indices = Utilities.fromPermutation(index, getParameterSizes());
         for(int i = 0; i < parameterSpaceSet.size(); i++) {
-            ParameterSpace parameterSpace = parameterSpaceSet.get(i);
-            List<? extends Object> values = parameterSpace.getValues();
-            String key = parameterSpace.getKey();
-            int valueIndex = indices.get(i);
-            Object value = values.get(valueIndex);
-            parameterPermutation.add(key, value);
+            ParameterSpace<?> parameterSpace = parameterSpaceSet.get(i);
+            parameterSpace.setValueAtIndex(indices.get(i));
         }
-        return parameterPermutation;
     }
 }

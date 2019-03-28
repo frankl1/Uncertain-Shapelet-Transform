@@ -4,14 +4,15 @@ import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifierInterface;
 import timeseriesweka.classifiers.ParameterSplittable;
-import timeseriesweka.classifiers.nn.ParameterPermutation;
 import timeseriesweka.classifiers.nn.ParametersSpace;
+import utilities.Utilities;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Random;
@@ -26,6 +27,7 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
         return Double.compare(results.getAcc(), t1.getAcc());
     };
     private String trainPath;
+    private boolean postProcess = true;
 
     private A getClassifier() {
         if(classifier == null) {
@@ -45,14 +47,12 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
     }
 
     private ParametersSpace parametersSpace = new ParametersSpace();
-    ParameterPermutation parameterPermutation = null;
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
-        if(parameterPermutation == null) {
+        if(postProcess) {
             postProcess();
         }
-        getClassifier().setOptions(parameterPermutation.getOptions());
         getClassifier().buildClassifier(trainInstances);
     }
 
@@ -66,20 +66,31 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
         if(permutations == null || permutations.length <= 0) {
             throw new IllegalArgumentException("No files found");
         }
-        ClassifierResults bestResults = new ClassifierResults();
-        File bestFile = permutations[0];
-        bestResults.loadResultsFromFile(permutations[0].getPath());
-        for(int i = 1; i < permutations.length; i++) { // todo more than one best perm? need to rand choose
-            ClassifierResults other = new ClassifierResults();
-            other.loadResultsFromFile(permutations[i].getPath());
-            if(parameterPermutationComparator.compare(bestResults, other) > 0) {
-                bestResults = other;
-                bestFile = permutations[i];
+        ClassifierResults bestResults = Utilities.bestConvertion(Arrays.asList(permutations), Comparator.comparingDouble(ClassifierResults::getAcc), file -> {
+            ClassifierResults classifierResults = new ClassifierResults();
+            try {
+                classifierResults.loadResultsFromFile(file.getPath());
+                return classifierResults;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
             }
-        }
+        }, random);
+//
+//
+//        ClassifierResults bestResults = new ClassifierResults();
+//        File bestFile = permutations[0];
+//        bestResults.loadResultsFromFile(permutations[0].getPath());
+//        for(int i = 1; i < permutations.length; i++) { // todo more than one best perm? need to rand choose
+//            ClassifierResults other = new ClassifierResults();
+//            other.loadResultsFromFile(permutations[i].getPath());
+//            if(parameterPermutationComparator.compare(bestResults, other) > 0) {
+//                bestResults = other;
+//                bestFile = permutations[i];
+//            }
+//        }
         String bestParameterPermutation = bestResults.getParas();
-        parameterPermutation = new ParameterPermutation();
-        parameterPermutation.setOptions(bestParameterPermutation.split(","));
+        getClassifier().setOptions(bestParameterPermutation.split(","));
     }
 
     private long parseFold(String path) {
@@ -120,15 +131,13 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
 
     @Override
     public void setParamSearch(final boolean b) {
-        if(!b) {
-            parameterPermutation = null;
-        }
+        postProcess = !b;
     }
 
     @Override
     public void setParametersFromIndex(final int x) {
         if(x >= 0) {
-            parameterPermutation = parametersSpace.getPermutation(x);
+            parametersSpace.setParameterPermutation(x);
         }
     }
 
