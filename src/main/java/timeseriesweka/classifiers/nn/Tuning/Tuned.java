@@ -1,23 +1,21 @@
 package timeseriesweka.classifiers.nn.Tuning;
 
-import weka.core.Instances;
+import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 
-import java.util.function.Function;
+public class Tuned<A extends AdvancedAbstractClassifier> extends AbstractTuned<A> {
 
-public class Tuned extends AbstractTuned {
-    public Tuned(final Function<Instances, PermutationBuilder> permutationBuilderFunction) {
-        this.permutationBuilderFunction = permutationBuilderFunction;
+    private A classifier;
+
+    public void setClassifier(final A classifier) {
+        this.classifier = classifier;
     }
 
-    public Function<Instances, PermutationBuilder> getPermutationBuilderFunction() {
-        return permutationBuilderFunction;
+    public A getClassifier() {
+        return classifier;
     }
 
-    public void setPermutationBuilderFunction(final Function<Instances, PermutationBuilder> permutationBuilderFunction) {
-        this.permutationBuilderFunction = permutationBuilderFunction;
+    @Override
+    protected A getClassifierInstance() {
+        return classifier;
     }
-
-    private Function<Instances, PermutationBuilder> permutationBuilderFunction;
-
-
 }

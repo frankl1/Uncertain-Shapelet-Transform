@@ -4,34 +4,82 @@ import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifierInterface;
 import timeseriesweka.classifiers.ParameterSplittable;
+import timeseriesweka.classifiers.nn.ParameterPermutation;
+import timeseriesweka.classifiers.nn.ParametersSpace;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Random;
-import java.util.function.Function;
 
-public abstract class AbstractTuned implements AdvancedAbstractClassifierInterface, ParameterSplittable {
-    private int parameterId = -1;
-    private PermutationBuilder permutationBuilder = null;
-    private AdvancedAbstractClassifier classifier;
+public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implements AdvancedAbstractClassifierInterface, ParameterSplittable {
+    private A classifier;
     private Random random = new Random();
     private Long seed;
+    private Comparator<ClassifierResults> parameterPermutationComparator = (results, t1) -> {
+        results.findAllStats();
+        t1.findAllStats();
+        return Double.compare(results.getAcc(), t1.getAcc());
+    };
+    private String trainPath;
+
+    private A getClassifier() {
+        if(classifier == null) {
+            classifier = getClassifierInstance();
+        }
+        return classifier;
+    }
+
+    protected abstract A getClassifierInstance();
+
+    public ParametersSpace getParametersSpace() {
+        return parametersSpace;
+    }
+
+    public void setParametersSpace(final ParametersSpace parametersSpace) {
+        this.parametersSpace = parametersSpace;
+    }
+
+    private ParametersSpace parametersSpace = new ParametersSpace();
+    ParameterPermutation parameterPermutation = null;
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
-        if(parameterId < 0) {
+        if(parameterPermutation == null) {
             postProcess();
-        } else {
-            setPermutationBuilder(trainInstances);
         }
-        buildPermutation();
-        classifier.buildClassifier(trainInstances);
+        getClassifier().setOptions(parameterPermutation.getOptions());
+        getClassifier().buildClassifier(trainInstances);
+    }
+
+    private void postProcess() throws Exception {
+        File[] permutations = new File(trainPath).listFiles(file -> {
+            if(!file.isFile()) {
+                return false;
+            }
+            return parseFold(file.getPath()) == seed;
+        });
+        if(permutations == null || permutations.length <= 0) {
+            throw new IllegalArgumentException("No files found");
+        }
+        ClassifierResults bestResults = new ClassifierResults();
+        File bestFile = permutations[0];
+        bestResults.loadResultsFromFile(permutations[0].getPath());
+        for(int i = 1; i < permutations.length; i++) { // todo more than one best perm? need to rand choose
+            ClassifierResults other = new ClassifierResults();
+            other.loadResultsFromFile(permutations[i].getPath());
+            if(parameterPermutationComparator.compare(bestResults, other) > 0) {
+                bestResults = other;
+                bestFile = permutations[i];
+            }
+        }
+        String bestParameterPermutation = bestResults.getParas();
+        parameterPermutation = new ParameterPermutation();
+        parameterPermutation.setOptions(bestParameterPermutation.split(","));
     }
 
     private long parseFold(String path) {
@@ -41,90 +89,47 @@ public abstract class AbstractTuned implements AdvancedAbstractClassifierInterfa
         return Long.parseLong(foldString);
     }
 
+    @Override
+    public double classifyInstance(final Instance testInstance) throws Exception {
+        return getClassifier().classifyInstance(testInstance);
+    }
+
+    @Override
+    public double[] distributionForInstance(final Instance testInstance) throws Exception {
+        return getClassifier().distributionForInstance(testInstance);
+    }
+
+    @Override
+    public Capabilities getCapabilities() {
+        return getClassifier().getCapabilities();
+    }
+
     private int parseParamIndex(String path) {
         String str = new File(path).getName();
         String substring = str.substring(str.indexOf("_"), str.indexOf("."));
         return Integer.parseInt(substring);
     }
 
-    private void postProcess() throws Exception {
-        long currentFold = parseFold(trainPath); // todo change to use seed
-        File[] permutations = new File(trainPath).listFiles(file -> {
-            if(!file.isFile()) {
-                return false;
-            }
-            return parseFold(file.getPath()) == currentFold;
-        });
-        if(permutations == null || permutations.length <= 0) {
-            throw new IllegalArgumentException("No files found");
-        }
-        ClassifierResults bestResults = new ClassifierResults();
-        File bestFile = permutations[0];
-        bestResults.loadResultsFromFile(permutations[0].getPath());
-        for(int i = 1; i < permutations.length; i++) {
-            ClassifierResults other = new ClassifierResults();
-            other.loadResultsFromFile(permutations[i].getPath());
-            if(permutationComparator.compare(bestResults, other) > 0) {
-                bestResults = other;
-                bestFile = permutations[i];
-            }
-        }
-        classifier = permutationBuilder.build();
-        classifier.setOptions(bestResults.getParas().split(","));
+    public Comparator<ClassifierResults> getParameterPermutationComparator() {
+        return parameterPermutationComparator;
     }
 
-    public Comparator<ClassifierResults> getPermutationComparator() {
-        return permutationComparator;
-    }
-
-    public void setPermutationComparator(final Comparator<ClassifierResults> permutationComparator) {
-        this.permutationComparator = permutationComparator;
-    }
-
-    private Comparator<ClassifierResults> permutationComparator = (results, t1) -> {
-        results.findAllStats();
-        t1.findAllStats();
-        return Double.compare(results.getAcc(), t1.getAcc());
-    };
-
-    private void setPermutationBuilder(Instances trainInstances) {
-        if(permutationBuilder == null) {
-            permutationBuilder = getPermutationBuilderFunction().apply(trainInstances);
-        }
-    }
-
-    private void buildPermutation() {
-        permutationBuilder.setParameterPermutation(parameterId);
-        classifier = permutationBuilder.build();
-    }
-
-    protected abstract Function<Instances, PermutationBuilder> getPermutationBuilderFunction();
-
-    @Override
-    public double classifyInstance(final Instance testInstance) throws Exception {
-        return classifier.classifyInstance(testInstance);
-    }
-
-    @Override
-    public double[] distributionForInstance(final Instance testInstance) throws Exception {
-        return classifier.distributionForInstance(testInstance);
-    }
-
-    @Override
-    public Capabilities getCapabilities() {
-        return classifier.getCapabilities();
+    public void setParameterPermutationComparator(final Comparator<ClassifierResults> parameterPermutationComparator) {
+        this.parameterPermutationComparator = parameterPermutationComparator;
     }
 
     @Override
     public void setParamSearch(final boolean b) {
         if(!b) {
-            parameterId = -1;
+            parameterPermutation = null;
         }
     }
 
     @Override
     public void setParametersFromIndex(final int x) {
-        parameterId = x;
+        if(x >= 0) {
+            parameterPermutation = parametersSpace.getPermutation(x);
+        }
     }
 
     @Override
@@ -138,70 +143,73 @@ public abstract class AbstractTuned implements AdvancedAbstractClassifierInterfa
     }
 
     public int size() {
-        if(permutationBuilder == null) {
-            return 1;
-        }
-        return permutationBuilder.size();
+        return parametersSpace.size();
     }
+
+
+    /**
+     * TODO
+     * Below just defers all funcs to the classifier itself. Not sure if this should be the default behaviour of a tuner?
+     */
 
     @Override
     public long getMinCheckpointInterval() {
-        return classifier.getMinCheckpointInterval();
+        return getClassifier().getMinCheckpointInterval();
     }
 
     @Override
     public void setMinCheckpointInterval(final long nanoseconds) {
-        classifier.setMinCheckpointInterval(nanoseconds);
+        getClassifier().setMinCheckpointInterval(nanoseconds);
     }
 
     @Override
     public long getPredictionContract() {
-        return classifier.getPredictionContract();
+        return getClassifier().getPredictionContract();
     }
 
     @Override
     public void setPredictionContract(final long predictionContract) {
-        classifier.setPredictionContract(predictionContract);
+        getClassifier().setPredictionContract(predictionContract);
     }
 
     @Override
     public long getTrainContract() {
-        return classifier.getTrainContract();
+        return getClassifier().getTrainContract();
     }
 
     @Override
     public void setTrainContract(final long trainContract) {
-        classifier.setTrainContract(trainContract);
+        getClassifier().setTrainContract(trainContract);
     }
 
     @Override
     public long getTestContract() {
-        return classifier.getTestContract();
+        return getClassifier().getTestContract();
     }
 
     @Override
     public void setTestContract(final long testContract) {
-        classifier.setTestContract(testContract);
+        getClassifier().setTestContract(testContract);
     }
 
     @Override
     public String getSavePath() {
-        return classifier.getSavePath();
+        return getClassifier().getSavePath();
     }
 
     @Override
     public void setSavePath(final String path) {
-        classifier.setSavePath(path);
+        getClassifier().setSavePath(path);
     }
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
-        classifier.copyFromSerObject(obj);
+        getClassifier().copyFromSerObject(obj);
     }
 
     @Override
     public void reset() {
-        classifier.reset();
+        getClassifier().reset();
         if(seed != null) {
             random.setSeed(seed);
         }
@@ -209,153 +217,151 @@ public abstract class AbstractTuned implements AdvancedAbstractClassifierInterfa
 
     @Override
     public void resetTest() {
-        classifier.resetTest();
+        getClassifier().resetTest();
     }
 
     @Override
     public void setSeed(final long seed) {
-        classifier.setSeed(seed);
+        getClassifier().setSeed(seed);
         this.seed = seed;
         reset();
     }
 
     @Override
     public void setRandom(final Random random) {
-        classifier.setRandom(random);
+        getClassifier().setRandom(random);
         this.random = random;
         reset();
     }
 
     @Override
     public String getParameters() {
-        return classifier.getParameters();
+        return getClassifier().getParameters();
     }
 
     @Override
     public long getTrainTime() {
-        return classifier.getTrainTime();
+        return getClassifier().getTrainTime();
     }
 
     @Override
     public long getTestTime() {
-        return classifier.getTestTime();
+        return getClassifier().getTestTime();
     }
 
     @Override
     public void setTimeLimit(final long nanoseconds) {
-        classifier.setTimeLimit(nanoseconds);
+        getClassifier().setTimeLimit(nanoseconds);
     }
 
     @Override
     public boolean isCvTrain() {
-        return classifier.isCvTrain();
+        return getClassifier().isCvTrain();
     }
 
     @Override
     public void setCvTrain(final boolean cvTrain) {
-        classifier.setCvTrain(cvTrain);
+        getClassifier().setCvTrain(cvTrain);
     }
 
     @Override
     public void setFindTrainAccuracyEstimate(final boolean setCV) {
-        classifier.setFindTrainAccuracyEstimate(setCV);
+        getClassifier().setFindTrainAccuracyEstimate(setCV);
     }
 
     @Override
     public boolean findsTrainAccuracyEstimate() {
-        return classifier.findsTrainAccuracyEstimate();
+        return getClassifier().findsTrainAccuracyEstimate();
     }
 
     @Override
     public void writeCVTrainToFile(final String train) {
-        classifier.writeCVTrainToFile(train);
+        getClassifier().writeCVTrainToFile(train);
         trainPath = train;
     }
 
-    private String trainPath;
-
     @Override
     public ClassifierResults getTrainResults() {
-        return classifier.getTrainResults();
+        return getClassifier().getTrainResults();
     }
 
     @Override
     public boolean isCheckpointing() {
-        return classifier.isCheckpointing();
+        return getClassifier().isCheckpointing();
     }
 
     @Override
     public void setCheckpointing(final boolean on) {
-        classifier.setCheckpointing(on);
+        getClassifier().setCheckpointing(on);
     }
 
     @Override
     public boolean setOption(final String key, final String value) {
-        return classifier.setOption(key, value);
+        return getClassifier().setOption(key, value);
     }
 
     @Override
     public void saveToFile(final String filename) throws IOException {
-        classifier.saveToFile(filename);
+        getClassifier().saveToFile(filename);
     }
 
     @Override
     public void loadFromFile(final String filename) throws Exception {
-        classifier.loadFromFile(filename);
+        getClassifier().loadFromFile(filename);
     }
 
     @Override
     public void setOneDayLimit() {
-        classifier.setOneDayLimit();
+        getClassifier().setOneDayLimit();
     }
 
     @Override
     public void setOneHourLimit() {
-        classifier.setOneHourLimit();
+        getClassifier().setOneHourLimit();
     }
 
     @Override
     public void setOneMinuteLimit() {
-        classifier.setOneMinuteLimit();
+        getClassifier().setOneMinuteLimit();
     }
 
     @Override
     public void setDayLimit(final int t) {
-        classifier.setDayLimit(t);
+        getClassifier().setDayLimit(t);
     }
 
     @Override
     public void setHourLimit(final int t) {
-        classifier.setHourLimit(t);
+        getClassifier().setHourLimit(t);
     }
 
     @Override
     public void setMinuteLimit(final int t) {
-        classifier.setMinuteLimit(t);
+        getClassifier().setMinuteLimit(t);
     }
 
     @Override
     public void setTimeLimit(final TimeLimit time, final int amount) {
-        classifier.setTimeLimit(time, amount);
+        getClassifier().setTimeLimit(time, amount);
     }
 
     @Override
     public int setNumberOfFolds(final Instances data) {
-        return classifier.setNumberOfFolds(data);
+        return getClassifier().setNumberOfFolds(data);
     }
 
     @Override
     public Enumeration listOptions() {
-        return classifier.listOptions();
+        return getClassifier().listOptions();
     }
 
     @Override
     public String[] getOptions() {
-        return classifier.getOptions();
+        return getClassifier().getOptions();
     }
 
     @Override
     public void setOptions(final String[] options) throws Exception {
-        classifier.setOptions(options);
+        getClassifier().setOptions(options);
     }
 }

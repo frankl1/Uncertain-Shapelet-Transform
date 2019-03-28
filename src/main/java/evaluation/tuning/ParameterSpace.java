@@ -44,6 +44,10 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
         return total;
     }
 
+    public int size() {
+        return numUniqueParameterSets();
+    }
+
     public List<String> getValues(String key)  {
         return parameterLists.get(key);
     }

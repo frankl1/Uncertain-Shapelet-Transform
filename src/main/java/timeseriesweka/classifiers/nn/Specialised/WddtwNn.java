@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.wddtw.Wddtw;
 import timeseriesweka.measures.wddtw.WddtwInterface;
 import weka.core.Instance;
@@ -15,8 +16,8 @@ public class WddtwNn extends AbstractNn implements WddtwInterface {
     }
 
     @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return wddtw.distance(instanceA, instanceB, cutOff);
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return wddtw;
     }
 
     @Override

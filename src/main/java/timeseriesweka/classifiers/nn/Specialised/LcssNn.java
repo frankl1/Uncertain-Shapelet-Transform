@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.lcss.Lcss;
 import timeseriesweka.measures.lcss.LcssInterface;
 import weka.core.Instance;
@@ -12,11 +13,6 @@ public class LcssNn extends AbstractNn implements LcssInterface {
     @Override
     public String toString() {
         return lcss.toString() + "nn";
-    }
-
-    @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return lcss.distance(instanceA, instanceB, cutOff);
     }
 
     @Override
@@ -37,5 +33,10 @@ public class LcssNn extends AbstractNn implements LcssInterface {
     @Override
     public void setWarpingWindow(final double warpingWindow) {
         lcss.setWarpingWindow(warpingWindow);
+    }
+
+    @Override
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return lcss;
     }
 }

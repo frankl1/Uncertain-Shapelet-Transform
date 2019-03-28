@@ -14,6 +14,8 @@
  */
 package timeseriesweka.classifiers;
 
+import weka.core.Instances;
+
 import java.io.Serializable;
 
 /**
@@ -27,5 +29,12 @@ public interface ParameterSplittable extends Serializable{
     */
     public void setParametersFromIndex(int x);
     public String getParas();
-    double getAcc();    
+    double getAcc();
+    default void setUpParameters(Instances trainInstances) {
+
+    }
+
+    default int size() {
+        return -1;
+    }
 }

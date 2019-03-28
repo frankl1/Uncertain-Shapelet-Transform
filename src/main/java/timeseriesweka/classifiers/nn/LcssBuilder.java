@@ -15,8 +15,8 @@ public class LcssBuilder extends PermutationBuilder {
 
     private double toleranceValue = Lcss.DEFAULT_TOLERANCE;
     private double warpingWindowValue = Lcss.DEFAULT_WARPING_WINDOW;
-    private final ParameterSpace<Double> toleranceSpace = new ParameterSpace<>(v -> toleranceValue = v, new IndexedValues<>());
-    private final ParameterSpace<Double> warpingWindowSpace = new ParameterSpace<>(v -> warpingWindowValue = v, new IndexedValues<>());
+    private final ParameterSpaceOld<Double> toleranceSpace = new ParameterSpaceOld<>(v -> toleranceValue = v, new IndexedValues<>());
+    private final ParameterSpaceOld<Double> warpingWindowSpace = new ParameterSpaceOld<>(v -> warpingWindowValue = v, new IndexedValues<>());
 
     public void setToleranceValues(Indexed<Double> toleranceValues) {
         toleranceSpace.setValues(toleranceValues);
@@ -43,7 +43,7 @@ public class LcssBuilder extends PermutationBuilder {
     }
 
     @Override
-    protected List<ParameterSpace> getParameterSpaces() {
+    protected List<ParameterSpaceOld> getParameterSpaces() {
         return new ArrayList<>(Arrays.asList(warpingWindowSpace, toleranceSpace));
     }
 

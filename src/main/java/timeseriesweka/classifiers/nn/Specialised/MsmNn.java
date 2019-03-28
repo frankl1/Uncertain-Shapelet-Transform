@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.msm.Msm;
 import timeseriesweka.measures.msm.MsmInterface;
 import weka.core.Instance;
@@ -15,8 +16,8 @@ public class MsmNn extends AbstractNn implements MsmInterface {
     }
 
     @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return msm.distance(instanceA, instanceB, cutOff);
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return msm;
     }
 
     @Override

@@ -1,12 +1,15 @@
 package timeseriesweka.classifiers.nn;
 
+import com.beust.jcommander.internal.Lists;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.nn.NeighbourWeighting.NeighbourWeighter;
 import timeseriesweka.classifiers.nn.NeighbourWeighting.UniformWeighting;
+import timeseriesweka.classifiers.nn.NeighbourWeighting.WeightByDistance;
 import timeseriesweka.classifiers.nn.Sampling.RandomRoundRobinSampler;
 import timeseriesweka.classifiers.nn.Sampling.Sampler;
+import timeseriesweka.measures.DistanceMeasure;
 import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -216,37 +219,6 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     }
 
     @Override
-    public String getParameters() {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(super.getParameters());
-        stringBuilder.append(",");
-        stringBuilder.append(SAMPLE_SIZE_PERCENTAGE_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(sampleSizePercentage);
-        stringBuilder.append(",");
-        stringBuilder.append(K_PERCENTAGE_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(kPercentage);
-        stringBuilder.append(",");
-        if(useRandomTieBreak) {
-            stringBuilder.append(RANDOM_TIE_BREAK_KEY);
-            stringBuilder.append(",");
-        }
-        if(useEarlyAbandon) {
-            stringBuilder.append(USE_EARLY_ABANDON_KEY);
-            stringBuilder.append(",");
-        }
-        stringBuilder.append(NEIGHBOUR_WEIGHTER_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(neighbourWeighter.getClass().getSimpleName());
-        stringBuilder.append(",");
-        stringBuilder.append(SAMPLER_KEY);
-        stringBuilder.append(",");
-        stringBuilder.append(sampler.getClass().getSimpleName());
-        return stringBuilder.toString();
-    }
-
-    @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
         resumeFromCheckpoint();
         trainTimeStamp = System.nanoTime();
@@ -293,6 +265,10 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
                 trainResults = getResults(trainNearestNeighbourFinders);
             }
             checkpoint(true);
+            if(cvTrain && trainFilePath != null) {
+                Utilities.mkdirParent(new File(trainFilePath));
+                trainResults.writeFullResultsToFile(trainFilePath);
+            }
         }
     }
 
@@ -345,9 +321,53 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     @Override
     public boolean setOption(final String key, final String value) {
         if(!super.setOption(key, value)) {
-
+            if(key.equals(SAMPLE_SIZE_PERCENTAGE_KEY)) {
+                sampleSizePercentage = Double.parseDouble(value);
+            } else if(key.equals(K_PERCENTAGE_KEY)) {
+                kPercentage = Double.parseDouble(value);
+            } else if(key.equals(RANDOM_TIE_BREAK_KEY)) {
+                useRandomTieBreak = Boolean.parseBoolean(value);
+            } else if(key.equals(NEIGHBOUR_WEIGHTER_KEY)) {
+                if(value.equals(WeightByDistance.class.getSimpleName())) {
+                    neighbourWeighter = new WeightByDistance();
+                } else if(value.equals(UniformWeighting.class.getSimpleName())) {
+                    neighbourWeighter = new UniformWeighting();
+                } else {
+                    return false;
+                }
+            } else if(key.equals(SAMPLER_KEY)) {
+                if(value.equals(RandomRoundRobinSampler.class.getSimpleName())) {
+                    sampler = new RandomRoundRobinSampler();
+//                } else if(value.equals(UniformWeighting.class.getSimpleName())) {
+//                    sampler = ;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
-        throw new UnsupportedOperationException();
+        return true;
+    }
+
+    @Override
+    public String[] getOptions() {
+        List<String> strings = new ArrayList<>();
+        strings.add(SAMPLE_SIZE_PERCENTAGE_KEY);
+        strings.add(String.valueOf(sampleSizePercentage));
+        strings.add(K_PERCENTAGE_KEY);
+        strings.add(String.valueOf(kPercentage));
+        strings.add(RANDOM_TIE_BREAK_KEY);
+        strings.add(String.valueOf(useRandomTieBreak));
+        strings.add(USE_EARLY_ABANDON_KEY);
+        strings.add(String.valueOf(useEarlyAbandon));
+        strings.add(NEIGHBOUR_WEIGHTER_KEY);
+        strings.add(neighbourWeighter.getClass().getSimpleName());
+        strings.add(SAMPLER_KEY);
+        strings.add(sampler.getClass().getSimpleName());
+        strings.addAll(Arrays.asList(super.getOptions()));
+        strings.addAll(Arrays.asList(getDistanceMeasureInstance().getOptions()));
+        return strings.toArray(new String[0]);
     }
 
     public Sampler getSampler() {
@@ -425,7 +445,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
         return neighbourWeighter;
     }
 
-    protected abstract double distance(Instance instanceA, Instance instanceB, double cutOff);
+    protected abstract DistanceMeasure getDistanceMeasureInstance();
 
     public void setNeighbourWeighter(final NeighbourWeighter neighbourWeighter) {
         this.neighbourWeighter = neighbourWeighter;
@@ -446,7 +466,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
         }
 
         public double addNeighbour(Instance neighbour) {
-            double distance = distance(instance, neighbour, findCutOff());
+            double distance = getDistanceMeasureInstance().distance(instance, neighbour, findCutOff());
             addNeighbour(neighbour, distance);
             return distance;
         }

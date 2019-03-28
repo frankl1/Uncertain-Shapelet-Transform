@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.dtw.Dtw;
 import timeseriesweka.measures.dtw.DtwInterface;
 import weka.core.Instance;
@@ -8,11 +9,6 @@ import weka.core.Instance;
 public class DtwNn extends AbstractNn implements DtwInterface {
 
     private final Dtw dtw = new Dtw();
-
-    @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return dtw.distance(instanceA, instanceB, cutOff);
-    }
 
     @Override
     public double getWarpingWindow() {
@@ -27,5 +23,10 @@ public class DtwNn extends AbstractNn implements DtwInterface {
     @Override
     public String toString() {
         return dtw.toString() + "nn";
+    }
+
+    @Override
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return dtw;
     }
 }

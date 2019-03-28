@@ -304,7 +304,7 @@ public class Dtw extends DistanceMeasure implements DtwInterface {
         return "1";
     }
 
-    private static final String WARPING_WINDOW_KEY = "-w";
+    public static final String WARPING_WINDOW_KEY = "-w";
 
     @Override
     public boolean setOption(final String key, final String value) {

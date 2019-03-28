@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.twe.Twe;
 import timeseriesweka.measures.twe.TweInterface;
 import weka.core.Instance;
@@ -15,9 +16,10 @@ public class TweNn extends AbstractNn implements TweInterface {
     }
 
     @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return twe.distance(instanceA, instanceB, cutOff);
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return twe;
     }
+
 
     @Override
     public double getPenalty() {

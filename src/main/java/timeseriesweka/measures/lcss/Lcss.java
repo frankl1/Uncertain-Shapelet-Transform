@@ -92,7 +92,7 @@ public class Lcss extends Dtw implements LcssInterface {
 //        return 1-((double)max/m);
     }
 
-    private static final String TOLERANCE_KEY = "-t";
+    public static final String TOLERANCE_KEY = "-t";
 
     @Override
     public String[] getOptions() {

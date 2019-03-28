@@ -1,45 +1,39 @@
 package timeseriesweka.classifiers.nn;
 
-import development.go.Indexed.Indexed;
-import development.go.Indexed.IndexedValues;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
-public class ParameterSpace<A> implements IndexedConsumer {
-    private final Consumer<A> consumer;
+public class ParameterSpace {
+    private String key;
+    private List<? extends Object> values = new ArrayList<>();
 
-    public ParameterSpace(final Consumer<A> consumer, final Indexed<A> values) {
-        this.consumer = consumer;
+    public ParameterSpace(final String key) {
+        this.key = key;
+    }
+
+    public ParameterSpace(final String key, final List<? extends Object> values) {
+        this(key);
         this.values = values;
     }
 
-    public ParameterSpace(final Consumer<A> consumer, final List<A> values) {
-        this.consumer = consumer;
-        setValues(values);
-    }
-
-    private Indexed<A> values;
-
-    public Indexed<A> getValues() {
+    public List<? extends Object> getValues() {
         return values;
     }
 
-    public void setValues(final Indexed<A> values) {
+    public void setValues(final List<? extends Object> values) {
         this.values = values;
     }
 
-    public void setValues(final List<A> values) {
-        setValues(new IndexedValues<>(values));
+    public String getKey() {
+        return key;
     }
 
-    @Override
+    public void setKey(final String key) {
+        this.key = key;
+    }
+
     public int size() {
         return values.size();
-    }
-
-    @Override
-    public void accept(final int i) {
-        consumer.accept(values.apply(i));
     }
 }

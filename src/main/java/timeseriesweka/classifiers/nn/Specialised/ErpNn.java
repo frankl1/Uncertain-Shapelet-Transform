@@ -1,6 +1,7 @@
 package timeseriesweka.classifiers.nn.Specialised;
 
 import timeseriesweka.classifiers.nn.AbstractNn;
+import timeseriesweka.measures.DistanceMeasure;
 import timeseriesweka.measures.erp.Erp;
 import timeseriesweka.measures.erp.ErpInterface;
 import weka.core.Instance;
@@ -15,8 +16,8 @@ public class ErpNn extends AbstractNn implements ErpInterface {
     }
 
     @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return erp.distance(instanceA, instanceB, cutOff);
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return erp;
     }
 
     @Override

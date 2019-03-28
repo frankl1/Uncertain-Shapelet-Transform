@@ -717,6 +717,7 @@ public class Experiments  {
                 ((TunedRandomForest) classifier).setNumFeaturesInProblem(train.numAttributes() - 1);
             
             expSettings.checkpointing = false;
+            ((ParameterSplittable) classifier).setUpParameters(train);
             ((ParameterSplittable) classifier).setParametersFromIndex(expSettings.singleParameterID);
             parameterFileName = "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
             expSettings.generateErrorEstimateOnTrainSet = true;

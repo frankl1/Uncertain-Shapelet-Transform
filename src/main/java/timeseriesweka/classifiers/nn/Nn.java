@@ -15,14 +15,13 @@ public class Nn extends AbstractNn {
 
     private DistanceMeasure distanceMeasure = new Dtw();
 
-
     @Override
     public String toString() {
         return distanceMeasure.toString() + "nn";
     }
 
     @Override
-    protected double distance(final Instance instanceA, final Instance instanceB, final double cutOff) {
-        return distanceMeasure.distance(instanceA, instanceB, cutOff);
+    protected DistanceMeasure getDistanceMeasureInstance() {
+        return distanceMeasure;
     }
 }
