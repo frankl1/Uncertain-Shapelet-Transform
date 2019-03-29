@@ -124,9 +124,9 @@ public class SamplingExperiment {
                         constituentBuilder.setParameterPermutation(combination);
                         Nn nn = constituentBuilder.build();
                         File file = new File(globalResultsDir
-                            + "/Predictions/" + datasetName
+                            + "/" + datasetName
                             + "/" + nn.getDistanceMeasure()
-                            + "/" + nn.getDistanceMeasure().getParameters()
+                            + "/" + combination
                             + "/fold" + seed + ".csv.gzip");
                         try {
                             Utilities.mkdir(file.getParentFile());
@@ -140,7 +140,6 @@ public class SamplingExperiment {
                                 ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file))));
                                 for (Double samplingPercentage : samplingPercentages) {
                                     nn.setSampleSizePercentage(samplingPercentage);
-                                    objectOutputStream.writeDouble(samplingPercentage);
                                     nn.buildClassifier(trainInstances);
                                     ClassifierResults trainResults = nn.getTrainResults();
                                     trainResults.setBenchmarkTime(benchmark);
