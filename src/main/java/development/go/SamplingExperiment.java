@@ -6,6 +6,7 @@ import com.beust.jcommander.converters.FileConverter;
 import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
 import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.*;
 import evaluation.storage.ClassifierResults;
+import timeseriesweka.classifiers.Nn.AbstractNn;
 import timeseriesweka.classifiers.Nn.Nn;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -23,7 +24,7 @@ public class SamplingExperiment {
     @Parameter(names={"-r"}, description="results globalResultsDir", converter= FileConverter.class, required=true)
     private File globalResultsDir;
     @Parameter(names={"-s"}, description="dataset fold index", required=true)
-    private Integer seed;
+    private List<Integer> seeds;
     @Parameter(names={"-d"}, description="datasets", required=true)
     private String datasetNamesFilePath;
     @Parameter(names={"-dd"}, description="datasets dir", required=true)
@@ -103,55 +104,59 @@ public class SamplingExperiment {
         constituentBuilders.add(new TweBuilder());
         constituentBuilders.add(new ErpBuilder());
         List<Double> samplingPercentages = new ArrayList<>();
-        for(String datasetName : datasetNames) {
-            System.out.println(datasetName);
-            System.out.println(seed);
-            Instances trainInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TRAIN.arff");
-            Instances testInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TEST.arff");
-            Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
-            trainInstances = splitInstances[0];
-            testInstances = splitInstances[1];
-            samplingPercentages.clear();
-            for(int i = 0; i <= trainInstances.size(); i++) {
-                samplingPercentages.add((double) i / trainInstances.size());
-            }
-            for(ConstituentBuilder constituentBuilder : constituentBuilders) {
-                constituentBuilder.setUpParameters(trainInstances);
-            }
-            for(ConstituentBuilder constituentBuilder : constituentBuilders) {
-                for(int combination = 0; combination < constituentBuilder.size(); combination++) {
-                    constituentBuilder.setParameterPermutation(combination);
-                    Nn nn = (Nn) constituentBuilder.build(); // todo will break
-                    File file = new File(globalResultsDir
-                        + "/Predictions/" + datasetName
-                        + "/" + nn.getDistanceMeasure()
-                        + "/" + nn.getDistanceMeasure().getParameters()
-                        + "/fold" + seed + ".csv.gzip");
-                    try {
-                        Utilities.mkdir(file.getParentFile());
-                        if (file.createNewFile()) {
-                            System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
-                            nn.setSeed(seed);
-                            nn.setCvTrain(true);
-                            nn.setUseEarlyAbandon(false);
-                            nn.setKPercentage(0);
-                            nn.setUseRandomTieBreak(false);
-                            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file))));
-                            for (Double samplingPercentage : samplingPercentages) {
-                                nn.setSampleSizePercentage(samplingPercentage);
-                                objectOutputStream.writeDouble(samplingPercentage);
-                                nn.buildClassifier(trainInstances);
-                                ClassifierResults trainResults = nn.getTrainResults();
-                                trainResults.setBenchmarkTime(benchmark);
-                                objectOutputStream.writeObject(trainResults.writeFullResultsToString());
-                                ClassifierResults testResults = nn.getTestResults(testInstances);
-                                testResults.setBenchmarkTime(benchmark);
-                                objectOutputStream.writeObject(testResults.writeFullResultsToString());
+        for(Integer seed : seeds) {
+            for(String datasetName : datasetNames) {
+                System.out.println(datasetName + " " + seed);
+                Instances trainInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TRAIN.arff");
+                Instances testInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TEST.arff");
+                Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+                trainInstances = splitInstances[0];
+                testInstances = splitInstances[1];
+                samplingPercentages.clear();
+                for(int i = 0; i <= trainInstances.size(); i++) {
+                    samplingPercentages.add((double) i / trainInstances.size());
+                }
+                for(ConstituentBuilder constituentBuilder : constituentBuilders) {
+                    constituentBuilder.setUpParameters(trainInstances);
+                }
+                for(ConstituentBuilder constituentBuilder : constituentBuilders) {
+                    for(int combination = 0; combination < constituentBuilder.size(); combination++) {
+                        constituentBuilder.setParameterPermutation(combination);
+                        Nn nn = constituentBuilder.build();
+                        File file = new File(globalResultsDir
+                            + "/Predictions/" + datasetName
+                            + "/" + nn.getDistanceMeasure()
+                            + "/" + nn.getDistanceMeasure().getParameters()
+                            + "/fold" + seed + ".csv.gzip");
+                        try {
+                            Utilities.mkdir(file.getParentFile());
+                            if (file.createNewFile()) {
+                                System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters());
+                                nn.setSeed(seed);
+                                nn.setCvTrain(true);
+                                nn.setUseEarlyAbandon(false);
+                                nn.setKPercentage(0);
+                                nn.setUseRandomTieBreak(false);
+                                ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file))));
+                                for (Double samplingPercentage : samplingPercentages) {
+                                    nn.setSampleSizePercentage(samplingPercentage);
+                                    objectOutputStream.writeDouble(samplingPercentage);
+                                    nn.buildClassifier(trainInstances);
+                                    ClassifierResults trainResults = nn.getTrainResults();
+                                    trainResults.setBenchmarkTime(benchmark);
+                                    objectOutputStream.writeObject(trainResults.writeFullResultsToString());
+                                    ClassifierResults testResults = nn.getTestResults(testInstances);
+                                    testResults.setBenchmarkTime(benchmark);
+                                    objectOutputStream.writeObject(testResults.writeFullResultsToString());
+                                }
+                                objectOutputStream.close();
                             }
-                            objectOutputStream.close();
+//                            else {
+//                                System.out.println(nn.toString() + " " + nn.getDistanceMeasure().getParameters() + " already exists");
+//                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
             }

@@ -154,6 +154,9 @@ public class Experiments  {
                 + "short, it is recommended to leave this off, as it will proportionally increase the total time to perform all your experiments by a great deal, and for short evaluation time the proportional affect of "
                 + "any processing noise may make any benchmark normalisation process unreliable anyway.")
         public boolean performTimingBenchmark = false;
+
+        @Parameter(names={"-pp","--postProcess"}, arity=1, description = "(boolean) whether to run the classifier in post-process mode, i.e. using (usually) files pre-generated from other (smaller) jobs.")
+        public boolean postProcess = false;
         
         //todo expose the filetype enum in some way, currently just using an unconnected if statement, if e.g the order of the enum values changes in the classifierresults, which we have no knowledge 
         //of here, the ifs will call the wrong things. decide on the design of this 
@@ -711,17 +714,20 @@ public class Experiments  {
     
     private static String setupParameterSavingInfo(ExperimentalArguments expSettings, Classifier classifier, Instances train, String resultsPath) { 
         String parameterFileName = null;
+        if(classifier instanceof ParameterSplittable) {
+            ((ParameterSplittable) classifier).setUpParameters(train);
+            ((ParameterSplittable) classifier).setPostProcess(expSettings.postProcess);
+        }
         if (expSettings.singleParameterID != null && classifier instanceof ParameterSplittable)//Single parameter fold
         {
             if (classifier instanceof TunedRandomForest)
                 ((TunedRandomForest) classifier).setNumFeaturesInProblem(train.numAttributes() - 1);
             
             expSettings.checkpointing = false;
-            ((ParameterSplittable) classifier).setUpParameters(train);
             ((ParameterSplittable) classifier).setParametersFromIndex(expSettings.singleParameterID);
             parameterFileName = "fold" + expSettings.foldId + "_" + expSettings.singleParameterID + ".csv";
             expSettings.generateErrorEstimateOnTrainSet = true;
-        } 
+        }
         else {
             //Only do all this if not an internal _single parameter_ experiment
             // Save internal info for ensembles

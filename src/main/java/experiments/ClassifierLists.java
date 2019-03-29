@@ -87,6 +87,7 @@ public class ClassifierLists {
         switch(classifier){
             case "TUNEDLCSS":
                 c = new TunedLcss();
+                ((TunedLcss) c).setSeed(fold);
                 break;
             case "PG":
                 c = new PG();

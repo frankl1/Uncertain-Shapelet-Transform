@@ -25,7 +25,7 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
         t1.findAllStats();
         return Double.compare(results.getAcc(), t1.getAcc());
     };
-    private String trainPath;
+    private String trainPath; // todo use one set in classifier instead - for API overhaul
     private boolean postProcess = true;
 
     private A getClassifier() {
@@ -33,6 +33,11 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
             classifier = getClassifierInstance();
         }
         return classifier;
+    }
+
+    @Override
+    public void setPostProcess(final boolean on) {
+        postProcess = on;
     }
 
     protected abstract A getClassifierInstance();
@@ -52,20 +57,41 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
         if(postProcess) {
             postProcess();
         }
+        else if(searchPermutations) {
+            String origTrainPath = trainPath;
+            long fold = parseCurrentFold(origTrainPath);
+            File parent = new File(origTrainPath).getParentFile();
+            String trainPath;
+            for(int i = 0; i < size(); i++) {
+                trainPath = new File(parent, "fold" + fold + "_" + i + ".csv").getPath();
+                if(new File(trainPath).exists()) {
+                    throw new IllegalStateException("parameter fold already exists"); // todo not necessarily a bad thing, what if you're adding to some pre-computed folds? Could do with API support
+                }
+                setParametersFromIndex(i);
+                getClassifier().writeCVTrainToFile(trainPath);
+                getClassifier().buildClassifier(trainInstances);
+                getClassifier().reset();
+            }
+            getClassifier().writeCVTrainToFile(origTrainPath);
+            postProcess();
+        }
         getClassifier().buildClassifier(trainInstances);
     }
 
     private void postProcess() throws Exception {
+        reset();
+        final long currentFold = parseCurrentFold(trainPath);
         String permutationPath = new File(trainPath).getParent(); // assumes parameter folds saved in same place as train / test folds - todo update API to support this
         File[] permutations = new File(permutationPath).listFiles(file -> {
             if(!file.isFile() || !file.getName().contains("_")) {
                 return false;
             }
-            return parseFold(file.getPath()) == seed;
+            return parseFold(file.getName()) == currentFold;
         });
         if(permutations == null || permutations.length <= 0) {
             throw new IllegalArgumentException("No files found");
         }
+        Arrays.sort(permutations, Comparator.comparing(File::getName));
         ClassifierResults bestResults = Utilities.bestConvertion(Arrays.asList(permutations), Comparator.comparingDouble(ClassifierResults::getAcc), file -> {
             ClassifierResults classifierResults = new ClassifierResults();
             try {
@@ -77,6 +103,7 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
             }
         }, random);
         String bestParameterPermutation = bestResults.getParas();
+        System.out.println(bestParameterPermutation);
         getClassifier().setOptions(bestParameterPermutation.split(","));
     }
 
@@ -84,6 +111,13 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
         String str = new File(path).getName();
         String substring = str.substring("fold".length());
         String foldString = substring.substring(0, substring.indexOf("_"));
+        return Long.parseLong(foldString);
+    }
+
+    private long parseCurrentFold(String path) {
+        String str = new File(path).getName();
+        String substring = str.substring("trainFold".length());
+        String foldString = substring.substring(0, substring.indexOf(".csv"));
         return Long.parseLong(foldString);
     }
 
@@ -117,16 +151,17 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
     }
 
     @Override
-    public void setParamSearch(final boolean b) {
-        postProcess = !b;
-    }
-
-    @Override
     public void setParametersFromIndex(final int x) {
         if(x >= 0) {
             parametersSpace.setParameterPermutation(x);
+            postProcess = false;
+            searchPermutations = false;
+        } else {
+            searchPermutations = true;
         }
     }
+
+    private boolean searchPermutations = true;
 
     @Override
     public String getParas() {
@@ -135,7 +170,7 @@ public abstract class AbstractTuned<A extends AdvancedAbstractClassifier> implem
 
     @Override
     public double getAcc() {
-        return 0;
+        return -1;
     }
 
     public int size() {

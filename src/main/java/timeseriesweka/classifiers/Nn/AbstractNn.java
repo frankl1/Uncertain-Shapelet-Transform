@@ -234,13 +234,10 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
                     trainNearestNeighbourFinders.add(new NearestNeighbourFinder(trainInstance));
                 }
             }
-            sampleSize = (int) (trainInstances.numInstances() * sampleSizePercentage);
             k = 1 + (int) kPercentage * originalTrainInstances.numInstances();
-            if(k > sampleSize) {
-                throw new IllegalArgumentException("k cannot be larger than sample size");
-            }
             trainCheckpoint();
         }
+        sampleSize = (int) (trainInstances.numInstances() * sampleSizePercentage);
         while (originalSampledTrainInstances.size() < sampleSize && withinTrainContract()) {
             if(!sampler.hasNext()) {
                 throw new IllegalStateException("Cannot sample another instance, this should never happen!");
@@ -379,6 +376,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
 
     public void setSampler(final Sampler sampler) {
         this.sampler = sampler;
+        sampler.setRandom(random);
         reset();
     }
 
@@ -403,6 +401,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     public void setSampleSizePercentage(final double percentage) {
         Utilities.percentageCheck(percentage);
         this.sampleSizePercentage = percentage;
+
     }
 
     public double getKPercentage() {

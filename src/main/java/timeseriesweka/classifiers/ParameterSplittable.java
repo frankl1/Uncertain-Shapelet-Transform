@@ -23,7 +23,9 @@ import java.io.Serializable;
  * @author ajb
  */
 public interface ParameterSplittable extends Serializable{
-    public void setParamSearch(boolean b);
+    default void setParamSearch(boolean b) {
+
+    }
 /* The actual parameter values should be set internally. This integer
   is just a key to maintain different parameter sets. The range starts at 1
     */
@@ -36,5 +38,13 @@ public interface ParameterSplittable extends Serializable{
 
     default int size() {
         return -1;
+    }
+
+    default void useOnlineParameterSearch() {
+        setParametersFromIndex(-1);
+    }
+
+    default void setPostProcess(boolean postProcess) {
+
     }
 }

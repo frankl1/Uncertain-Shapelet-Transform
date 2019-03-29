@@ -26,7 +26,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     public static final String PREDICTION_CONTRACT_KEY = "predictionContract";
     public static final String TRAIN_CONTRACT_KEY = "trainContract";
     public static final String TEST_CONTRACT_KEY = "testContract";
-    public static final String SEED_KEY = "seed";
+//    public static final String SEED_KEY = "seed";
     //    public static final String TRAIN_TIME_KEY = "trainTime";
 //    public static final String TEST_TIME_KEY = "testTime";
 //    public static final String PREDICTION_TIME_KEY = "predictionTime";
@@ -169,7 +169,7 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
             PREDICTION_CONTRACT_KEY, String.valueOf(predictionContract),
             TRAIN_CONTRACT_KEY, String.valueOf(trainContract),
             TEST_CONTRACT_KEY, String.valueOf(testContract),
-            SEED_KEY, String.valueOf(seed),
+//            SEED_KEY, String.valueOf(seed),
 //            PREDICTION_TIME_KEY, String.valueOf(predictionTime),
 //            TRAIN_TIME_KEY, String.valueOf(trainTime),
 //            TEST_TIME_KEY, String.valueOf(testTime) // only need these if experiments isn't recording this
@@ -185,8 +185,12 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
             setTrainContract(Long.parseLong(value));
         } else if (key.equalsIgnoreCase(TEST_CONTRACT_KEY)) {
             setTestContract(Long.parseLong(value));
-        } else if(key.equalsIgnoreCase(SEED_KEY)) {
-            setSeed(Long.parseLong(value));
+//        } else if(key.equalsIgnoreCase(SEED_KEY)) { // todo use weka's randomize thing
+//            if(value == null) {
+//                setSeed(null);
+//            } else {
+//                setSeed(Long.parseLong(value));
+//            }
         } else {
             return false;
         }

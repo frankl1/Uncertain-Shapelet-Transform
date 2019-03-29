@@ -17,39 +17,29 @@ public class RandomRoundRobinSampler implements Sampler {
     }
 
     private List<List<Instance>> instancesByClass;
+    private final List<List<Instance>> nonEmptyInstancesByClass = new ArrayList<>();
     private Random random = new Random();
-    private final List<Integer> indicies = new ArrayList<>();
-
-    private void regenerateClassValues() {
-        for(int i = 0; i < instancesByClass.size(); i++) {
-            indicies.add(i);
-        }
-    }
 
     @Override
     public void setInstances(final List<Instance> instances) {
         instancesByClass = Utilities.instancesByClass(instances);
-        regenerateClassValues();
     }
 
     @Override
     public boolean hasNext() {
-        return !indicies.isEmpty() || !instancesByClass.isEmpty();
+        return !instancesByClass.isEmpty();
     }
 
     @Override
     public Instance next() {
-        int classValue = indicies.remove(random.nextInt(indicies.size()));
-        List<Instance> homogeneousInstances = instancesByClass.get(classValue);
+        List<Instance> homogeneousInstances = instancesByClass.remove(random.nextInt(instancesByClass.size()));
         Instance instance = homogeneousInstances.remove(random.nextInt(homogeneousInstances.size()));
-        if(homogeneousInstances.isEmpty()) {
-            instancesByClass.remove(classValue);
-            for(int i = classValue; i < indicies.size(); i++) {
-                indicies.set(i, indicies.get(i) - 1);
-            }
+        if(!homogeneousInstances.isEmpty()) {
+            nonEmptyInstancesByClass.add(homogeneousInstances);
         }
-        if(indicies.isEmpty()) {
-            regenerateClassValues();
+        if(instancesByClass.isEmpty()) {
+            instancesByClass.addAll(nonEmptyInstancesByClass);
+            nonEmptyInstancesByClass.clear();
         }
         return instance;
     }

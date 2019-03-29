@@ -1,6 +1,9 @@
 package development.go;
 
 import evaluation.storage.ClassifierResults;
+import utilities.ClassifierTools;
+import utilities.InstanceTools;
+import weka.core.Instances;
 
 import java.io.*;
 import java.util.zip.GZIPInputStream;
@@ -83,9 +86,18 @@ public class SamplingExperimentAnalysis {
 //        System.out.println();
 //        System.out.println(testResults.writeFullResultsToString());
 
-        String resultsPath = "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nn2/Predictions/GunPoint/dtw/-w 0.0/fold0.csv.gzip";
+        String datasetsDir = "/scratch/Datasets/TSCProblems2015";
+        String datasetName = "GunPoint";
+        int seed = 0;
+        String resultsPath = "/scratch/sampRes/Predictions/GunPoint/DTW/warpingWindow,0.0/fold0.csv.gzip";
+//        String resultsPath = "/run/user/33190/gvfs/sftp:host=hpc.uea.ac.uk/gpfs/home/vte14wgu/experiments/sample-train/results/nnas3/Predictions/GunPoint/DTW/warpingWindow,0.0/fold0.csv.gzip";
+        Instances trainInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TRAIN.arff");
+        Instances testInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TEST.arff");
+        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+        trainInstances = splitInstances[0];
+        testInstances = splitInstances[1];
         ObjectInputStream reader = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(resultsPath))));
-        for(int i = 0; i <= 100; i += 10) {
+        for(int i = 0; i <= trainInstances.size(); i++) {
             double percentage = reader.readDouble();
             System.out.println(percentage);
             String trainResultsString = (String) reader.readObject();

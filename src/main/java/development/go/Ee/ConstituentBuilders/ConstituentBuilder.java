@@ -73,7 +73,7 @@ public abstract class ConstituentBuilder<A extends DistanceMeasure> implements P
     }
 
     @Override
-    public AbstractNn build() {
+    public Nn build() {
         if(parameterPermutation == null) {
             parameterPermutation = Utilities.fromPermutation(parameterPermutationSingular, getParameterSizes());
             parameterPermutationSingular = null;
