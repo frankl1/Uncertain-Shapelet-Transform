@@ -30,6 +30,9 @@ import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
+import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -631,6 +634,12 @@ public class Experiments  {
         LOGGER.log(Level.FINE, "Preamble complete, real experiment starting.");
         
         try {
+            if(expSettings.checkpointing && classifier instanceof CheckpointClassifier) {
+                ((CheckpointClassifier) classifier).setSavePath(resultsPath + "cp");
+                if(classifier instanceof AdvancedAbstractClassifier) {
+                    ((AdvancedAbstractClassifier) classifier).setCheckpointing(true);
+                }
+            }
             //Setup train results
             if (expSettings.generateErrorEstimateOnTrainSet) 
                 trainResults = findOrSetUpTrainEstimate(expSettings, classifier, trainSet, expSettings.foldId, resultsPath + trainFoldFilename);

@@ -496,21 +496,41 @@ public class Utilities {
         }
     }
 
-    public static <I, C> I best(List<I> list, Comparator<C> comparator, Function<I, C> converter, Random random) {
-        return randomElement(best(list, comparator, converter), random);
+
+    public static <I, C> I best(Iterable<I> iterable, Comparator<C> comparator, Function<I, C> converter, Random random) {
+        return randomElement(best(iterable.iterator(), comparator, converter), random);
+    }
+
+    public static <I, C> I best(Iterator<I> iterator, Comparator<C> comparator, Function<I, C> converter, Random random) {
+        return randomElement(best(iterator, comparator, converter), random);
     }
 
     public static <I, C> Integer argBest(List<I> list, Comparator<C> comparator, Function<I, C> converter, Random random) {
         return randomElement(argBest(list, comparator, converter), random);
     }
 
-    public static <I, C> List<I> best(List<I> list, Comparator<C> comparator, Function<I, C> converter) {
-        List<Integer> argBest = argBest(list, comparator, converter);
-        List<I> best = new ArrayList<>();
-        for(Integer i : argBest) {
-            best.add(list.get(i));
+    public static <I, C> List<I> best(Iterator<I> iterator, Comparator<C> comparator, Function<I, C> converter) {
+        if(!iterator.hasNext()) {
+            throw new IllegalArgumentException();
         }
-        return best;
+        I best = iterator.next();
+        C conversion = converter.apply(best);
+        List<I> draws = new ArrayList<>();
+        draws.add(best);
+        while(iterator.hasNext()) {
+            I other = iterator.next();
+            C otherConversion = converter.apply(other);
+            double comparisonResult = comparator.compare(otherConversion, conversion);
+            if(comparisonResult >= 0) {
+                if(comparisonResult > 0) {
+                    draws.clear();
+                    best = other;
+                    conversion = otherConversion;
+                }
+                draws.add(other);
+            }
+        }
+        return draws;
     }
 
     public static <I, C> List<Integer> argBest(List<I> list, Comparator<C> comparator, Function<I, C> converter) {
@@ -666,4 +686,18 @@ public class Utilities {
             mkdir(parent);
         }
     }
+
+    public static List<Double> linearInterpolate(double min, double max, int num) {
+        List<Double> list = new ArrayList<>();
+        for(int i = 0; i <= num; i++) {
+            if(min == 0 && max == 1) {
+                list.add((double) (i / num));
+            } else {
+                list.add(min + (max - min) * i);
+            }
+        }
+        return list;
+    }
+
+
 }

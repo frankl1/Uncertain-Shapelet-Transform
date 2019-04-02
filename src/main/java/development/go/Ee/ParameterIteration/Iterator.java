@@ -7,8 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-public interface IterationStrategy extends Iterator<AbstractNn> {
-    void useConstituentBuilders(List<ConstituentBuilder> constituentBuilders);
+public interface Iterator<A> extends java.util.Iterator<A> {
+    void setSource(List<A> source);
 
     default void setRandom(Random random) {
 

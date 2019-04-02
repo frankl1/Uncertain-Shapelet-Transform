@@ -1,9 +1,8 @@
 package development.go.Ee;
 
-import development.go.Ee.ConstituentBuilders.ConstituentBuilder;
-import development.go.Ee.ConstituentBuilders.DistanceMeasureBuilders.*;
-import development.go.Ee.ParameterIteration.IterationStrategy;
-import development.go.Ee.ParameterIteration.RandomRoundRobinIterationStrategy;
+import Tuning.Tuned;
+import development.go.Ee.ParameterIteration.Iterator;
+import development.go.Ee.ParameterIteration.RandomRoundRobinIterator;
 import development.go.Ee.Selection.FirstBestPerType;
 import development.go.Ee.Selection.Selector;
 import evaluation.storage.ClassifierResults;
@@ -14,63 +13,50 @@ import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 
-import timeseriesweka.classifiers.Nn.Nn;
-import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.io.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
 
-public class Ee extends AdvancedAbstractClassifier
-//    , ParameterSplittable
-{
+public class Ee extends Tuned {
 
+    // todo override finding next parameter in tuned aka setup next constituent / constituent param for ee
 
-    private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
-    private final List<ConstituentBuilder<?>> originalConstituentBuilders = new ArrayList<>();
+    @Override
+    public int size() {
+        int size = 0;
+        for(Tuned constituent : constituents) {
+            size += constituent.size();
+        }
+        return size;
+    }
+
+    @Override
+    public void useTrainInstances(final Instances trainInstances) {
+        for(Tuned constituent : constituents) {
+            constituent.useTrainInstances(trainInstances);
+        }
+    }
+
+    private final List<Tuned> constituents = new ArrayList<>();
     private Selector<EnsembleModule, String> selector = new FirstBestPerType<>(Comparator.comparingDouble(constituent -> constituent.trainResults.getAcc()));
     private double sampleSizePercentage = 1;
     private EnsembleModule[] modules;
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVote();
-    private IterationStrategy iterationStrategy = new RandomRoundRobinIterationStrategy();
-    private boolean buildFromFile = true;
-    private String resultsFilePath = "/scratch/results";
-    private long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
+    private Iterator<Tuned> consistuentIterator = new RandomRoundRobinIterator<>();
     private boolean useRandomTieBreak = false;
 
-    private Ee() {
-        reset();
-    }
-
-    public void reset() {
-        super.reset();
-        originalConstituentBuilders.clear();
-    }
-
-    private static List<String> datasetNamesFromFile(File file) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        String line;
-        List<String> datasetNames = new ArrayList<>();
-        while ((line = reader.readLine()) != null) {
-            datasetNames.add(line.trim());
-        }
-        return datasetNames;
-    }
-
     public static void main(String[] args) throws Exception {
-        File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
-        int seed = 0;
-        String datasetName = datasetFile.getName();
-        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
-        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
-        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
-        trainInstances = splitInstances[0];
-        testInstances = splitInstances[1];
-        Ee ee = Ee.newClassicConfiguration();
+//        File datasetFile = new File("/scratch/Datasets/TSCProblems2015/GunPoint");
+//        int seed = 0;
+//        String datasetName = datasetFile.getName();
+//        Instances trainInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TRAIN.arff");
+//        Instances testInstances = ClassifierTools.loadData(datasetFile + "/" + datasetName + "_TEST.arff");
+//        Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
+//        trainInstances = splitInstances[0];
+//        testInstances = splitInstances[1];
+//        Ee ee = Ee.newClassicConfiguration();
 
 
 //        // todo set seed / random
@@ -137,66 +123,62 @@ public class Ee extends AdvancedAbstractClassifier
 //        threadPoolExecutor.shutdown();
     }
 
-    public static Ee newClassicConfiguration() {
-        Ee ee = new Ee();
-        ee.addConstituentBuilder(new LcssBuilder());
-        ee.addConstituentBuilder(new OldDtwBuilder());
-        ee.addConstituentBuilder(new OldDdtwBuilder());
-        ee.addConstituentBuilder(new OldWdtwBuilder());
-        ee.addConstituentBuilder(new OldWddtwBuilder());
-        ee.addConstituentBuilder(new ErpBuilder());
-        ee.addConstituentBuilder(new MsmBuilder());
-        ee.addConstituentBuilder(new TweBuilder());
-        ee.addConstituentBuilder(new FullDtwBuilder());
-        ee.addConstituentBuilder(new FullDdtwBuilder());
-        ee.addConstituentBuilder(new EdBuilder());
-        return ee;
-    }
-
-    public void addConstituentBuilder(ConstituentBuilder<?> builder) {
-        originalConstituentBuilders.add(builder);
-    }
-
-    public static Ee newFairConfiguration() {
-        Ee ee = new Ee();
-        ee.addConstituentBuilder(new DtwBuilder());
-        ee.addConstituentBuilder(new DdtwBuilder());
-        ee.addConstituentBuilder(new WdtwBuilder());
-        ee.addConstituentBuilder(new WddtwBuilder());
-        ee.addConstituentBuilder(new LcssBuilder());
-        ee.addConstituentBuilder(new ErpBuilder());
-        ee.addConstituentBuilder(new TweBuilder());
-        ee.addConstituentBuilder(new MsmBuilder());
-        return ee;
-    }
-
-    public static Ee newFairRandomConfiguration() {
-        Ee ee = new Ee();
-        ee.addConstituentBuilder(new DtwBuilder());
-        ee.addConstituentBuilder(new DdtwBuilder());
-        ee.addConstituentBuilder(new WdtwBuilder());
-        ee.addConstituentBuilder(new WddtwBuilder());
-        ee.addConstituentBuilder(new LcssBuilder());
-        ee.addConstituentBuilder(new ErpBuilder());
-        ee.addConstituentBuilder(new TweBuilder());
-        ee.addConstituentBuilder(new MsmBuilder());
-//        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().getAcc())));
-        return ee;
-    }
-
-    public static Ee newFairRandomBalAccConfiguration() {
-        Ee ee = new Ee();
-        ee.addConstituentBuilder(new DtwBuilder());
-        ee.addConstituentBuilder(new DdtwBuilder());
-        ee.addConstituentBuilder(new WdtwBuilder());
-        ee.addConstituentBuilder(new WddtwBuilder());
-        ee.addConstituentBuilder(new LcssBuilder());
-        ee.addConstituentBuilder(new ErpBuilder());
-        ee.addConstituentBuilder(new TweBuilder());
-        ee.addConstituentBuilder(new MsmBuilder());
-//        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().balancedAcc)));
-        return ee;
-    }
+//    public static Ee newClassicConfiguration() {
+//        Ee ee = new Ee();
+//        ee.addConstituentBuilder(new LcssBuilder());
+//        ee.addConstituentBuilder(new OldDtwBuilder());
+//        ee.addConstituentBuilder(new OldDdtwBuilder());
+//        ee.addConstituentBuilder(new OldWdtwBuilder());
+//        ee.addConstituentBuilder(new OldWddtwBuilder());
+//        ee.addConstituentBuilder(new ErpBuilder());
+//        ee.addConstituentBuilder(new MsmBuilder());
+//        ee.addConstituentBuilder(new TweBuilder());
+//        ee.addConstituentBuilder(new FullDtwBuilder());
+//        ee.addConstituentBuilder(new FullDdtwBuilder());
+//        ee.addConstituentBuilder(new EdBuilder());
+//        return ee;
+//    }
+//
+//    public static Ee newFairConfiguration() {
+//        Ee ee = new Ee();
+//        ee.addConstituentBuilder(new DtwBuilder());
+//        ee.addConstituentBuilder(new DdtwBuilder());
+//        ee.addConstituentBuilder(new WdtwBuilder());
+//        ee.addConstituentBuilder(new WddtwBuilder());
+//        ee.addConstituentBuilder(new LcssBuilder());
+//        ee.addConstituentBuilder(new ErpBuilder());
+//        ee.addConstituentBuilder(new TweBuilder());
+//        ee.addConstituentBuilder(new MsmBuilder());
+//        return ee;
+//    }
+//
+//    public static Ee newFairRandomConfiguration() {
+//        Ee ee = new Ee();
+//        ee.addConstituentBuilder(new DtwBuilder());
+//        ee.addConstituentBuilder(new DdtwBuilder());
+//        ee.addConstituentBuilder(new WdtwBuilder());
+//        ee.addConstituentBuilder(new WddtwBuilder());
+//        ee.addConstituentBuilder(new LcssBuilder());
+//        ee.addConstituentBuilder(new ErpBuilder());
+//        ee.addConstituentBuilder(new TweBuilder());
+//        ee.addConstituentBuilder(new MsmBuilder());
+////        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().getAcc())));
+//        return ee;
+//    }
+//
+//    public static Ee newFairRandomBalAccConfiguration() {
+//        Ee ee = new Ee();
+//        ee.addConstituentBuilder(new DtwBuilder());
+//        ee.addConstituentBuilder(new DdtwBuilder());
+//        ee.addConstituentBuilder(new WdtwBuilder());
+//        ee.addConstituentBuilder(new WddtwBuilder());
+//        ee.addConstituentBuilder(new LcssBuilder());
+//        ee.addConstituentBuilder(new ErpBuilder());
+//        ee.addConstituentBuilder(new TweBuilder());
+//        ee.addConstituentBuilder(new MsmBuilder());
+////        ee.setSelector(new BestPerType<>(Comparator.comparingDouble(constituent -> constituent.getTrainResults().balancedAcc)));
+//        return ee;
+//    }
 
     public double getSampleSizePercentage() {
         return sampleSizePercentage;
@@ -207,70 +189,91 @@ public class Ee extends AdvancedAbstractClassifier
     }
 
     @Override
-    public void buildClassifier(final Instances trainInstances) throws Exception {
-        resumeFromCheckpoint();
-        trainTimeStamp = System.nanoTime();
-        final List<ConstituentBuilder<?>> constituentBuilders = new ArrayList<>(originalConstituentBuilders);
-        for(ConstituentBuilder<?> constituentBuilder : constituentBuilders) {
-            constituentBuilder.setUpParameters(trainInstances);
-        }
-        trainResults = new ClassifierResults();
-        trainCheckpoint();
-        while (iterationStrategy.hasNext() && withinTrainContract()) {
-            Nn nn = (Nn) iterationStrategy.next(); // todo will break
-            nn.setCvTrain(isCvTrain());
-            nn.setCheckpointing(isCheckpointing());
-            nn.setTrainContract(trainContract - trainTime);
-            // todo below should be offloaded to constituent builders perhaps?
-            nn.setSampleSizePercentage(sampleSizePercentage);
-//            System.out.println(Nn.toString() + " " + Nn.getDistanceMeasure().getParameters());
-            EnsembleModule ensembleModule = new EnsembleModule();
-            if(buildFromFile) {
-                updateTrainTime();
-                String path = resultsFilePath // todo this string probs need adjusting for running consistuents individually
-                    + "/Predictions/"
-                    + trainInstances.relationName()
-                    + "/" + nn.getDistanceMeasure().toString()
-                    + "/" + nn.getDistanceMeasure().getParameters()
-                    + "/fold" + seed + ".csv.gzip";
-                ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(path))));
-                double percentage;
-                String trainResultsString;
-                String testResultsString;
-                do {
-                    percentage = objectInputStream.readDouble();
-                    trainResultsString = (String) objectInputStream.readObject();
-                    testResultsString = (String) objectInputStream.readObject();
-                } while (percentage != sampleSizePercentage);
-                ClassifierResults trainResults = ClassifierResults.parse(trainResultsString);
-                ClassifierResults testResults = ClassifierResults.parse(testResultsString);
-                ensembleModule.trainResults = trainResults;
-                ensembleModule.testResults = testResults;
-                ensembleModule.setClassifier(nn);
-                trainTime += trainResults.getBuildTimeInNanos();
-                trainTimeStamp = System.nanoTime();
+    protected void setParameterIndex(int index) {
+        boolean stop = false;
+        int constituentIndex = 0;
+        Tuned constituent;
+        do {
+            constituent = constituents.get(constituentIndex);
+            if(index < constituent.size()) {
+                stop = true;
             } else {
-                nn.buildClassifier(trainInstances);
-                ensembleModule.setClassifier(nn);
-                ensembleModule.trainResults = nn.getTrainResults();
+                index -= constituent.size();
+                constituentIndex++;
             }
-            selector.consider(ensembleModule, nn.getDistanceMeasure().toString());
-            trainCheckpoint();
+        } while (!stop && constituentIndex < constituents.size());
+        if(!stop) {
+            throw new IllegalArgumentException("index out of range");
         }
-        List<EnsembleModule> constituents = selector.getSelected();
-        modules = new EnsembleModule[constituents.size()];
-//        long constituentPredictionContract = predictionContract / modules.length;
-//        long constituentTestContract = testContract / modules.length;
-        for(int i = 0; i < modules.length; i++) {
-            modules[i] = constituents.get(i);
-//            modules[i].setPredictionContract(constituentPredictionContract); // todo when new api is enforced
-//            modules[i].setTestContract(constituentTestContract); // todo when new api is enforced
-        }
-        weightingScheme.defineWeightings(modules, trainInstances.numClasses());
-        votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
-        trainCheckpoint(true);
-        getTrainResults().writeFullResultsToFile(trainFilePath);
+        constituent.setSubTaskIndex(index);
     }
+
+    //    @Override
+//    public void buildClassifier(final Instances trainInstances) throws Exception {
+//        resumeFromCheckpoint();
+//        trainTimeStamp = System.nanoTime();
+//        if(resetTrain) {
+//            for(Constituent constituent : constituents) {
+//                parameters.put(constituent, Utilities.naturalNumbersFromZero(constituent.size()));
+//            }
+//            trainResults = new ClassifierResults();
+//            trainCheckpoint();
+//        }
+//        while (consistuentIterator.hasNext() && withinTrainContract()) {
+//            Nn nn = null;//consistuentIterator.next(); // todo will break
+//            nn.setCvTrain(isCvTrain());
+//            nn.setCheckpointing(isCheckpointing());
+//            nn.setTrainContract(trainContract - trainTime);
+//            // todo below should be offloaded to constituent builders perhaps?
+//            nn.setSampleSizePercentage(sampleSizePercentage);
+////            System.out.println(Nn.toString() + " " + Nn.getDistanceMeasure().getParameters());
+//            EnsembleModule ensembleModule = new EnsembleModule();
+//            if(buildFromFile) {
+//                updateTrainTime();
+//                String path = trainFilePath // todo this string probs need adjusting for running consistuents individually
+//                    + "/Predictions/"
+//                    + trainInstances.relationName()
+//                    + "/" + nn.getDistanceMeasure().toString()
+//                    + "/" + nn.getDistanceMeasure().getParameters()
+//                    + "/fold" + seed + ".csv.gzip";
+//                ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(path))));
+//                double percentage;
+//                String trainResultsString;
+//                String testResultsString;
+//                do {
+//                    percentage = objectInputStream.readDouble();
+//                    trainResultsString = (String) objectInputStream.readObject();
+//                    testResultsString = (String) objectInputStream.readObject();
+//                } while (percentage != sampleSizePercentage);
+//                ClassifierResults trainResults = ClassifierResults.parse(trainResultsString);
+//                ClassifierResults testResults = ClassifierResults.parse(testResultsString);
+//                ensembleModule.trainResults = trainResults;
+//                ensembleModule.testResults = testResults;
+//                ensembleModule.setClassifier(nn);
+//                trainTime += trainResults.getBuildTimeInNanos();
+//                trainTimeStamp = System.nanoTime();
+//            } else {
+//                nn.buildClassifier(trainInstances);
+//                ensembleModule.setClassifier(nn);
+//                ensembleModule.trainResults = nn.getTrainResults();
+//            }
+//            selector.consider(ensembleModule, nn.getDistanceMeasure().toString());
+//            trainCheckpoint();
+//        }
+//        List<EnsembleModule> constituents = selector.getSelected();
+//        modules = new EnsembleModule[constituents.size()];
+////        long constituentPredictionContract = predictionContract / modules.length;
+////        long constituentTestContract = testContract / modules.length;
+//        for(int i = 0; i < modules.length; i++) {
+//            modules[i] = constituents.get(i);
+////            modules[i].setPredictionContract(constituentPredictionContract); // todo when new api is enforced
+////            modules[i].setTestContract(constituentTestContract); // todo when new api is enforced
+//        }
+//        weightingScheme.defineWeightings(modules, trainInstances.numClasses());
+//        votingScheme.trainVotingScheme(modules, trainInstances.numClasses());
+//        trainCheckpoint(true);
+//        getTrainResults().writeFullResultsToFile(trainFilePath);
+//    }
 
     public Selector<EnsembleModule, String> getSelector() {
         return selector;
@@ -296,22 +299,6 @@ public class Ee extends AdvancedAbstractClassifier
         this.votingScheme = votingScheme;
     }
 
-    public boolean isBuildFromFile() { // todo rename these
-        return buildFromFile;
-    }
-
-    public void setBuildFromFile(final boolean buildFromFile) {
-        this.buildFromFile = buildFromFile;
-    }
-
-    public String getResultsFilePath() {
-        return resultsFilePath;
-    }
-
-    public void setResultsFilePath(final String resultsFilePath) {
-        this.resultsFilePath = resultsFilePath;
-    }
-
     public boolean isUseRandomTieBreak() {
         return useRandomTieBreak;
     }
@@ -321,30 +308,28 @@ public class Ee extends AdvancedAbstractClassifier
     }
 
     public ClassifierResults getTestResults(final Instances testInstances) throws Exception {
-        ClassifierResults results = new ClassifierResults();
-        for(int i = 0; i < testInstances.size(); i++) {
-            Instance testInstance = testInstances.get(i);
-            long timeStamp = System.nanoTime();
-            double[] prediction = distributionForInstance(testInstance);
-            predictionTime = System.nanoTime() - timeStamp;
-            double predictedClass;
-            if(useRandomTieBreak) {
-                predictedClass = Utilities.argMax(prediction, random);
-            } else {
-                predictedClass = Utilities.argMax(prediction)[0];
-            }
-            results.addPrediction(testInstance.classValue(), prediction, predictedClass, predictionTime, null);
-        }
-        setResultsMetaData(testInstances.numClasses(), results);
-        return results;
+//        ClassifierResults results = new ClassifierResults();
+//        for(int i = 0; i < testInstances.size(); i++) {
+//            Instance testInstance = testInstances.get(i);
+//            long timeStamp = System.nanoTime();
+//            double[] prediction = distributionForInstance(testInstance);
+//            predictionTime = System.nanoTime() - timeStamp;
+//            double predictedClass;
+//            if(useRandomTieBreak) {
+//                predictedClass = Utilities.argMax(prediction, random);
+//            } else {
+//                predictedClass = Utilities.argMax(prediction)[0];
+//            }
+//            results.addPrediction(testInstance.classValue(), prediction, predictedClass, predictionTime, null);
+//        }
+//        setResultsMetaData(testInstances.numClasses(), results);
+//        return results;
     }
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
         return votingScheme.distributionForInstance(modules, testInstance);
     }
-
-
 
     @Override
     public String getParameters() {
@@ -366,42 +351,26 @@ public class Ee extends AdvancedAbstractClassifier
         throw new UnsupportedOperationException(); // todo setoptiosn
     }
 
-    public IterationStrategy getIterationStrategy() {
-        return iterationStrategy;
+    public Iterator getConsistuentIterator() {
+        return consistuentIterator;
     }
 
-    public void setIterationStrategy(final IterationStrategy iterationStrategy) {
-        this.iterationStrategy = iterationStrategy;
-    }
-
-    @Override
-    public void setSavePath(final String path) {
-        super.setSavePath(path);
-        checkpointFilePath = new File(path, CHECKPOINT_FILE_NAME).getPath();
+    public void setConsistuentIterator(final Iterator consistuentIterator) {
+        this.consistuentIterator = consistuentIterator;
     }
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
         super.copyFromSerObject(obj);
         Ee other = (Ee) obj;
-        seed = other.seed;
-        random = other.random;
-        originalConstituentBuilders.clear();
-        originalConstituentBuilders.addAll(other.originalConstituentBuilders);
+        constituents.clear();
+        constituents.addAll(other.constituents);
         selector = other.selector;
         sampleSizePercentage = other.sampleSizePercentage;
-        trainResults = other.trainResults;
         modules = other.modules;
         weightingScheme = other.weightingScheme;
         votingScheme = other.votingScheme;
-        iterationStrategy = other.iterationStrategy;
-        trainTime = other.trainTime;
-        testTime = other.testTime;
-        predictionTime = other.predictionTime;
-        trainContract = other.trainContract;
-        testContract = other.testContract;
-        predictionContract = other.predictionContract;
-        minCheckpointInterval = other.minCheckpointInterval;
+        consistuentIterator = other.consistuentIterator;
         useRandomTieBreak = other.useRandomTieBreak;
     }
 }

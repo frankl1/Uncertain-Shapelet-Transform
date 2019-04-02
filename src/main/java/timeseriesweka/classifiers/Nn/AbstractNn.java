@@ -38,7 +38,6 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     private boolean useEarlyAbandon = false;
     private NeighbourWeighter neighbourWeighter = new UniformWeighting();
     private Sampler sampler = new RandomRoundRobinSampler();
-    // todo make contract use linear regression (order 2)
 
     public static void main(String[] args) throws Exception {
 //        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -193,11 +192,16 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
 //        System.out.println(testResults.acc);
     }
 
+
     @Override
     public void setSavePath(String path) {
         super.setSavePath(path);
         this.checkpointFilePath = new File(path).getPath() + "/" + CHECKPOINT_FILE_NAME;
     }
+
+
+    // todo make contract use linear regression (order 2)
+
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
@@ -218,102 +222,23 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     }
 
     @Override
-    public void buildClassifier(Instances trainInstances) throws Exception {
-        resumeFromCheckpoint();
-        trainTimeStamp = System.nanoTime();
-        if(resetTrain) {
-            trainTime = 0;
-            resetTrain = false;
-            this.originalTrainInstances = trainInstances;
-            trainInstances = originalTrainInstances;
-            sampler.setInstances(trainInstances);
-            originalSampledTrainInstances.clear();
-            trainNearestNeighbourFinders.clear();
-            if(cvTrain) {
-                for(Instance trainInstance : trainInstances) {
-                    trainNearestNeighbourFinders.add(new NearestNeighbourFinder(trainInstance));
-                }
-            }
-            k = 1 + (int) kPercentage * originalTrainInstances.numInstances();
-            trainCheckpoint();
-        }
-        sampleSize = (int) (trainInstances.numInstances() * sampleSizePercentage);
-        while (originalSampledTrainInstances.size() < sampleSize && withinTrainContract()) {
-            if(!sampler.hasNext()) {
-                throw new IllegalStateException("Cannot sample another instance, this should never happen!");
-            }
-            Instance sampledInstance = sampler.next();
-            originalSampledTrainInstances.add(sampledInstance);
-            if (cvTrain) {
-                for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
-                    if(!nearestNeighbourFinder.getInstance().equals(sampledInstance)) {
-                        nearestNeighbourFinder.addNeighbour(sampledInstance);
-                    }
-                }
-            }
-            trainResults = null;
-            trainCheckpoint();
-        }
-        if(trainResults == null) {
-            resetTest();
-            updateTrainTime();
-            if(cvTrain) {
-                trainResults = getResults(trainNearestNeighbourFinders);
-            }
-            checkpoint(true);
-            if(cvTrain && trainFilePath != null) {
-                Utilities.mkdirParent(new File(trainFilePath));
-                trainResults.writeFullResultsToFile(trainFilePath);
-            }
-        }
-    }
-
-    public ClassifierResults getTestResults(Instances testInstances) throws Exception {
-        resumeFromCheckpoint();
-        testTimeStamp = System.nanoTime();
-        if(resetTest) {
-            resetTest = false;
-            testTime = 0;
-            sampledTrainInstances.clear();
-            testNearestNeighbourFinders.clear();
-            sampledTrainInstances.addAll(originalSampledTrainInstances);
-            for(Instance testInstance : testInstances) {
-                testNearestNeighbourFinders.add(new NearestNeighbourFinder(testInstance));
-            }
-            testCheckpoint();
-        }
-        while (!sampledTrainInstances.isEmpty() && withinTestContract()) {
-            testResults = null;
-            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
-            for(NearestNeighbourFinder nearestNeighbourFinder : testNearestNeighbourFinders) {
-                nearestNeighbourFinder.addNeighbour(sampledTrainInstance);
-            }
-            testCheckpoint();
-        }
-        if(testResults == null) {
-            testResults = getResults(testNearestNeighbourFinders);
-            checkpoint(true);
-        }
-        return testResults;
-    }
-
-    private ClassifierResults getResults(List<NearestNeighbourFinder> nearestNeighbourFinders) throws Exception {
-        ClassifierResults results = new ClassifierResults();
-        for (int i = 0; i < nearestNeighbourFinders.size(); i++) {
-            NearestNeighbourFinder nearestNeighbourFinder = nearestNeighbourFinders.get(i);
-            double classValue = nearestNeighbourFinder.getInstance().classValue();
-            long predictionTimeStamp = System.nanoTime();
-            double[] predictions = nearestNeighbourFinder.predict();
-            long predictionTime = System.nanoTime() - predictionTimeStamp;
-            results.addPrediction(classValue, predictions, Utilities.argMax(predictions, random), predictionTime, null);
-        }
-        setResultsMetaData(nearestNeighbourFinders.get(0).getInstance().numClasses(), results);
-        return results;
-    }
-
-    @Override
-    public String toString() {
-        return getDistanceMeasureInstance().toString() + "-" + getClass().getSimpleName().toUpperCase();
+    public String[] getOptions() {
+        List<String> strings = new ArrayList<>();
+        strings.add(SAMPLE_SIZE_PERCENTAGE_KEY);
+        strings.add(String.valueOf(sampleSizePercentage));
+        strings.add(K_PERCENTAGE_KEY);
+        strings.add(String.valueOf(kPercentage));
+        strings.add(RANDOM_TIE_BREAK_KEY);
+        strings.add(String.valueOf(useRandomTieBreak));
+        strings.add(USE_EARLY_ABANDON_KEY);
+        strings.add(String.valueOf(useEarlyAbandon));
+        strings.add(NEIGHBOUR_WEIGHTER_KEY);
+        strings.add(neighbourWeighter.getClass().getSimpleName());
+        strings.add(SAMPLER_KEY);
+        strings.add(sampler.getClass().getSimpleName());
+        strings.addAll(Arrays.asList(super.getOptions()));
+        strings.addAll(Arrays.asList(getDistanceMeasureInstance().getOptions()));
+        return strings.toArray(new String[0]);
     }
 
     @Override
@@ -350,25 +275,111 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
         return true;
     }
 
-    @Override
-    public String[] getOptions() {
-        List<String> strings = new ArrayList<>();
-        strings.add(SAMPLE_SIZE_PERCENTAGE_KEY);
-        strings.add(String.valueOf(sampleSizePercentage));
-        strings.add(K_PERCENTAGE_KEY);
-        strings.add(String.valueOf(kPercentage));
-        strings.add(RANDOM_TIE_BREAK_KEY);
-        strings.add(String.valueOf(useRandomTieBreak));
-        strings.add(USE_EARLY_ABANDON_KEY);
-        strings.add(String.valueOf(useEarlyAbandon));
-        strings.add(NEIGHBOUR_WEIGHTER_KEY);
-        strings.add(neighbourWeighter.getClass().getSimpleName());
-        strings.add(SAMPLER_KEY);
-        strings.add(sampler.getClass().getSimpleName());
-        strings.addAll(Arrays.asList(super.getOptions()));
-        strings.addAll(Arrays.asList(getDistanceMeasureInstance().getOptions()));
-        return strings.toArray(new String[0]);
+    public void setUseEarlyAbandon(final boolean useEarlyAbandon) {
+        this.useEarlyAbandon = useEarlyAbandon;
     }
+
+    public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
+        this.useRandomTieBreak = useRandomTieBreak;
+    }
+
+    @Override
+    public void buildClassifier(Instances trainInstances) throws Exception {
+        resumeFromCheckpoint();
+        trainTimeStamp = System.nanoTime();
+        if(resetOnTrain) {
+            trainTime = 0;
+            this.originalTrainInstances = trainInstances;
+            trainInstances = originalTrainInstances;
+            sampler.setInstances(trainInstances);
+            originalSampledTrainInstances.clear();
+            trainNearestNeighbourFinders.clear();
+            if(cvTrain) {
+                for(Instance trainInstance : trainInstances) {
+                    trainNearestNeighbourFinders.add(new NearestNeighbourFinder(trainInstance));
+                }
+            }
+            k = 1 + (int) kPercentage * originalTrainInstances.numInstances();
+            trainCheckpoint();
+        }
+        sampleSize = (int) (trainInstances.numInstances() * sampleSizePercentage);
+        while (originalSampledTrainInstances.size() < sampleSize && withinTrainContract()) {
+            if(!sampler.hasNext()) {
+                throw new IllegalStateException("Cannot sample another instance, this should never happen!");
+            }
+            Instance sampledInstance = sampler.next();
+            originalSampledTrainInstances.add(sampledInstance);
+            if (cvTrain) {
+                for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
+                    if(!nearestNeighbourFinder.getInstance().equals(sampledInstance)) {
+                        nearestNeighbourFinder.addNeighbour(sampledInstance);
+                    }
+                }
+            }
+            trainResults = null;
+            trainCheckpoint();
+        }
+        if(trainResults == null) {
+            updateTrainTime();
+            if(cvTrain) {
+                trainResults = getResults(trainNearestNeighbourFinders);
+            }
+            checkpoint(true);
+            if(cvTrain && trainFilePath != null) {
+                Utilities.mkdirParent(new File(trainFilePath));
+                trainResults.writeFullResultsToFile(trainFilePath);
+            }
+        }
+    }
+
+    private ClassifierResults getResults(List<NearestNeighbourFinder> nearestNeighbourFinders) throws Exception {
+        ClassifierResults results = new ClassifierResults();
+        for (int i = 0; i < nearestNeighbourFinders.size(); i++) {
+            NearestNeighbourFinder nearestNeighbourFinder = nearestNeighbourFinders.get(i);
+            double classValue = nearestNeighbourFinder.getInstance().classValue();
+            long predictionTimeStamp = System.nanoTime();
+            double[] predictions = nearestNeighbourFinder.predict();
+            long predictionTime = System.nanoTime() - predictionTimeStamp;
+            results.addPrediction(classValue, predictions, Utilities.argMax(predictions, random), predictionTime, null);
+        }
+        setResultsMetaData(nearestNeighbourFinders.get(0).getInstance().numClasses(), results);
+        return results;
+    }
+
+    public ClassifierResults getTestResults(Instances testInstances) throws Exception {
+        resumeFromCheckpoint();
+        testTimeStamp = System.nanoTime();
+        if(resetOnTest) {
+            testTime = 0;
+            sampledTrainInstances.clear();
+            testNearestNeighbourFinders.clear();
+            sampledTrainInstances.addAll(originalSampledTrainInstances);
+            for(Instance testInstance : testInstances) {
+                testNearestNeighbourFinders.add(new NearestNeighbourFinder(testInstance));
+            }
+            testCheckpoint();
+        }
+        while (!sampledTrainInstances.isEmpty() && withinTestContract()) {
+            testResults = null;
+            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
+            for(NearestNeighbourFinder nearestNeighbourFinder : testNearestNeighbourFinders) {
+                nearestNeighbourFinder.addNeighbour(sampledTrainInstance);
+            }
+            testCheckpoint();
+        }
+        if(testResults == null) {
+            testResults = getResults(testNearestNeighbourFinders);
+            checkpoint(true);
+        }
+        return testResults;
+    }
+
+    @Override
+    public String toString() {
+        return getDistanceMeasureInstance().toString() + "-" + getClass().getSimpleName().toUpperCase();
+    }
+
+    protected abstract DistanceMeasure getDistanceMeasureInstance();
 
     public Sampler getSampler() {
         return sampler;
@@ -377,17 +388,6 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     public void setSampler(final Sampler sampler) {
         this.sampler = sampler;
         sampler.setRandom(random);
-        reset();
-    }
-
-    public void setUseRandomTieBreak(final boolean useRandomTieBreak) {
-        this.useRandomTieBreak = useRandomTieBreak;
-        reset();
-    }
-
-    public void setUseEarlyAbandon(final boolean useEarlyAbandon) {
-        this.useEarlyAbandon = useEarlyAbandon;
-        reset();
     }
 
     private int getSampleSize() {
@@ -411,7 +411,6 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
     public void setKPercentage(final double percentage) {
         Utilities.percentageCheck(percentage);
         this.kPercentage = percentage;
-        reset();
     }
 
     public boolean usesRandomTieBreak() {
@@ -447,11 +446,8 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
         return neighbourWeighter;
     }
 
-    protected abstract DistanceMeasure getDistanceMeasureInstance();
-
     public void setNeighbourWeighter(final NeighbourWeighter neighbourWeighter) {
         this.neighbourWeighter = neighbourWeighter;
-        reset();
     }
 
     private class NearestNeighbourFinder implements Serializable {

@@ -13,7 +13,6 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public abstract class AdvancedAbstractClassifier extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfoOptions, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
 
@@ -47,12 +46,35 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     protected long lastCheckpointTimeStamp = 0;
     protected long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
     protected Long seed = null;
-    protected boolean resetTrain = true;
-    protected boolean resetTest = true;
     protected ClassifierResults trainResults;
     protected ClassifierResults testResults;
     protected Instances originalTrainInstances = null;
     protected Instances originalTestInstances;
+    protected boolean resetOnTrain = false;
+    protected boolean resetOnTest = false;
+
+    public int getSeedNotNull() {
+        if(seed == null) {
+            throw new IllegalArgumentException("seed null");
+        }
+        return Math.toIntExact(seed); // todo make seed int
+    }
+
+    public boolean resetsOnBuild() {
+        return resetOnTrain;
+    }
+
+    public void setResetOnTrain(final boolean resetOnTrain) {
+        this.resetOnTrain = resetOnTrain;
+    }
+
+    public boolean resetsOnTest() {
+        return resetOnTest;
+    }
+
+    public void setResetOnTest(final boolean resetOnTest) {
+        this.resetOnTest = resetOnTest;
+    }
 
     public long getMinCheckpointInterval() {
         return minCheckpointInterval;
@@ -99,7 +121,6 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
 
     @Override
     public void copyFromSerObject(final Object obj) throws Exception {
-        reset();
         AdvancedAbstractClassifier other = (AdvancedAbstractClassifier) obj;
         originalTestInstances = other.originalTestInstances;
         originalTrainInstances = other.originalTrainInstances;
@@ -112,37 +133,19 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         predictionContract = other.predictionContract;
         seed = other.seed;
         trainResults = other.trainResults;
-        resetTrain = other.resetTrain;
-        resetTest = other.resetTest;
         testResults = other.testResults;
+        resetOnTest = other.resetOnTest;
+        resetOnTrain = other.resetOnTrain;
         trainFilePath = other.trainFilePath; // todo should this be here?
-    }
-
-    public void reset() {
-        trainTime = -1;
-        if (seed != null) {
-            random.setSeed(seed);
-        }
-        trainResults = null;
-        resetTrain = true;
-        hasResumedFromCheckpoint = false;
-        resetTest();
-    }
-
-    public void resetTest() {
-        resetTest = true;
-        testResults = null;
-        testTime = -1;
+        setSeed(seed);
     }
 
     public void setSeed(long seed) {
         this.seed = seed;
-        reset();
     }
 
     public void setRandom(Random random) {
         this.random = random;
-        reset();
     }
 
     protected ClassifierResults setResultsMetaData(int numClasses, ClassifierResults results) throws Exception {
@@ -216,7 +219,6 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
 
     public void setCvTrain(final boolean cvTrain) {
         this.cvTrain = cvTrain;
-        reset();
     }
 
     private long getPredictionTime() {

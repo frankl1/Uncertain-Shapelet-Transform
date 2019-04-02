@@ -139,7 +139,7 @@ if nargin < 4
 
 else
     
-   if (length(clique) > 0)
+   if (intervalLength(clique) > 0)
         clique = clique(:,idx) > 0;
    end
 end

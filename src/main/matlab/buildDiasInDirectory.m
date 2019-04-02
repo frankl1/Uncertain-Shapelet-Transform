@@ -8,13 +8,13 @@ k = dir(strcat(folder, '*.csv'));
 filenames = {k.name}';
 
 if pairwise == 0
-    for i=1:length(filenames)
+    for i=1:intervalLength(filenames)
         buildDia(char(strcat(folder, filenames(i))), pval, 0);
     end
 else %pairwise == 1
-    for i=1:length(filenames)
+    for i=1:intervalLength(filenames)
         accsFile = char(filenames(i));
-        name = accsFile(1:(length(accsFile)-length('.csv')));
+        name = accsFile(1:(intervalLength(accsFile)-intervalLength('.csv')));
         expr = fileread(strcat(folder, name, '_cliques.txt'));
         eval(expr);
         buildDia(char(strcat(folder, filenames(i))), pval, 1, cliques);

@@ -15,6 +15,7 @@
 package experiments;
 
 
+import Tuning.Tuned;
 import development.go.Ee.PG;
 import development.go.Ee.TSEF;
 import multivariate_timeseriesweka.classifiers.MultivariateShapeletTransformClassifier;
@@ -24,11 +25,18 @@ import multivariate_timeseriesweka.classifiers.NN_DTW_I;
 import multivariate_timeseriesweka.classifiers.NN_ED_I;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
+import timeseriesweka.classifiers.Nn.Specialised.Ddtw.TunedDdtwNn;
+import timeseriesweka.classifiers.Nn.Specialised.Dtw.TunedDtwNn;
+import timeseriesweka.classifiers.Nn.Specialised.Erp.TunedErpNn;
+import timeseriesweka.classifiers.Nn.Specialised.Msm.TunedMsmNn;
+import timeseriesweka.classifiers.Nn.Specialised.Twe.TunedTweNn;
+import timeseriesweka.classifiers.Nn.Specialised.Wddtw.TunedWddtwNn;
+import timeseriesweka.classifiers.Nn.Specialised.Wdtw.TunedWdtwNn;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.DTW1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.ED1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.MSM1NN;
 import timeseriesweka.classifiers.ensembles.elastic_ensemble.WDTW1NN;
-import timeseriesweka.classifiers.Nn.Specialised.Lcss.TunedLcss;
+import timeseriesweka.classifiers.Nn.Specialised.Lcss.TunedLcssNn;
 import vector_classifiers.CAWPE;
 import weka.classifiers.Classifier;
 import weka.classifiers.bayes.BayesNet;
@@ -85,15 +93,52 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
-            case "TUNEDLCSS":
-                c = new TunedLcss();
-                ((TunedLcss) c).setSeed(fold);
+            case "TUNED_LCSS":
+                Tuned tunedLcssNn = new TunedLcssNn();
+                tunedLcssNn.setSeed(fold);
+                c = tunedLcssNn;
+                break;
+            case "TUNED_DTW":
+                Tuned tunedDtwNn = new TunedDtwNn();
+                tunedDtwNn.setSeed(fold);
+                c = tunedDtwNn;
+                break;
+            case "TUNED_DDTW":
+                Tuned tunedDdtwNn = new TunedDdtwNn();
+                tunedDdtwNn.setSeed(fold);
+                c = tunedDdtwNn;
+                break;
+            case "TUNED_ERP":
+                Tuned tunedErpNn = new TunedErpNn();
+                tunedErpNn.setSeed(fold);
+                c = tunedErpNn;
+                break;
+            case "TUNED_MSM":
+                Tuned tunedMsmNn = new TunedMsmNn();
+                tunedMsmNn.setSeed(fold);
+                c = tunedMsmNn;
+                break;
+            case "TUNED_WDTW":
+                Tuned tunedWdtwNn = new TunedWdtwNn();
+                tunedWdtwNn.setSeed(fold);
+                c = tunedWdtwNn;
+                break;
+            case "TUNED_WDDTW":
+                Tuned tunedWddtwNn = new TunedWddtwNn();
+                tunedWddtwNn.setSeed(fold);
+                c = tunedWddtwNn;
+                break;
+            case "TUNED_TWE":
+                Tuned tunedTweNn = new TunedTweNn();
+                tunedTweNn.setSeed(fold);
+                c = tunedTweNn;
                 break;
             case "PG":
                 c = new PG();
                 break;
-            case "TSEF":
+            case "EIN":
                 c = new TSEF();
+                ((TSEF) c).setSeed(fold);
                 break;
 //            case "GDTW":
 ////                ClassifierBuilder classifierBuilder = new ClassifierBuilder(new DtwBuilder());

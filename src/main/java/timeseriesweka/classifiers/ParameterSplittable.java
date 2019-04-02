@@ -14,6 +14,7 @@
  */
 package timeseriesweka.classifiers;
 
+import weka.classifiers.Classifier;
 import weka.core.Instances;
 
 import java.io.Serializable;
@@ -22,7 +23,7 @@ import java.io.Serializable;
  *
  * @author ajb
  */
-public interface ParameterSplittable extends Serializable{
+public interface ParameterSplittable extends Serializable, Classifier {
     default void setParamSearch(boolean b) {
 
     }

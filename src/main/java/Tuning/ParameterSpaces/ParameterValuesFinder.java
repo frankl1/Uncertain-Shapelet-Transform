@@ -1,4 +1,4 @@
-package Tuning;
+package Tuning.ParameterSpaces;
 
 import weka.core.Instances;
 

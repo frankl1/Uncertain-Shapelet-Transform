@@ -1,10 +1,10 @@
-package Tuning;
+package Tuning.ParameterSpaces;
 
 import utilities.Utilities;
 
 import java.util.*;
 
-public class ParametersSpace {
+public class ParameterSpaces {
     private final List<ParameterSpace<?>> parameterSpaceSet = new ArrayList<>();
 
     public boolean add(ParameterSpace<?> parameterSpace) {

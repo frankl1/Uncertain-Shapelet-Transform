@@ -13,11 +13,11 @@ timings = timings(inds, :);
 
 % data for x axis
 dsets = headers(2:size(headers,1),1);
-for i=1:length(dsets)
+for i=1:intervalLength(dsets)
     dsets(i) = replace(dsets(i),'_','\_');
 end
 dsets = dsets(inds);
-numDsets = length(dsets);
+numDsets = intervalLength(dsets);
 x = 1:numDsets;
 numTicks = numDsets;
 if numDsets > 10
@@ -40,7 +40,7 @@ else
 end
 
 set(gca,'FontSize',16)
-xlabel(['Datasets ordered by average ',evalSet,' time, D=',int2str(length(dsets))], 'FontSize', 24);
+xlabel(['Datasets ordered by average ',evalSet,' time, D=',int2str(intervalLength(dsets))], 'FontSize', 24);
 ylabel(['Time, ',evalSet,' (ms)'], 'FontSize', 24);
 
 xticks(ticks);

@@ -15,6 +15,7 @@ import static utilities.Utilities.writeDatasetNameList;
 public class Playground {
     public static void main(String[] args) throws IOException {
         String datasetNameListPath = "/scratch/datasetList.txt";
+        String out = "/scratch/datasetsByInstances.txt";
         String datasetsDir = "/scratch/Datasets/TSCProblems2015/";
         List<String> datasetNames = readDatasetNameList(datasetNameListPath);
         Comparator<Instances> comparator = new Comparator<Instances>() {
@@ -24,6 +25,6 @@ public class Playground {
             }
         };
         Utilities.sortDatasetNames(datasetsDir, datasetNames, comparator);
-        writeDatasetNameList(datasetNameListPath, datasetNames);
+        writeDatasetNameList(out, datasetNames);
     }
 }

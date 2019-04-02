@@ -1,4 +1,4 @@
-package Tuning;
+package Tuning.ParameterSpaces;
 
 import java.util.ArrayList;
 import java.util.List;

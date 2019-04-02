@@ -678,7 +678,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     public static boolean printSetAccWarning = true;
     private boolean firstTimeInSetAcc = true;
             
-    public double getAcc() { 
+    public double getAcc() {
         if (acc < 0)
             calculateAcc();
         return acc; 
@@ -1177,7 +1177,7 @@ public class ClassifierResults implements DebugPrinting, Serializable{
     }
    
     @Override
-    public String toString() {                
+    public String toString() {
         return generateFirstLine();
     }
     

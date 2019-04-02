@@ -1,9 +1,9 @@
 package timeseriesweka.classifiers.Nn.Specialised.Lcss;
 
-import Tuning.AbstractTuned;
-import Tuning.ParameterSpace;
-import Tuning.ParameterValuesFinder;
-import Tuning.ParametersSpace;
+import Tuning.Tuned;
+import Tuning.ParameterSpaces.ParameterSpace;
+import Tuning.ParameterSpaces.ParameterValuesFinder;
+import Tuning.ParameterSpaces.ParameterSpaces;
 import evaluation.storage.ClassifierResults;
 import utilities.ClassifierTools;
 import utilities.InstanceTools;
@@ -14,7 +14,7 @@ import weka.core.Instances;
 
 import static utilities.Utilities.incrementalDiffList;
 
-public class TunedLcss extends AbstractTuned<LcssNn> {
+public class TunedLcssNn extends Tuned<LcssNn> {
 
     private final LcssNn lcssNn = new LcssNn();
     private final ParameterSpace<Double> tolerance = new ParameterSpace<>(lcssNn::setTolerance);
@@ -25,10 +25,10 @@ public class TunedLcss extends AbstractTuned<LcssNn> {
         return incrementalDiffList(minTolerance, maxTolerance, 10);
     };
 
-    public TunedLcss() {
-        ParametersSpace parametersSpace = getParametersSpace();
-        parametersSpace.add(tolerance);
-        parametersSpace.add(warpingWindow);
+    public TunedLcssNn() {
+        ParameterSpaces parameterSpaces = getParameterSpaces();
+        parameterSpaces.add(tolerance);
+        parameterSpaces.add(warpingWindow);
     }
 
     public static void main(String[] args) throws Exception {
@@ -41,23 +41,23 @@ public class TunedLcss extends AbstractTuned<LcssNn> {
         Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
         trainInstances = splitInstances[0];
         testInstances = splitInstances[1];
-        TunedLcss tunedLcss = new TunedLcss();
-        tunedLcss.setSeed(seed);
-        tunedLcss.setUpParameters(trainInstances);
-        for(int i = 0; i < tunedLcss.size(); i++) {
+        TunedLcssNn tunedLcssNn = new TunedLcssNn();
+        tunedLcssNn.setSeed(seed);
+        tunedLcssNn.useTrainInstances(trainInstances);
+        for(int i = 0; i < tunedLcssNn.size(); i++) {
             System.out.println(i);
-            tunedLcss.setParamSearch(true);
-            tunedLcss.writeCVTrainToFile(resultsPath + "/fold" + seed + "_" + i + ".csv");
-            tunedLcss.setParametersFromIndex(i);
-            tunedLcss.buildClassifier(trainInstances);
-            tunedLcss.reset();
+            tunedLcssNn.setParamSearch(true);
+            tunedLcssNn.writeCVTrainToFile(resultsPath + "/fold" + seed + "_" + i + ".csv");
+            tunedLcssNn.setParametersFromIndex(i);
+            tunedLcssNn.buildClassifier(trainInstances);
+            tunedLcssNn.reset();
         }
-        tunedLcss.writeCVTrainToFile(resultsPath + "/trainFold" + seed + ".csv");
-        tunedLcss.setParamSearch(false);
-        tunedLcss.buildClassifier(trainInstances);
+        tunedLcssNn.writeCVTrainToFile(resultsPath + "/trainFold" + seed + ".csv");
+        tunedLcssNn.setParamSearch(false);
+        tunedLcssNn.buildClassifier(trainInstances);
         ClassifierResults results = new ClassifierResults();
         for(Instance testInstance : testInstances) {
-            double[] distribution = tunedLcss.distributionForInstance(testInstance);
+            double[] distribution = tunedLcssNn.distributionForInstance(testInstance);
             results.addPrediction(testInstance.classValue(), distribution, Utilities.argMax(distribution)[0], 0, null);
         }
         results.findAllStats();
@@ -66,10 +66,8 @@ public class TunedLcss extends AbstractTuned<LcssNn> {
     }
 
     @Override
-    public void setUpParameters(final Instances trainInstances) {
-        if(toleranceValuesFinder != null) {
-            tolerance.setValues(toleranceValuesFinder.find(trainInstances));
-        }
+    public void useTrainInstances(final Instances trainInstances) {
+        tolerance.setValues(toleranceValuesFinder.find(trainInstances));
     }
 
     @Override

@@ -5,7 +5,7 @@ function [cd,f] = buildDia(accsFile, a, pairwise, cliques)
 %accs = accs';
 
 [accs,labels,~] = xlsread(accsFile);
-name = accsFile(1:(length(accsFile)-length('.csv')));
+name = accsFile(1:(intervalLength(accsFile)-intervalLength('.csv')));
 
 errs = 1 - accs;
 
@@ -19,7 +19,7 @@ end
 
 %[~,name,~] = fileparts(accsFile);
 %title(name);
-%print(accsFile(1:(length(accsFile)-length('.csv'))), '-dpng');
+%print(accsFile(1:(intervalLength(accsFile)-intervalLength('.csv'))), '-dpng');
 
 orient(f,'landscape')
 set(f,'Units','Inches');
@@ -28,6 +28,6 @@ set(f,'PaperPosition', [0.05 0 0.9 1]);
 %pos = get(f,'Position');
 %set('PaperSize',[pos(3)*1.3, pos(4)])
 print(f,name,'-dpdf'); %'-bestfit'
-%saveas(f,accsFile(1:(length(accsFile)-length('.csv'))), 'pdf');
+%saveas(f,accsFile(1:(intervalLength(accsFile)-intervalLength('.csv'))), 'pdf');
 
 end
