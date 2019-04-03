@@ -14,12 +14,9 @@
  */
 package evaluation.tuning;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import utilities.Utilities;
+
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -31,7 +28,11 @@ import java.util.Map.Entry;
  * @author James Large (james.large@uea.ac.uk)
  */
 public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
-    public Map<String, List<String>> parameterLists = new HashMap<>();
+    public Map<String, List<String>> getParameterLists() {
+        return parameterLists;
+    }
+
+    private Map<String, List<String>> parameterLists = new TreeMap<>();
        
     public int numParas() { 
         return parameterLists.size();
@@ -51,8 +52,28 @@ public class ParameterSpace implements Iterable<Entry<String, List<String>>>{
     public List<String> getValues(String key)  {
         return parameterLists.get(key);
     }
-    
-    
+
+    private List<Integer> getParameterBins() {
+        List<Integer> list = new ArrayList<>();
+        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
+            list.add(entry.getValue().size());
+        }
+        return list;
+    }
+
+    public ParameterSet getParameterSet(int index) {
+        List<Integer> indices = Utilities.fromPermutation(index, getParameterBins());
+        ParameterSet parameterSet = new ParameterSet();
+        int i = 0;
+        for(Map.Entry<String, List<String>> entry : parameterLists.entrySet()) {
+            parameterSet.addParameter(entry.getKey(), entry.getValue().get(indices.get(i++)));
+        }
+        return parameterSet;
+    }
+
+    public void clear() {
+        parameterLists.clear();
+    }
     
     
     

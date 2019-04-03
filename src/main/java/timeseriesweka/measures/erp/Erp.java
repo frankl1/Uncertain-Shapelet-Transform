@@ -6,7 +6,7 @@ import weka.core.Option;
 
 public class Erp extends Dtw implements ErpInterface {
 
-    private double penalty; // penalty for ee gap, 0 best according to paper
+    private double penalty; // penalty for a gap, 0 best according to paper
 
     public Erp() {
         this(1, 0);
@@ -116,7 +116,7 @@ public class Erp extends Dtw implements ErpInterface {
         return "1";
     }
 
-    private static final String PENALTY_KEY = "penalty";
+    public static final String PENALTY_KEY = "penalty";
 
     @Override
     public String[] getOptions() {

@@ -31,6 +31,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import development.go.Ee.BasedOnTrainSet;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ParameterSplittable;
@@ -619,7 +620,11 @@ public class Experiments  {
      * @return the accuracy of c on fold for problem given in train/test, or -1 on an error 
      */
     public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
-        
+
+        if(classifier instanceof BasedOnTrainSet) {
+            ((BasedOnTrainSet) classifier).useTrainInstances(trainSet);
+        }
+
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
         String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);

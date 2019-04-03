@@ -689,15 +689,22 @@ public class Utilities {
 
     public static List<Double> linearInterpolate(double min, double max, int num) {
         List<Double> list = new ArrayList<>();
-        for(int i = 0; i <= num; i++) {
+        for(int i = 0; i < num; i++) {
             if(min == 0 && max == 1) {
                 list.add((double) (i / num));
             } else {
-                list.add(min + (max - min) * i);
+                list.add(min + (max - min) * ((double) i / (num - 1)));
             }
         }
         return list;
     }
 
 
+    public static List<Double> linearInterpolate(int size, int divider) {
+        List<Double> list = new ArrayList<>();
+        for(int i = 0; i < size; i++) {
+            list.add((double) i / divider);
+        }
+        return list;
+    }
 }

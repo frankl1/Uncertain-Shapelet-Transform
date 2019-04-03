@@ -1,21 +1,24 @@
 package timeseriesweka.classifiers.Nn.Specialised.Dtw;
 
-import Tuning.Tuned;
-import Tuning.ParameterSpaces.ParameterSpace;
-import Tuning.ParameterSpaces.ParameterSpaces;
+import development.go.Ee.Tuned;
+import evaluation.tuning.ParameterSpace;
+import timeseriesweka.measures.dtw.Dtw;
 import utilities.Utilities;
+import weka.core.Instances;
 
-public class TunedDtwNn extends Tuned<DtwNn> {
-    private final DtwNn dtwNn = new DtwNn();
-    private final ParameterSpace<Double> warpingWindow = new ParameterSpace<>(dtwNn::setWarpingWindow, Utilities.linearInterpolate(0, 1, 101));
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class TunedDtwNn extends Tuned {
 
     public TunedDtwNn() {
-        ParameterSpaces parameterSpaces = getParameterSpaces();
-        parameterSpaces.add(warpingWindow);
+        setClassifier(new DtwNn());
     }
 
     @Override
-    protected DtwNn getClassifierInstance() {
-        return dtwNn;
+    public void useTrainInstances(final Instances trainInstances) {
+        ParameterSpace parameterSpace = getParameterSpace();
+        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Utilities.linearInterpolate(101, 100));
     }
 }

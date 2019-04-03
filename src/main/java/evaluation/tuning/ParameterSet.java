@@ -65,7 +65,8 @@ public class ParameterSet {
 
         int i = 0;
         for (Map.Entry<String, String> entry : parameterSet.entrySet()) {
-            ps[i] = "-" + entry.getKey();
+//            ps[i] = "-" + entry.getKey(); // todo do we need the hyphen? I don't think so - George
+            ps[i] = entry.getKey();
             ps[i+1] = entry.getValue();
             i+=2;
         }

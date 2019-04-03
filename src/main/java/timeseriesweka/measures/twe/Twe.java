@@ -163,8 +163,8 @@ public class Twe extends DistanceMeasure implements TweInterface {
         return "1";
     }
 
-    private static final String STIFFNESS_KEY = "stiffness";
-    private static final String PENALTY_KEY = "penalty";
+    public static final String STIFFNESS_KEY = "stiffness";
+    public static final String PENALTY_KEY = "penalty";
 
     @Override
     public String[] getOptions() {

@@ -2,16 +2,9 @@ package development.go.Ee.ParameterIteration;
 
 import java.util.*;
 
-public class RandomIterator<A> implements Iterator<A> {
+public class RandomIterator<A> implements SourcedIterator<A, List<A>> {
 
     private Random random = new Random();
-    private final List<A> source = new ArrayList<>();
-
-    @Override
-    public void setSource(final List<A> source) {
-        this.source.clear();
-        this.source.addAll(source);
-    }
 
     @Override
     public boolean hasNext() {
@@ -21,6 +14,14 @@ public class RandomIterator<A> implements Iterator<A> {
     @Override
     public A next() {
         return source.remove(0);
+    }
+
+    private List<A> source = new ArrayList<>();
+
+    @Override
+    public void setSource(final List<A> source) {
+        this.source.clear();
+        this.source.addAll(source);
     }
 
     @Override

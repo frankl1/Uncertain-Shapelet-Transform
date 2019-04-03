@@ -97,7 +97,7 @@ public class Wdtw extends Dtw implements WdtwInterface {
         return "1";
     }
 
-    private static final String WEIGHT_KEY = "weight";
+    public static final String WEIGHT_KEY = "weight";
 
     @Override
     public String[] getOptions() {

@@ -1,23 +1,28 @@
 package timeseriesweka.classifiers.Nn.Specialised.Wdtw;
 
-import Tuning.Tuned;
-import Tuning.ParameterSpaces.ParameterSpace;
-import Tuning.ParameterSpaces.ParameterSpaces;
+import development.go.Ee.Tuned;
+import evaluation.tuning.ParameterSpace;
+import evaluation.tuning.Tuner;
+import timeseriesweka.measures.dtw.Dtw;
+import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.Utilities;
+import weka.core.Instances;
 
-public class TunedWdtwNn extends Tuned<WdtwNn> {
-    private final WdtwNn wdtwNn = new WdtwNn();
-    private final ParameterSpace<Double> weight = new ParameterSpace<>(wdtwNn::setWarpingWindow, Utilities.linearInterpolate(0, 1, 101));
-    private final ParameterSpace<Double> warpingWindow = new ParameterSpace<>(wdtwNn::setWarpingWindow, Utilities.linearInterpolate(1, 1, 1));
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+public class TunedWdtwNn extends Tuned {
 
     public TunedWdtwNn() {
-        ParameterSpaces parameterSpaces = getParameterSpaces();
-        parameterSpaces.add(weight);
-        parameterSpaces.add(warpingWindow);
+        setClassifier(new WdtwNn());
     }
 
     @Override
-    protected WdtwNn getClassifierInstance() {
-        return wdtwNn;
+    public void useTrainInstances(final Instances trainInstances) {
+        ParameterSpace parameterSpace = getParameterSpace();
+        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Collections.singletonList(1d));
+        parameterSpace.addParameter(Wdtw.WEIGHT_KEY, Utilities.linearInterpolate(101, 100));
     }
+
 }

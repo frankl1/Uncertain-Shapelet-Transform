@@ -50,8 +50,8 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     protected ClassifierResults testResults;
     protected Instances originalTrainInstances = null;
     protected Instances originalTestInstances;
-    protected boolean resetOnTrain = false;
-    protected boolean resetOnTest = false;
+    protected boolean resetOnTrain = true;
+    protected boolean resetOnTest = true;
 
     public int getSeedNotNull() {
         if(seed == null) {

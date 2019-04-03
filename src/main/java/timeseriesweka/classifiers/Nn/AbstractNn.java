@@ -289,6 +289,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
         trainTimeStamp = System.nanoTime();
         if(resetOnTrain) {
             trainTime = 0;
+            resetOnTrain = false;
             this.originalTrainInstances = trainInstances;
             trainInstances = originalTrainInstances;
             sampler.setInstances(trainInstances);

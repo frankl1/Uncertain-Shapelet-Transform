@@ -140,7 +140,7 @@ public class Msm extends Dtw implements MsmInterface {
         return "1";
     }
 
-    private static final String PENALTY_KEY = "penalty";
+    public static final String PENALTY_KEY = "penalty";
 
     @Override
     public String[] getOptions() {

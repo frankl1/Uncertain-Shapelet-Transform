@@ -1,24 +1,20 @@
 package timeseriesweka.classifiers.Nn.Specialised.Wddtw;
 
-import Tuning.Tuned;
-import Tuning.ParameterSpaces.ParameterSpace;
-import Tuning.ParameterSpaces.ParameterSpaces;
+import development.go.Ee.Tuned;
+import evaluation.tuning.ParameterSpace;
+import evaluation.tuning.Tuner;
+import timeseriesweka.classifiers.Nn.Specialised.Wdtw.TunedWdtwNn;
+import timeseriesweka.classifiers.Nn.Specialised.Wdtw.WdtwNn;
+import timeseriesweka.measures.dtw.Dtw;
+import timeseriesweka.measures.wdtw.Wdtw;
 import utilities.Utilities;
+import weka.core.Instances;
 
-public class TunedWddtwNn extends Tuned<WddtwNn> {
-    private final WddtwNn wddtwNn = new WddtwNn();
-    private final ParameterSpace<Double> weight = new ParameterSpace<>(wddtwNn::setWarpingWindow, Utilities.linearInterpolate(0, 1, 101));
-    private final ParameterSpace<Double> warpingWindow = new ParameterSpace<>(wddtwNn::setWarpingWindow, Utilities.linearInterpolate(1, 1, 1));
+import java.util.Collections;
+import java.util.List;
 
-
+public class TunedWddtwNn extends TunedWdtwNn {
     public TunedWddtwNn() {
-        ParameterSpaces parameterSpaces = getParameterSpaces();
-        parameterSpaces.add(weight);
-        parameterSpaces.add(warpingWindow);
-    }
-
-    @Override
-    protected WddtwNn getClassifierInstance() {
-        return wddtwNn;
+        setClassifier(new WddtwNn());
     }
 }

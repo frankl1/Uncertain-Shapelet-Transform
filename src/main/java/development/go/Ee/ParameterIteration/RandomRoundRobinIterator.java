@@ -2,7 +2,7 @@ package development.go.Ee.ParameterIteration;
 
 import java.util.*;
 
-public class RandomRoundRobinIterator<A> implements Iterator<A> {
+public class RandomRoundRobinIterator<A> implements SourcedIterator<A, List<A>> {
     private Random random = new Random();
     private final List<A> source = new ArrayList<>();
     private final List<A> unpicked = new ArrayList<>();
