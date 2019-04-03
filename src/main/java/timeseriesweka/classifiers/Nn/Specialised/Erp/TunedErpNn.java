@@ -16,9 +16,13 @@ import java.util.List;
 import static utilities.Utilities.incrementalDiffList;
 
 public class TunedErpNn extends Tuned {
+
+    public TunedErpNn() {
+        setClassifier(new ErpNn());
+    }
+
     @Override
     public void useTrainInstances(final Instances trainInstances) {
-        setClassifier(new WdtwNn());
         ParameterSpace parameterSpace = getParameterSpace();
         double maxTolerance = StatisticUtilities.populationStandardDeviation(trainInstances);
         double minTolerance = maxTolerance * 0.2;

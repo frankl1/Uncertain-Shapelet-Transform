@@ -19,7 +19,6 @@ public class TunedMsmNn extends Tuned {
     @Override
     public void useTrainInstances(final Instances trainInstances) {
         ParameterSpace parameterSpace = getParameterSpace();
-        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Collections.singletonList(1d));
         parameterSpace.addParameter(Msm.PENALTY_KEY, Arrays.asList(
             0.01,
             0.01375,
@@ -122,5 +121,6 @@ public class TunedMsmNn extends Tuned {
             96.4,
             100d
         ));
+        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Collections.singletonList(1d));
     }
 }

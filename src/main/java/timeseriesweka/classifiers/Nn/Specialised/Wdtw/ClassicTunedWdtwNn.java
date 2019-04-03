@@ -14,7 +14,7 @@ public class ClassicTunedWdtwNn extends TunedWdtwNn {
     @Override
     public void useTrainInstances(final Instances trainInstances) {
         ParameterSpace parameterSpace = getParameterSpace();
-        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Collections.singletonList(1d));
+        parameterSpace.addParameter(Wdtw.WARPING_WINDOW_KEY, Collections.singletonList(1d));
         parameterSpace.addParameter(Wdtw.WEIGHT_KEY, Utilities.linearInterpolate(100, 100));
     }
 }

@@ -39,22 +39,19 @@ public class Ee extends AbstractTuned {
 
     @Override
     protected void setParameterPermutationIndex(int index) throws Exception {
-        if(index == 639) {
-            boolean b = true;
-        }
-        boolean stop = false;
+        boolean match = false;
         int constituentIndex = 0;
         AbstractTuned constituent;
         do {
             constituent = constituents.get(constituentIndex);
             if(index < constituent.size()) {
-                stop = true;
+                match = true;
             } else {
                 index -= constituent.size();
                 constituentIndex++;
             }
-        } while (!stop && constituentIndex < constituents.size());
-        if(!stop) {
+        } while (!match && constituentIndex < constituents.size());
+        if(!match) {
             throw new IllegalArgumentException("index out of range");
         }
         constituent.setParameterPermutationIndex(index);

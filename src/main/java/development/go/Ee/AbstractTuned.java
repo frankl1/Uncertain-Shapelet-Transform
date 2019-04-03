@@ -62,6 +62,26 @@ public abstract class AbstractTuned extends AdvancedAbstractClassifier implement
         this.classifier = classifier;
     }
 
+    protected AbstractClassifier postTune(Instances trainInstances, List<ParameterResult> parameterResults) throws Exception {
+        Iterator<ParameterResult> parameterResultsIterator = parameterResults.iterator();
+        if(!parameterResultsIterator.hasNext()) {
+            throw new IllegalStateException("no params evaluated");
+        }
+        ParameterResult bestParameterResult;
+        if(useRandomTieBreak) {
+            bestParameterResult = Utilities.best(parameterResultsIterator, comparator, ParameterResult::getTrainResults, random);
+        } else {
+            bestParameterResult = Utilities.best(parameterResultsIterator, comparator, ParameterResult::getTrainResults).get(0);
+        }
+        trainResults = bestParameterResult.getTrainResults();
+        classifier = bestParameterResult.getClassifier();
+        if(!bestParameterResult.isBuilt()) {
+            classifier.setOptions(bestParameterResult.getTrainResults().getParas().split(","));
+            classifier.buildClassifier(trainInstances);
+            bestParameterResult.setBuilt(true);
+        }
+        return classifier;
+    }
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
@@ -82,23 +102,7 @@ public abstract class AbstractTuned extends AdvancedAbstractClassifier implement
                 parameterResults.add(new ParameterResult(classifier, trainResults, true));
                 parameterIndexTested(parameterPermutationIndex);
             }
-            Iterator<ParameterResult> parameterResultsIterator = parameterResults.iterator();
-            if(!parameterResultsIterator.hasNext()) {
-                throw new IllegalStateException("no params evaluated");
-            }
-            ParameterResult bestParameterResult;
-            if(useRandomTieBreak) {
-                bestParameterResult = Utilities.best(parameterResultsIterator, comparator, ParameterResult::getTrainResults, random);
-            } else {
-                bestParameterResult = Utilities.best(parameterResultsIterator, comparator, ParameterResult::getTrainResults).get(0);
-            }
-            trainResults = bestParameterResult.getTrainResults();
-            classifier = bestParameterResult.getClassifier();
-            if(!bestParameterResult.isBuilt()) {
-                classifier.setOptions(bestParameterResult.getTrainResults().getParas().split(","));
-                classifier.buildClassifier(trainInstances);
-                bestParameterResult.setBuilt(true);
-            }
+            classifier = postTune(trainInstances, parameterResults);
         }
     }
 

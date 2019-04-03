@@ -5,6 +5,7 @@ import development.go.Ee.Tuned;
 import evaluation.tuning.ParameterSpace;
 import timeseriesweka.classifiers.Nn.Specialised.Dtw.DtwNn;
 import timeseriesweka.classifiers.Nn.Specialised.Dtw.TunedDtwNn;
+import timeseriesweka.measures.ddtw.Ddtw;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.Utilities;
 import weka.core.Instances;
@@ -20,6 +21,6 @@ public class TunedDdtwNn extends Tuned {
     @Override
     public void useTrainInstances(final Instances trainInstances) {
         ParameterSpace parameterSpace = getParameterSpace();
-        parameterSpace.addParameter(Dtw.WARPING_WINDOW_KEY, Utilities.linearInterpolate(101, 100));
+        parameterSpace.addParameter(Ddtw.WARPING_WINDOW_KEY, Utilities.linearInterpolate(101, 100));
     }
 }
