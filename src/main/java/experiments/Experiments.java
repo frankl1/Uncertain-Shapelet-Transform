@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import development.go.Ee.BasedOnTrainSet;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.CheckpointClassifier;
+import timeseriesweka.classifiers.Logable;
 import timeseriesweka.classifiers.ParameterSplittable;
 import utilities.ClassifierTools;
 import evaluation.evaluators.CrossValidationEvaluator;
@@ -407,7 +408,7 @@ public class Experiments  {
         //todo: when we convert to e.g argparse4j for parameter passing, add a para 
         //for location to log to file as well. for now, assuming console output is good enough
         //for local running, and cluster output files are good enough on there. 
-//        LOGGER.addHandler(new FileHandler()); 
+//        LOGGER.addHandler(new FileHandler());
         if (debug)
             LOGGER.setLevel(Level.FINEST);
         else 
@@ -435,6 +436,11 @@ public class Experiments  {
         else {           
 //            Classifier classifier = ClassifierLists.setClassifierClassic(expSettings.classifierName, expSettings.foldId);
             Classifier classifier = ClassifierLists.setClassifier(expSettings);
+
+            if(classifier instanceof Logable) {
+                ((Logable) classifier).setLogger(LOGGER);
+            }
+
             Instances[] data = sampleDataset(expSettings.dataReadLocation, expSettings.datasetName, expSettings.foldId);
         
             //If needed, build/make the directory to write the train and/or testFold files to

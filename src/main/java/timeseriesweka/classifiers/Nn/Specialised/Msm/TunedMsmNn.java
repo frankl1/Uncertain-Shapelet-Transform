@@ -13,7 +13,7 @@ import java.util.Collections;
 
 public class TunedMsmNn extends Tuned {
     public TunedMsmNn() {
-        setClassifier(new MsmNn());
+        setClassifierSupplier(MsmNn::new);
     }
 
     @Override

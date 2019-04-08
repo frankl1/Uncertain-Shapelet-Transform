@@ -15,7 +15,7 @@ import java.util.List;
 
 public class TunedDdtwNn extends Tuned {
     public TunedDdtwNn() {
-        setClassifier(new DdtwNn());
+        setClassifierSupplier(DdtwNn::new);
     }
 
     @Override

@@ -15,7 +15,7 @@ import java.util.List;
 
 public class TunedTweNn extends Tuned {
     public TunedTweNn() {
-        setClassifier(new TweNn());
+        setClassifierSupplier(TweNn::new);
     }
 
     @Override

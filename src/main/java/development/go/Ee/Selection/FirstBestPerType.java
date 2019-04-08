@@ -2,11 +2,11 @@ package development.go.Ee.Selection;
 
 import java.util.*;
 
-public class FirstBestPerType<A, B> implements Selector<A, B> {
+public class FirstBestPerType<A> implements Selector<A> {
 
 
     @Override
-    public void consider(final A candidate, final B type) {
+    public void consider(final A candidate, final Object type) {
         A best = bestMap.get(type);
         if(best == null) {
             bestMap.put(type, candidate);
@@ -27,6 +27,6 @@ public class FirstBestPerType<A, B> implements Selector<A, B> {
         this.comparator = comparator;
     }
 
-    private Map<B, A> bestMap = new HashMap<>();
+    private Map<Object, A> bestMap = new HashMap<>();
     private final Comparator<A> comparator; // todo getters setters
 }

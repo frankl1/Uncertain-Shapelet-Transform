@@ -13,23 +13,35 @@ import weka.core.Instances;
 import java.io.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-public abstract class AdvancedAbstractClassifier extends AbstractClassifier implements Serializable, Reproducible, SaveParameterInfoOptions, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate {
+public abstract class AdvancedAbstractClassifier extends AbstractClassifier implements AdvancedAbstractClassifierInterface {
 
-    @Override
+    public static final String CV_TRAIN_KEY = "cvTrain";
+    public static final String PREDICTION_CONTRACT_KEY = "predictionContract";    @Override
+    public Logger getLogger() {
+        return logger;
+    }
+    public static final String TRAIN_CONTRACT_KEY = "trainContract";    @Override
+    public void setLogger(final Logger logger) {
+        this.logger = logger;
+    }
+    public static final String TEST_CONTRACT_KEY = "testContract";    @Override
     public void setOptions(final String[] options) throws Exception {
         OptionsSetter.setOptions(this, options);
     }
-
-    public static final String CV_TRAIN_KEY = "cvTrain";
-    public static final String PREDICTION_CONTRACT_KEY = "predictionContract";
-    public static final String TRAIN_CONTRACT_KEY = "trainContract";
-    public static final String TEST_CONTRACT_KEY = "testContract";
+    protected Logger logger = Logger.getLogger(getClass().getCanonicalName());    @Override
+    public int getSeed() {
+        return seed;
+    }
 //    public static final String SEED_KEY = "seed";
     //    public static final String TRAIN_TIME_KEY = "trainTime";
 //    public static final String TEST_TIME_KEY = "testTime";
 //    public static final String PREDICTION_TIME_KEY = "predictionTime";
-    protected boolean hasResumedFromCheckpoint = false;
+    protected boolean hasResumedFromCheckpoint = false;    @Override
+    public void setSeed(final int seed) {
+        this.seed = seed;
+    }
     protected long testTime;
     protected long trainTime;
     protected String savePath;
@@ -45,22 +57,17 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     protected boolean checkpointing = false;
     protected long lastCheckpointTimeStamp = 0;
     protected long minCheckpointInterval = TimeUnit.NANOSECONDS.convert(10, TimeUnit.MINUTES);
-    protected Long seed = null;
+    protected int seed = -1;
     protected ClassifierResults trainResults;
     protected ClassifierResults testResults;
     protected Instances originalTrainInstances = null;
     protected Instances originalTestInstances;
     protected boolean resetOnTrain = true;
     protected boolean resetOnTest = true;
+    protected String trainFilePath;
+    protected long predictionTimeStamp;
 
-    public int getSeedNotNull() {
-        if(seed == null) {
-            throw new IllegalArgumentException("seed null");
-        }
-        return Math.toIntExact(seed); // todo make seed int
-    }
-
-    public boolean resetsOnBuild() {
+    public boolean resetsOnTrain() {
         return resetOnTrain;
     }
 
@@ -140,32 +147,26 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         setSeed(seed);
     }
 
-    public void setSeed(long seed) {
-        this.seed = seed;
+    public long getTrainTime() {
+        return trainTime;
     }
 
-    public void setRandom(Random random) {
-        this.random = random;
+    public long getTestTime() {
+        return testTime;
     }
-
-    protected ClassifierResults setResultsMetaData(int numClasses, ClassifierResults results) throws Exception {
-        results.setNumClasses(numClasses);
-        try {
-            results.setMemory(SizeOf.deepSizeOf(this));
-        } catch (Exception e) {
-
-        }
-        results.setClassifierName(toString());
-        results.setParas(getParameters());
-        results.setTimeUnit(TimeUnit.NANOSECONDS);
-        results.setBuildTime(getTrainTime());
-        results.setTestTime(getTestTime());
-        results.findAllStatsOnce();
-        return results;
-    }
-
 
     @Override
+    public void setTimeLimit(final long nanoseconds) { // todo split to train time limit and test time limit
+        trainContract = nanoseconds;
+    }
+
+    public boolean isCvTrain() {
+        return cvTrain;
+    }
+
+    public void setCvTrain(final boolean cvTrain) {
+        this.cvTrain = cvTrain;
+    }    @Override
     public String[] getOptions() {
         return new String[]{
             CV_TRAIN_KEY, String.valueOf(cvTrain),
@@ -177,6 +178,34 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
 //            TRAIN_TIME_KEY, String.valueOf(trainTime),
 //            TEST_TIME_KEY, String.valueOf(testTime) // only need these if experiments isn't recording this
         };
+    }
+
+    @Override
+    public void setFindTrainAccuracyEstimate(final boolean setCV) {
+        setCvTrain(setCV);
+    }
+
+    @Override
+    public boolean findsTrainAccuracyEstimate() {
+        return cvTrain;
+    }
+
+    @Override
+    public void writeCVTrainToFile(final String train) {
+        trainFilePath = train;
+    }
+
+    @Override
+    public ClassifierResults getTrainResults() {
+        return trainResults;
+    }
+
+    public boolean isCheckpointing() {
+        return checkpointing;
+    }
+
+    public void setCheckpointing(boolean on) {
+        checkpointing = on;
     }
 
     public boolean setOption(String key, String value) {
@@ -200,51 +229,24 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         return true;
     }
 
-    public long getTrainTime() {
-        return trainTime;
-    }
+    protected ClassifierResults setResultsMetaData(int numClasses, ClassifierResults results) throws Exception {
+        results.setNumClasses(numClasses);
+        try {
+            results.setMemory(SizeOf.deepSizeOf(this));
+        } catch (Exception e) {
 
-    public long getTestTime() {
-        return testTime;
-    }
-
-    @Override
-    public void setTimeLimit(final long nanoseconds) { // todo split to train time limit and test time limit
-        trainContract = nanoseconds;
-    }
-
-    public boolean isCvTrain() {
-        return cvTrain;
-    }
-
-    public void setCvTrain(final boolean cvTrain) {
-        this.cvTrain = cvTrain;
+        }
+        results.setClassifierName(toString());
+        results.setParas(getParameters());
+        results.setTimeUnit(TimeUnit.NANOSECONDS);
+        results.setBuildTime(getTrainTime());
+        results.setTestTime(getTestTime());
+        results.findAllStatsOnce();
+        return results;
     }
 
     private long getPredictionTime() {
         return predictionTime;
-    }
-
-    @Override
-    public void setFindTrainAccuracyEstimate(final boolean setCV) {
-        setCvTrain(setCV);
-    }
-
-    @Override
-    public boolean findsTrainAccuracyEstimate() {
-        return cvTrain;
-    }
-
-    protected String trainFilePath;
-
-    @Override
-    public void writeCVTrainToFile(final String train) {
-        trainFilePath = train;
-    }
-
-    @Override
-    public ClassifierResults getTrainResults() {
-        return trainResults;
     }
 
     protected void resumeFromCheckpoint() throws Exception {
@@ -258,25 +260,11 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         }
     }
 
-    protected void updateTrainTime() {
-        long timeStamp = System.nanoTime();
-        trainTime += timeStamp - trainTimeStamp;
-        trainTimeStamp = timeStamp;
-    }
-
-    protected void updateTestTime() {
-        long timeStamp = System.nanoTime();
-        testTime += timeStamp - testTimeStamp;
-        testTimeStamp = timeStamp;
-    }
-
     protected void updatePredictionTime() {
         long timeStamp = System.nanoTime();
         predictionTime += timeStamp - predictionTimeStamp;
         predictionTimeStamp = timeStamp;
     }
-
-    protected long predictionTimeStamp;
 
     protected boolean withinTrainContract() {
         return (trainContract < 0 || trainTime < trainContract);
@@ -290,14 +278,6 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         return (predictionContract < 0 || predictionTime < predictionContract);
     }
 
-    public boolean isCheckpointing() {
-        return checkpointing;
-    }
-
-    public void setCheckpointing(boolean on) {
-        checkpointing = on;
-    }
-
     protected void checkpoint() throws IOException {
         checkpoint(false);
     }
@@ -309,7 +289,6 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         }
     }
 
-
     protected void testCheckpoint() throws IOException {
         testCheckpoint(false);
     }
@@ -318,6 +297,12 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         updateTestTime();
         checkpoint(force);
         testTimeStamp = System.nanoTime();
+    }
+
+    protected void updateTestTime() {
+        long timeStamp = System.nanoTime();
+        testTime += timeStamp - testTimeStamp;
+        testTimeStamp = timeStamp;
     }
 
     protected void trainCheckpoint() throws IOException {
@@ -329,5 +314,24 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
         checkpoint(force);
         trainTimeStamp = System.nanoTime();
     }
+
+    protected void updateTrainTime() {
+        long timeStamp = System.nanoTime();
+        trainTime += timeStamp - trainTimeStamp;
+        trainTimeStamp = timeStamp;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

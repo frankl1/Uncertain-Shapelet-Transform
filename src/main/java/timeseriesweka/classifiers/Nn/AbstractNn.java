@@ -17,7 +17,7 @@ import evaluation.storage.ClassifierResults;
 import java.io.*;
 import java.util.*;
 
-public abstract class AbstractNn extends AdvancedAbstractClassifier implements  CheckpointClassifier, ContractClassifier {
+public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
     private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
     private static final String SAMPLE_SIZE_PERCENTAGE_KEY = "sampleSizePercentage";
@@ -377,7 +377,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier implements  
 
     @Override
     public String toString() {
-        return getDistanceMeasureInstance().toString() + "-" + getClass().getSimpleName().toUpperCase();
+        return getDistanceMeasureInstance().toString().toUpperCase() + "-" + getClass().getSimpleName().toUpperCase();
     }
 
     protected abstract DistanceMeasure getDistanceMeasureInstance();

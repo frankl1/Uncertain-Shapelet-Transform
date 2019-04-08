@@ -707,4 +707,14 @@ public class Utilities {
         }
         return list;
     }
+
+    public static String join(final String[] options, final String s) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(options[0]);
+        for(int i = 1; i < options.length; i++) {
+            stringBuilder.append(s);
+            stringBuilder.append(options[i]);
+        }
+        return stringBuilder.toString();
+    }
 }

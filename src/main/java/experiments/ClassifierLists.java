@@ -130,6 +130,7 @@ public class ClassifierLists {
                 break;
             case "ClassicEe":
                 Ee cee = new Ee();
+                cee.classicSetup();
                 cee.setSeed(fold);
                 c = cee;
                 break;

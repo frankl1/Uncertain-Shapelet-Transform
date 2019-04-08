@@ -2,15 +2,14 @@ package timeseriesweka.classifiers.AdvancedAbstractClassifier;
 
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
-import timeseriesweka.classifiers.SaveParameterInfo;
+import timeseriesweka.classifiers.*;
 import utilities.OptionsSetter;
 import utilities.Reproducible;
 import utilities.TrainAccuracyEstimate;
 import utilities.Utilities;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
+import weka.core.Randomizable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,70 +19,67 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 
-public interface AdvancedAbstractClassifierInterface extends Serializable, Reproducible, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier {
+ public interface AdvancedAbstractClassifierInterface extends Serializable, Randomizable, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier, SaveParameterInfoOptions, Logable {
 
-    public long getMinCheckpointInterval();
+     long getMinCheckpointInterval();
 
-    public void setMinCheckpointInterval(long nanoseconds);
+     void setMinCheckpointInterval(long nanoseconds);
 
-    public long getPredictionContract();
+     long getPredictionContract();
 
-    public void setPredictionContract(final long predictionContract);
+     void setPredictionContract(final long predictionContract);
 
-    public long getTrainContract();
+     long getTrainContract();
 
-    public void setTrainContract(final long trainContract);
+     void setTrainContract(final long trainContract);
 
-    public long getTestContract();
+     long getTestContract();
 
-    public void setTestContract(final long testContract);
+     void setTestContract(final long testContract);
 
-    public String getSavePath();
-
-    @Override
-    public void setSavePath(String path);
+     String getSavePath();
 
     @Override
-    public void copyFromSerObject(final Object obj) throws Exception;
-
-    public void reset();
-
-    public void resetTest();
-
-    public void setSeed(long seed);
-
-    public void setRandom(Random random);
+     void setSavePath(String path);
 
     @Override
-    public String getParameters();
+     void copyFromSerObject(final Object obj) throws Exception;
 
-    public long getTrainTime();
+     void setResetOnTrain(boolean on);
 
-    public long getTestTime();
+     boolean resetsOnTrain();
 
-    @Override
-    public void setTimeLimit(final long nanoseconds);
+     boolean resetsOnTest();
 
-    public boolean isCvTrain();
+     void setResetOnTest(boolean on);
 
-    public void setCvTrain(final boolean cvTrain);
+     long getTrainTime();
 
-    @Override
-    public void setFindTrainAccuracyEstimate(final boolean setCV);
+     long getTestTime();
 
     @Override
-    public boolean findsTrainAccuracyEstimate();
+     void setTimeLimit(final long nanoseconds);
+
+     boolean isCvTrain();
+
+     void setCvTrain(final boolean cvTrain);
 
     @Override
-    public void writeCVTrainToFile(final String train);
+     void setFindTrainAccuracyEstimate(final boolean setCV);
 
     @Override
-    public ClassifierResults getTrainResults();
+     boolean findsTrainAccuracyEstimate();
 
-    public boolean isCheckpointing();
+    @Override
+     void writeCVTrainToFile(final String train);
 
-    public void setCheckpointing(boolean on);
+    @Override
+     ClassifierResults getTrainResults();
 
-    public boolean setOption(String key, String value);
+     boolean isCheckpointing();
+
+     void setCheckpointing(boolean on);
+
+     boolean setOption(String key, String value);
 
 }

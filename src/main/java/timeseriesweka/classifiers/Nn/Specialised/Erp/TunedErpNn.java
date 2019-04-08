@@ -18,7 +18,7 @@ import static utilities.Utilities.incrementalDiffList;
 public class TunedErpNn extends Tuned {
 
     public TunedErpNn() {
-        setClassifier(new ErpNn());
+        setClassifierSupplier(ErpNn::new);
     }
 
     @Override

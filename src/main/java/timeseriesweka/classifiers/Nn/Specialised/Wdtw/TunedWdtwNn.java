@@ -15,7 +15,7 @@ import java.util.List;
 public class TunedWdtwNn extends Tuned {
 
     public TunedWdtwNn() {
-        setClassifier(new WdtwNn());
+        setClassifierSupplier(WdtwNn::new);
     }
 
     @Override

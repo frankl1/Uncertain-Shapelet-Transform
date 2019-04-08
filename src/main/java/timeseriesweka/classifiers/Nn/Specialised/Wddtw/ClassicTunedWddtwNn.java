@@ -4,6 +4,6 @@ import timeseriesweka.classifiers.Nn.Specialised.Wdtw.ClassicTunedWdtwNn;
 
 public class ClassicTunedWddtwNn extends ClassicTunedWdtwNn {
     public ClassicTunedWddtwNn() {
-        setClassifier(new WddtwNn());
+        setClassifierSupplier(WddtwNn::new);
     }
 }

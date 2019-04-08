@@ -18,7 +18,7 @@ import static utilities.Utilities.incrementalDiffList;
 public class TunedLcssNn extends Tuned {
 
     public TunedLcssNn() {
-        setClassifier(new LcssNn());
+        setClassifierSupplier(LcssNn::new);
     }
 
     @Override
