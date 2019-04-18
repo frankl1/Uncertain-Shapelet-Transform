@@ -693,7 +693,7 @@ public class SVMAttributeEval
 
   /**
    * Get SVM-ranked attribute indexes (best to worst) selected for
-   * the class attribute indexed by classInd (one-vs-all).
+   * the class attribute list by classInd (one-vs-all).
    */
   private int[] rankBySVM(int classInd, Instances data) {
     // Holds a mapping into the original array of attribute indices

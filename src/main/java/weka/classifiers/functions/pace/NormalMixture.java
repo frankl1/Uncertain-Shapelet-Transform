@@ -120,7 +120,7 @@ public class  NormalMixture
 
   /** 
    *  Return true if a value can be considered for mixture estimatino
-   *  separately from the data indexed between i0 and i1 
+   *  separately from the data list between i0 and i1
    *  
    *  @param data the data supposedly generated from the mixture 
    *  @param i0 the index of the first element in the group

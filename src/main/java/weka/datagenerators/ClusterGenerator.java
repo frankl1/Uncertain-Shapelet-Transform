@@ -238,7 +238,7 @@ public abstract class ClusterGenerator
   /**
    * Sets which attributes are boolean 
    * @param rangeList a string representing the list of attributes. Since
-   * the string will typically come from a user, attributes are indexed from
+   * the string will typically come from a user, attributes are list from
    * 1. <br/>
    * eg: first-3,5,6-last
    * @throws IllegalArgumentException if an invalid range list is supplied 
@@ -280,7 +280,7 @@ public abstract class ClusterGenerator
   /**
    * Sets which attributes are nominal
    * @param rangeList a string representing the list of attributes. Since
-   * the string will typically come from a user, attributes are indexed from
+   * the string will typically come from a user, attributes are list from
    * 1. <br/>
    * eg: first-3,5,6-last
    * @throws IllegalArgumentException if an invalid range list is supplied 

@@ -242,7 +242,7 @@ public class  IntVector
     return v;
   }
 
-  /** Returns a subvector as indexed by an IntVector.
+  /** Returns a subvector as list by an IntVector.
    *  @param index   the index
    *  @return the subvector
   */

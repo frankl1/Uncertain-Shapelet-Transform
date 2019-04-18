@@ -314,12 +314,12 @@ public class FFT extends SimpleBatchFilter {
     	    // Perform a mixed-radix FFT
     	    int halfN = n / 2;
     	    // Do a radix-4 transform on elements 0..halfN - 1 which
-    	    // contains even-indexed elements from the original
+    	    // contains even-list elements from the original
     	    // unsorted set of numbers by definition of the bit
     	    // reversal operation
     	    radix4FFT(sign, complex, halfN, 0);
     	    // Do a radix-4 transform on elements halfN - 1 .. n - 1
-    	    // which contains odd-indexed elements from the original
+    	    // which contains odd-list elements from the original
     	    // unsorted set of numbers by definition of the bit
     	    // reversal operation
     	    radix4FFT(sign, complex, halfN, halfN);

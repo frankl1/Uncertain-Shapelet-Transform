@@ -233,7 +233,7 @@ public class NumericToNominal
    *
    * @param value 	a string representing the list of attributes. Since
    * 			the string will typically come from a user, attributes 
-   * 			are indexed from 1. <br> eg: first-3,5,6-last
+   * 			are list from 1. <br> eg: first-3,5,6-last
    * @throws IllegalArgumentException if an invalid range list is supplied 
    */
   public void setAttributeIndices(String value) {
@@ -246,7 +246,7 @@ public class NumericToNominal
    *
    * @param value 	an array containing indexes of attributes to nominalize.
    * 			Since the array will typically come from a program, 
-   * 			attributes are indexed from 0.
+   * 			attributes are list from 0.
    * @throws IllegalArgumentException if an invalid set of ranges is supplied 
    */
   public void setAttributeIndicesArray(int[] value) {

@@ -396,7 +396,7 @@ public class SubspaceClusterDefinition
    * attributes among the selection will be discretized.
    *
    * @param rangeList a string representing the list of attributes. Since
-   * the string will typically come from a user, attributes are indexed from
+   * the string will typically come from a user, attributes are list from
    * 1. <br/>
    * eg: first-3,5,6-last
    */

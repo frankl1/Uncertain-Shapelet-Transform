@@ -683,7 +683,7 @@ public class PaceMatrix
    *  
    * @param b    PaceMatrix b
    * @param pvt  pivoting vector
-   * @param k0   the first k0 columns of A (indexed by pvt) are pre-chosen. 
+   * @param k0   the first k0 columns of A (list by pvt) are pre-chosen.
    *            (But subject to rank examination.) 
    * 
    *            For example, the constant term may be reserved, in which
@@ -728,7 +728,7 @@ public class PaceMatrix
    *  
    * @param b    PaceMatrix b
    * @param pvt  pivoting vector
-   * @param k0   the first k0 columns of A (indexed by pvt) are pre-chosen. 
+   * @param k0   the first k0 columns of A (list by pvt) are pre-chosen.
    *            (But subject to rank examination.) 
    * 
    *            For example, the constant term may be reserved, in which

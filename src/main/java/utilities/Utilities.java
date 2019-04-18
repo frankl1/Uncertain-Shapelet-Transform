@@ -14,6 +14,7 @@
  */
 package utilities;
 
+
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -642,30 +643,42 @@ public class Utilities {
         return values;
     }
 
-
-
-    public static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances) throws Exception {
-        classifier.buildClassifier(trainInstances);
-        return test(classifier, testInstances);
+    public static List<Integer> incrementalDiffListInt(int min, int max, int size) {
+        if(min > max) {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+        List<Integer> values = new ArrayList<>();
+        values.add(min);
+        for(int i = 1; i <= size - 2; i++) {
+            values.add((int) (((double) (max - min)) * ((double) i / (size - 1)) + min));
+        }
+        values.add(max);
+        return values;
     }
 
-    public static ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances, ClassifierResults results) throws Exception {
+    public static evaluation.storage.ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances, Random random) throws Exception {
         classifier.buildClassifier(trainInstances);
-        return test(classifier, testInstances, results);
+        return test(classifier, testInstances, random);
     }
 
-    public static ClassifierResults test(Classifier classifier, Instances testInstances, ClassifierResults results) throws Exception {
+    public static evaluation.storage.ClassifierResults trainAndTest(Classifier classifier, Instances trainInstances, Instances testInstances, evaluation.storage.ClassifierResults results, Random random) throws Exception {
+        classifier.buildClassifier(trainInstances);
+        return test(classifier, testInstances, results, random);
+    }
+
+    public static evaluation.storage.ClassifierResults test(Classifier classifier, Instances testInstances, evaluation.storage.ClassifierResults results, Random random) throws Exception {
         for(Instance testInstance : testInstances) {
             double classValue = testInstance.classValue();
             double[] predictions = classifier.distributionForInstance(testInstance);
-            results.storeSingleResult(classValue, predictions);
+            results.addPrediction(classValue, predictions, argMax(predictions, random), -1, null);
         }
         return results;
     }
 
-    public static ClassifierResults test(Classifier classifier, Instances testInstances) throws Exception {
-        ClassifierResults results = test(classifier, testInstances, new ClassifierResults());
-        results.setNumInstances(testInstances.numInstances());
+    public static evaluation.storage.ClassifierResults test(Classifier classifier, Instances testInstances, Random random) throws Exception {
+        evaluation.storage.ClassifierResults results = test(classifier, testInstances, new evaluation.storage.ClassifierResults(), random);
         results.setNumClasses(testInstances.numClasses());
         results.findAllStatsOnce();
         return results;

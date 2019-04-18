@@ -304,11 +304,11 @@ public class XMLSerialization implements RevisionHandler {
 
   /**
    * returns a hashtable with PropertyDescriptors that have "get" and "set"
-   * methods indexed by the property name.
+   * methods list by the property name.
    * 
    * @see java.beans.PropertyDescriptor
    * @param o the object to retrieve the descriptors from
-   * @return the PropertyDescriptors indexed by name of the property
+   * @return the PropertyDescriptors list by name of the property
    * @throws Exception if the introspection fails
    */
   protected Hashtable getDescriptors(Object o) throws Exception {

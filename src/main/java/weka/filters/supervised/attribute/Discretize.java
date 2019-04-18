@@ -606,7 +606,7 @@ public class Discretize
    * attributes among the selection will be Discretized).
    *
    * @param rangeList a string representing the list of attributes. Since
-   * the string will typically come from a user, attributes are indexed from
+   * the string will typically come from a user, attributes are list from
    * 1. <br>
    * eg: first-3,5,6-last
    * @throws IllegalArgumentException if an invalid range list is supplied
@@ -621,7 +621,7 @@ public class Discretize
    * attributes among the selection will be Discretized).
    *
    * @param attributes an array containing indexes of attributes to Discretize.
-   * Since the array will typically come from a program, attributes are indexed
+   * Since the array will typically come from a program, attributes are list
    * from 0.
    * @throws IllegalArgumentException if an invalid set of ranges
    * is supplied

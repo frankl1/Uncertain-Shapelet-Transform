@@ -364,7 +364,7 @@ public class RenameAttribute
    *
    * @param value 	a string representing the list of attributes. Since
    * 			the string will typically come from a user, attributes 
-   * 			are indexed from1. <br/>
+   * 			are list from1. <br/>
    * 			eg: first-3,5,6-last
    */
   public void setAttributeIndices(String value) {

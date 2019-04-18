@@ -210,7 +210,7 @@ public class SlowDTW_1NN extends AbstractClassifier  implements SaveParameterInf
  * you cannot use the early abandon. Early abandon about doubles the speed,
  * as will storing the distances. Given the extra n^2 memory, probably better
  * to just use the early abandon. We could store those that were not abandoned?
-answer is to store those without the abandon in a hash table indexed by i and j,
+answer is to store those without the abandon in a hash table list by i and j,
 *where index i,j == j,i
 
 * @return 

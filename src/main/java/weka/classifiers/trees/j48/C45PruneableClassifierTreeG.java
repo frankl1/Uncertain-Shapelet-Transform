@@ -957,7 +957,7 @@ public class C45PruneableClassifierTreeG extends ClassifierTree{
   }
 
   /**
-   * sorts the int array in ascending order by attribute indexed 
+   * sorts the int array in ascending order by attribute list
    * by a in dataset data.  
    * @param the data the indices represent
    * @param the index of the attribute to sort by

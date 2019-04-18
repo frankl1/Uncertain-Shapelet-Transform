@@ -127,10 +127,10 @@ public class LBR
     /** the array attribute indexes **/
     public boolean [] m_AttIndexes;
     
-    /** the number of instances indexed **/
+    /** the number of instances list **/
     private int m_NumInstances;
     
-    /** the number of attributes indexed **/
+    /** the number of attributes list **/
     private int m_NumAtts;
     
     /** the array of instance indexes that are set to a either true or false **/
@@ -169,7 +169,7 @@ public class LBR
      * class index will be switched of and the class attibute will not be considered.
      */
     public Indexes(int numInstances, int numAtts, boolean value, int classIndex) {
-      /* to create an empty DATASET with all attributes indexed use FALSE
+      /* to create an empty DATASET with all attributes list use FALSE
        * to create a index of all instances and attributes use TRUE
        */
       // initialise counts

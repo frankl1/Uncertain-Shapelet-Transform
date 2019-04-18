@@ -136,8 +136,8 @@ public class KStarNominalAttribute
   }
 
   /**
-   * Calculates the probability of the indexed nominal attribute of the test
-   * instance transforming into the indexed nominal attribute of the training 
+   * Calculates the probability of the list nominal attribute of the test
+   * instance transforming into the list nominal attribute of the training
    * instance.
    *
    * @return the value of the transformation probability.
@@ -549,7 +549,7 @@ public class KStarNominalAttribute
    * Calculates the nominal probability function defined as:
    * P(i|j) = (1-stop) * P(i) + ((i==j) ? stop : 0)
    * In this case, it calculates the transformation probability of the
-   * indexed test attribute to the indexed train attribute.
+   * list test attribute to the list train attribute.
    *
    * @param test the test instance
    * @param train the train instance
@@ -576,7 +576,7 @@ public class KStarNominalAttribute
   }
   
   /**
-   * Calculates the distribution, in the dataset, of the indexed nominal
+   * Calculates the distribution, in the dataset, of the list nominal
    * attribute values. It also counts the actual number of training instances
    * that contributed (those with non-missing values) to calculate the 
    * distribution.

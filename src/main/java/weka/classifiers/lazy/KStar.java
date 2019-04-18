@@ -350,8 +350,8 @@ public class KStar
   }
 
   /**
-   * Calculates the transformation probability of the indexed test attribute 
-   * to the indexed train attribute.
+   * Calculates the transformation probability of the list test attribute
+   * to the list train attribute.
    *
    * @param first the test instance.
    * @param second the train instance.

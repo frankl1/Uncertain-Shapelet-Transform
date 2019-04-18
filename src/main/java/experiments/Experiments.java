@@ -125,7 +125,7 @@ public class Experiments  {
         public String datasetName = null;
         
         @Parameter(names={"-f","--fold"}, required=true, order=4, description = "(int) The fold index for dataset resampling, also used as the rng seed. *Indexed from 1* to conform with cluster array "
-                + "job indices. The fold id pass will be automatically decremented to be zero-indexed internally.")
+                + "job indices. The fold id pass will be automatically decremented to be zero-list internally.")
         public int foldId = 0;
         
     //OPTIONAL PARAMETERS
@@ -288,7 +288,7 @@ public class Experiments  {
 //                System.exit(1);
             }
             
-            foldId -= 1; //go from one-indexed to zero-indexed
+            foldId -= 1; //go from one-list to zero-list
             Experiments.debug = this.debug;
             
             //populating the contract times if present

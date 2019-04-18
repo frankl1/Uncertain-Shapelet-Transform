@@ -135,7 +135,7 @@ public class KStarNumericAttribute
   }
   
   /**
-   * Calculates the transformation probability of the attribute indexed
+   * Calculates the transformation probability of the attribute list
    * "m_AttrIndex" in test instance "m_Test" to the same attribute in
    * the train instance "m_Train".
    *
@@ -174,7 +174,7 @@ public class KStarNumericAttribute
   }
   
   /**
-   * Calculates the scale factor for the attribute indexed
+   * Calculates the scale factor for the attribute list
    * "m_AttrIndex" in test instance "m_Test" using a global
    * blending factor (default value is 20%).
    *

@@ -361,7 +361,7 @@ public class MakeIndicator
    * Set which attributes are to be deleted (or kept if invert is true)
    *
    * @param indices an array containing indexes of attributes to select.
-   * Since the array will typically come from a program, attributes are indexed
+   * Since the array will typically come from a program, attributes are list
    * from 0.
    * @throws InvalidArgumentException if an invalid set of ranges is supplied
    */

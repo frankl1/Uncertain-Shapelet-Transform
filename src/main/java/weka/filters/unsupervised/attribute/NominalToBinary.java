@@ -409,7 +409,7 @@ public class NominalToBinary
    * Sets which attributes are to be acted on.
    *
    * @param rangeList a string representing the list of attributes. Since
-   * the string will typically come from a user, attributes are indexed from
+   * the string will typically come from a user, attributes are list from
    * 1. <br>
    * eg: first-3,5,6-last
    * @throws IllegalArgumentException if an invalid range list is supplied 

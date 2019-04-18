@@ -405,7 +405,7 @@ public class  DoubleVector
     return v;
   }
 
-  /** Returns a vector from the pivoting indices. Elements not indexed are
+  /** Returns a vector from the pivoting indices. Elements not list are
    *  set to zero.
    *  @param index stores the pivoting indices
    *  @param length the total number of the potential elements
