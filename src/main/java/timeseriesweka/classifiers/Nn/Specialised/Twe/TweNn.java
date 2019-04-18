@@ -9,16 +9,9 @@ public class TweNn extends AbstractNn implements TweInterface {
 
     private final Twe twe = new Twe();
 
-    @Override
-    public String toString() {
-        return twe.toString() + "Nn";
+    public TweNn() {
+        setDistanceMeasure(twe);
     }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return twe;
-    }
-
 
     @Override
     public double getPenalty() {

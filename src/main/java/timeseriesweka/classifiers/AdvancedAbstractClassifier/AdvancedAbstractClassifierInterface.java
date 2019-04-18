@@ -1,5 +1,6 @@
 package timeseriesweka.classifiers.AdvancedAbstractClassifier;
 
+import ee.Randomised;
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.*;
@@ -19,7 +20,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 
- public interface AdvancedAbstractClassifierInterface extends Serializable, Randomizable, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier, SaveParameterInfoOptions, Logable {
+ public interface AdvancedAbstractClassifierInterface extends Serializable, Randomizable, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier, SaveParameterInfoOptions, Logable, Randomised {
 
      long getMinCheckpointInterval();
 

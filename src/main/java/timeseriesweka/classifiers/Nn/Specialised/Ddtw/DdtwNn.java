@@ -8,23 +8,17 @@ import timeseriesweka.measures.ddtw.DdtwInterface;
 public class DdtwNn extends AbstractNn implements DdtwInterface {
     private final Ddtw ddtw = new Ddtw();
 
-    @Override
-    public String toString() {
-        return ddtw.toString() + "Nn";
+    public DdtwNn() {
+        setDistanceMeasure(ddtw);
     }
 
     @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return ddtw;
-    }
-
-    @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return ddtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         ddtw.setWarpingWindow(warpingWindow);
     }
 

@@ -67,6 +67,16 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     protected String trainFilePath;
     protected long predictionTimeStamp;
 
+    @Override
+    public void setRandom(final Random random) {
+        this.random = random;
+    }
+
+    @Override
+    public Random getRandom() {
+        return random;
+    }
+
     public boolean resetsOnTrain() {
         return resetOnTrain;
     }

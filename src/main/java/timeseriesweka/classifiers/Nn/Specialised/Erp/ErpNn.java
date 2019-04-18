@@ -9,14 +9,8 @@ public class ErpNn extends AbstractNn implements ErpInterface {
 
     private final Erp erp = new Erp();
 
-    @Override
-    public String toString() {
-        return erp.toString() + "Nn";
-    }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return erp;
+    public ErpNn() {
+        setDistanceMeasure(erp);
     }
 
     @Override
@@ -30,12 +24,12 @@ public class ErpNn extends AbstractNn implements ErpInterface {
     }
 
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return erp.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         erp.setWarpingWindow(warpingWindow);
     }
 }

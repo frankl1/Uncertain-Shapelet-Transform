@@ -2,7 +2,7 @@ package ee.sampling;
 
 import java.util.Random;
 
-public class ShiftedDistribution implements Distribution<Double> {
+public class ShiftedDistribution extends Distribution<Double> {
     private final ScaledDistribution scaledDistribution;
     private final double min;
 
@@ -12,20 +12,7 @@ public class ShiftedDistribution implements Distribution<Double> {
     }
 
     @Override
-    public Double sample() {
-        return min + scaledDistribution.sample();
-    }
-
-    private Random random = new Random();
-
-    @Override
-    public void setRandom(Random random) {
-        scaledDistribution.setRandom(random);
-        this.random = random;
-    }
-
-    @Override
-    public Random getRandom() {
-        return random;
+    public Double sample(Random random) {
+        return min + scaledDistribution.sample(random);
     }
 }

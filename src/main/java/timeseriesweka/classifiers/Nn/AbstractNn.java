@@ -9,6 +9,7 @@ import timeseriesweka.classifiers.Nn.NeighbourWeighting.WeightByDistance;
 import timeseriesweka.Sampling.RandomRoundRobinSampler;
 import timeseriesweka.Sampling.Sampler;
 import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -237,7 +238,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
         strings.add(SAMPLER_KEY);
         strings.add(sampler.getClass().getSimpleName());
         strings.addAll(Arrays.asList(super.getOptions()));
-        strings.addAll(Arrays.asList(getDistanceMeasureInstance().getOptions()));
+        strings.addAll(Arrays.asList(getDistanceMeasure().getOptions()));
         return strings.toArray(new String[0]);
     }
 
@@ -269,7 +270,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
                     return false;
                 }
             } else {
-                return getDistanceMeasureInstance().setOption(key, value);
+                return getDistanceMeasure().setOption(key, value);
             }
         }
         return true;
@@ -377,10 +378,8 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
     @Override
     public String toString() {
-        return getDistanceMeasureInstance().toString().toUpperCase() + "-" + getClass().getSimpleName().toUpperCase();
+        return getDistanceMeasure().toString().toUpperCase() + "-NN";
     }
-
-    protected abstract DistanceMeasure getDistanceMeasureInstance();
 
     public Sampler getSampler() {
         return sampler;
@@ -451,6 +450,16 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
         this.neighbourWeighter = neighbourWeighter;
     }
 
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
+    }
+
+    protected void setDistanceMeasure(final DistanceMeasure distanceMeasure) {
+        this.distanceMeasure = distanceMeasure;
+    }
+
+    private DistanceMeasure distanceMeasure = new Dtw();
+
     private class NearestNeighbourFinder implements Serializable {
         private Instance instance;
         private TreeMap<Double, List<Instance>> nearestNeighbours = new TreeMap<>();
@@ -465,7 +474,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
         }
 
         public double addNeighbour(Instance neighbour) {
-            double distance = getDistanceMeasureInstance().distance(instance, neighbour, findCutOff());
+            double distance = getDistanceMeasure().distance(instance, neighbour, findCutOff());
             addNeighbour(neighbour, distance);
             return distance;
         }

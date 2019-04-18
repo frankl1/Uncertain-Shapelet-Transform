@@ -9,23 +9,18 @@ public class DtwNn extends AbstractNn implements DtwInterface {
 
     private final Dtw dtw = new Dtw();
 
+    public DtwNn() {
+        setDistanceMeasure(dtw);
+    }
+
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return dtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         dtw.setWarpingWindow(warpingWindow);
     }
 
-    @Override
-    public String toString() {
-        return dtw.toString() + "Nn";
-    }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return dtw;
-    }
 }

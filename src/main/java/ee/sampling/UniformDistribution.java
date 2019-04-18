@@ -4,22 +4,10 @@ import ee.Randomised;
 
 import java.util.Random;
 
-public class UniformDistribution implements Distribution<Double>, Randomised {
+public class UniformDistribution extends Distribution<Double> {
 
     @Override
-    public Double sample() {
-        return getRandom().nextDouble();
-    }
-
-    @Override
-    public void setRandom(Random random) {
-        this.random = random;
-    }
-
-    private Random random = new Random();
-
-    @Override
-    public Random getRandom() {
-        return random;
+    public Double sample(Random random) {
+        return random.nextDouble();
     }
 }

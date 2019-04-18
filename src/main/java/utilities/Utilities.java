@@ -730,4 +730,20 @@ public class Utilities {
         }
         return stringBuilder.toString();
     }
+
+    public static List<Integer> zeroInts(int size) {
+        List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < size; i++) {
+            list.add(0);
+        }
+        return list;
+    }
+
+    public static List<Double> zeroDoubles(int size) {
+        List<Double> list = new ArrayList<>();
+        for(int i = 0; i < size; i++) {
+            list.add(0.0);
+        }
+        return list;
+    }
 }

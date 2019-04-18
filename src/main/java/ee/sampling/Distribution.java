@@ -2,6 +2,13 @@ package ee.sampling;
 
 import ee.Randomised;
 
-public interface Distribution<A> extends Randomised {
-    A sample();
+import java.util.Random;
+
+public abstract class Distribution<A> {
+    public A sample() {
+        return sample(new Random());
+    }
+
+    public abstract A sample(Random random);
+
 }

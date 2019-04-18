@@ -9,9 +9,8 @@ public class LcssNn extends AbstractNn implements LcssInterface {
 
     protected final Lcss lcss = new Lcss();
 
-    @Override
-    public String toString() {
-        return lcss.toString() + "Nn";
+    public LcssNn() {
+        setDistanceMeasure(lcss);
     }
 
     @Override
@@ -25,17 +24,13 @@ public class LcssNn extends AbstractNn implements LcssInterface {
     }
 
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return lcss.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         lcss.setWarpingWindow(warpingWindow);
     }
 
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return lcss;
-    }
 }

@@ -2,7 +2,7 @@ package ee.sampling;
 
 import java.util.Random;
 
-public class ScaledDistribution implements Distribution<Double> {
+public class ScaledDistribution extends Distribution<Double> {
     private final Distribution<Double> distribution;
     private final double scale;
 
@@ -12,21 +12,9 @@ public class ScaledDistribution implements Distribution<Double> {
     }
 
     @Override
-    public Double sample() {
-        return scale * distribution.sample();
+    public Double sample(final Random random) {
+        return scale * distribution.sample(random);
     }
 
-    private Random random = new Random();
-
-    @Override
-    public void setRandom(Random random) {
-        distribution.setRandom(random);
-        this.random = random;
-    }
-
-    @Override
-    public Random getRandom() {
-        return random;
-    }
 }
 

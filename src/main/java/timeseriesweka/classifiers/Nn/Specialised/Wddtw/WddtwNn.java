@@ -9,14 +9,8 @@ public class WddtwNn extends AbstractNn implements WddtwInterface {
 
     private final Wddtw wddtw = new Wddtw();
 
-    @Override
-    public String toString() {
-        return wddtw.toString() + "Nn";
-    }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return wddtw;
+    public WddtwNn() {
+        setDistanceMeasure(wddtw);
     }
 
     @Override
@@ -30,12 +24,12 @@ public class WddtwNn extends AbstractNn implements WddtwInterface {
     }
 
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return wddtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         wddtw.setWarpingWindow(warpingWindow);
     }
 }

@@ -9,14 +9,8 @@ public class MsmNn extends AbstractNn implements MsmInterface {
 
     private final Msm msm = new Msm();
 
-    @Override
-    public String toString() {
-        return msm.toString() + "Nn";
-    }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return msm;
+    public MsmNn() {
+        setDistanceMeasure(msm);
     }
 
     @Override
@@ -30,12 +24,12 @@ public class MsmNn extends AbstractNn implements MsmInterface {
     }
 
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return msm.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         msm.setWarpingWindow(warpingWindow);
     }
 }

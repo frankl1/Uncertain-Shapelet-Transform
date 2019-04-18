@@ -8,14 +8,8 @@ import timeseriesweka.measures.wdtw.WdtwInterface;
 public class WdtwNn extends AbstractNn implements WdtwInterface {
     private final Wdtw wdtw = new Wdtw();
 
-    @Override
-    public String toString() {
-        return wdtw.toString() + "Nn";
-    }
-
-    @Override
-    protected DistanceMeasure getDistanceMeasureInstance() {
-        return wdtw;
+    public WdtwNn() {
+        setDistanceMeasure(wdtw);
     }
 
     @Override
@@ -29,12 +23,12 @@ public class WdtwNn extends AbstractNn implements WdtwInterface {
     }
 
     @Override
-    public double getWarpingWindow() {
+    public int getWarpingWindow() {
         return wdtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final double warpingWindow) {
+    public void setWarpingWindow(final int warpingWindow) {
         wdtw.setWarpingWindow(warpingWindow);
     }
 }
