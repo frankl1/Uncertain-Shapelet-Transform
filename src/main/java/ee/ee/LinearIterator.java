@@ -23,7 +23,7 @@ public class LinearIterator implements Iterator<String[]> {
     @Override
     public String[] next() { // todo deal with pool already empty
         ParameterPool parameterPool = ee.parameterPools.get(0);
-        ParameterPermutation parameterPermutation = parameterPool.getParameterPermutationFromIndexAndRandom(index, random);
+        ParameterPermutation parameterPermutation = parameterPool.getParameterPermutationFromIndexAndRandom(index, ee.getTrainRandom());
         index++;
         if(index >= Utilities.numPermutations(parameterPool.getDiscreteParameterPoolSizes())) {
             index = 0;

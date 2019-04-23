@@ -1,6 +1,5 @@
 package timeseriesweka.classifiers.AdvancedAbstractClassifier;
 
-import ee.Randomised;
 import evaluation.storage.ClassifierResults;
 import net.sourceforge.sizeof.SizeOf;
 import timeseriesweka.classifiers.*;
@@ -20,7 +19,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 
- public interface AdvancedAbstractClassifierInterface extends Serializable, Randomizable, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier, SaveParameterInfoOptions, Logable, Randomised {
+ public interface AdvancedAbstractClassifierInterface extends Serializable, Randomizable, SaveParameterInfo, CheckpointClassifier, ContractClassifier, OptionsSetter, TrainAccuracyEstimate, Classifier, SaveParameterInfoOptions, Logable {
+
+     // todo make this mirror implementation
 
      long getMinCheckpointInterval();
 
@@ -38,12 +39,13 @@ import java.util.concurrent.TimeUnit;
 
      void setTestContract(final long testContract);
 
-     String getSavePath();
+     String getTrainCheckpointDirPath();
 
-    @Override
-     void setSavePath(String path);
+     void setTrainCheckpointDirPath(String path);
 
-    @Override
+     void setTestCheckpointDirPath(String path);
+
+     @Override
      void copyFromSerObject(final Object obj) throws Exception;
 
      void setResetOnTrain(boolean on);
@@ -61,9 +63,9 @@ import java.util.concurrent.TimeUnit;
     @Override
      void setTimeLimit(final long nanoseconds);
 
-     boolean isCvTrain();
+     boolean isEstimateTrain();
 
-     void setCvTrain(final boolean cvTrain);
+     void setEstimateTrain(final boolean estimateTrain);
 
     @Override
      void setFindTrainAccuracyEstimate(final boolean setCV);
@@ -77,10 +79,11 @@ import java.util.concurrent.TimeUnit;
     @Override
      ClassifierResults getTrainResults();
 
-     boolean isCheckpointing();
+     boolean isTrainCheckpointing();
 
-     void setCheckpointing(boolean on);
+     void setTrainCheckpointing(boolean on);
 
      boolean setOption(String key, String value);
 
+     ClassifierResults getTestResults(Instances testInstances) throws Exception;
 }

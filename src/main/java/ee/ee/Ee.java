@@ -3,8 +3,12 @@ package ee.ee;
 import ee.parameter.ParameterPool;
 import ee.selection.BestPerTypeSelector;
 import ee.selection.Selector;
+import evaluation.evaluators.CrossValidationEvaluator;
+import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
+import timeseriesweka.classifiers.CheckpointClassifier;
+import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.Nn.AbstractNn;
 import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
@@ -15,16 +19,16 @@ import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
 import timeseriesweka.measures.DistanceMeasureFactory;
 import timeseriesweka.measures.erp.Erp;
 import timeseriesweka.measures.lcss.Lcss;
-import utilities.ClassifierTools;
-import utilities.InstanceTools;
-import utilities.StatisticUtilities;
-import utilities.Utilities;
+import utilities.*;
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.File;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static utilities.Utilities.incrementalDiffList;
 
@@ -32,7 +36,6 @@ public class Ee extends AdvancedAbstractClassifier {
 
     protected final List<ParameterPool> parameterPools = new ArrayList<>();
     private final List<Function<Instances, ParameterPool>> parameterPoolObtainers = new ArrayList<>();
-    private final List<Classifier> candidates = new ArrayList<>();
     private Iterator<String[]> parameterPermutationIterator;
     private Selector<EnsembleModule> selector = new BestPerTypeSelector<>(ensembleModule -> {
         if (!(ensembleModule.getClassifier() instanceof AbstractNn)) {
@@ -40,42 +43,124 @@ public class Ee extends AdvancedAbstractClassifier {
         } else {
             return ((AbstractNn) ensembleModule.getClassifier()).getDistanceMeasure().toString();
         }
-    }, (ensembleModule, t1) -> Double.compare(ensembleModule.trainResults.getAcc(), ensembleModule.trainResults.getAcc()));
+    }, Comparator.comparingDouble(ensembleModule -> ensembleModule.trainResults.getAcc()));
     private Function<Ee, Iterator<String[]>> iteratorObtainer = RandomIterator::new;
     private EnsembleModule[] ensembleModules;
+
+    public List<Function<Instances, ParameterPool>> getParameterPoolObtainers() {
+        return parameterPoolObtainers;
+    }
+
+    public Selector<EnsembleModule> getSelector() {
+        return selector;
+    }
+
+    public void setSelector(final Selector<EnsembleModule> selector) {
+        this.selector = selector;
+    }
+
+    public Function<Ee, Iterator<String[]>> getIteratorObtainer() {
+        return iteratorObtainer;
+    }
+
+    public void setIteratorObtainer(final Function<Ee, Iterator<String[]>> iteratorObtainer) {
+        this.iteratorObtainer = iteratorObtainer;
+    }
+
+    public ModuleWeightingScheme getWeightingScheme() {
+        return weightingScheme;
+    }
+
+    public void setWeightingScheme(final ModuleWeightingScheme weightingScheme) {
+        this.weightingScheme = weightingScheme;
+    }
+
+    public ModuleVotingScheme getVotingScheme() {
+        return votingScheme;
+    }
+
+    public void setVotingScheme(final ModuleVotingScheme votingScheme) {
+        this.votingScheme = votingScheme;
+    }
+
+    public Supplier<AbstractClassifier> getClassifierSupplier() {
+        return classifierSupplier;
+    }
+
+    public void setClassifierSupplier(final Supplier<AbstractClassifier> classifierSupplier) {
+        this.classifierSupplier = classifierSupplier;
+    }
+
+    public Evaluator getTrainEstimateEvaluator() {
+        return trainEstimateEvaluator;
+    }
+
+    public void setTrainEstimateEvaluator(final Evaluator trainEstimateEvaluator) {
+        this.trainEstimateEvaluator = trainEstimateEvaluator;
+    }
+
     private ModuleWeightingScheme weightingScheme = new TrainAcc();
     private ModuleVotingScheme votingScheme = new MajorityVote();
+    private Supplier<AbstractClassifier> classifierSupplier = Nn::new;
+    private Evaluator trainEstimateEvaluator = new CrossValidationEvaluator();
+    private int count;
+
+    @Override
+    protected void resetTrain() throws Exception {
+        super.resetTrain();
+        parameterPools.clear();
+        count = 0;
+    }
 
     @Override
     public void buildClassifier(final Instances trainInstances) throws Exception {
-        if(resetOnTrain) {
-            trainTime = 0;
-            trainTimeStamp = System.nanoTime();
-            parameterPools.clear();
-            candidates.clear();
+        super.buildClassifier(trainInstances);
+        if(resetsOnTrain()) {
             for(Function<Instances, ParameterPool> parameterPoolObtainer : parameterPoolObtainers) {
                 parameterPools.add(parameterPoolObtainer.apply(trainInstances));
             }
             parameterPermutationIterator = iteratorObtainer.apply(this);
+            selector.setRandom(getTrainRandom());
         }
         while (withinTrainContract() && parameterPermutationIterator.hasNext()) {
             String[] parameterPermutation = parameterPermutationIterator.next();
-            System.out.println(Utilities.join(parameterPermutation, ", "));
-            Nn nn = new Nn(); // todo generify to abst classifier
-            nn.setOptions(parameterPermutation);
-//            nn.setTrainContract(); todo get remaining train contract
-            nn.buildClassifier(trainInstances);
-            // todo pass to parameterPermutationIterator
-            EnsembleModule ensembleModule = new EnsembleModule(nn.toString(), nn, nn.getParameters());
-            ensembleModule.trainResults = nn.getTrainResults();
+            getLogger().info("Running parameter permutation: " + Utilities.join(parameterPermutation, ", "));
+            AbstractClassifier classifier = classifierSupplier.get();
+            classifier.setOptions(parameterPermutation);
+            if(classifier instanceof ContractClassifier) {
+                ((ContractClassifier) classifier).setTimeLimit(getRemainingTrainTime());
+            }
+            if(classifier instanceof CheckpointClassifier) {
+                ((CheckpointClassifier) classifier).setSavePath(new File(getTrainCheckpointDirPath(), String.valueOf(count)).getPath());
+            }
+            ClassifierResults trainResults = null;
+            File iterationTrainFile = new File(getTrainCheckpointDirPath(), String.valueOf(count));
+            if(isTrainCheckpointing() && iterationTrainFile.exists()) {
+                trainResults = new ClassifierResults();
+                trainResults.loadResultsFromFile(iterationTrainFile.getPath());
+            } else {
+                classifier.buildClassifier(trainInstances);
+                if(classifier instanceof TrainAccuracyEstimate) {
+                    trainResults = ((TrainAccuracyEstimate) classifier).getTrainResults();
+                } else {
+                    trainEstimateEvaluator.setSeed(getSeed());
+                    trainResults = trainEstimateEvaluator.evaluate(classifier, trainInstances);
+                }
+                if(isTrainCheckpointing()) {
+                    trainResults.writeFullResultsToFile(iterationTrainFile.getPath());
+                }
+            }
+            EnsembleModule ensembleModule = new EnsembleModule(classifier.toString(), classifier, Utilities.join(classifier.getOptions(), ","));
+            ensembleModule.trainResults = trainResults;
             selector.considerCandidate(ensembleModule);
-            trainCheckpoint();
+            count++;
+            updateTrainTime();
         }
-        if(resetOnTrain) {
+        if(resetsOnTrain()) {
             ensembleModules = selector.getSelected().toArray(new EnsembleModule[0]);
             weightingScheme.defineWeightings(ensembleModules, trainInstances.numClasses());
             votingScheme.trainVotingScheme(ensembleModules, trainInstances.numClasses());
-            trainCheckpoint(true);
+            updateTrainTime();
         }
     }
 
@@ -117,7 +202,7 @@ public class Ee extends AdvancedAbstractClassifier {
         String datasetName = "OliveOil";
         int seed = 0;
         Random random = new Random(seed);
-        ee.setRandom(random);
+        ee.setTrainRandom(random);
         Instances trainInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TRAIN.arff");
         Instances testInstances = ClassifierTools.loadData(datasetsDir + "/" + datasetName + "/" + datasetName + "_TEST.arff");
         Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
@@ -128,7 +213,6 @@ public class Ee extends AdvancedAbstractClassifier {
         System.out.println(results.getAcc());
     }
 
-
     @Override
     public double classifyInstance(final Instance instance) throws Exception {
         return votingScheme.classifyInstance(ensembleModules, instance);
@@ -137,5 +221,10 @@ public class Ee extends AdvancedAbstractClassifier {
     @Override
     public double[] distributionForInstance(final Instance instance) throws Exception {
         return votingScheme.distributionForInstance(ensembleModules, instance);
+    }
+
+    @Override
+    public ClassifierResults getTestResults(final Instances testInstances) throws Exception {
+        throw new UnsupportedOperationException();
     }
 }

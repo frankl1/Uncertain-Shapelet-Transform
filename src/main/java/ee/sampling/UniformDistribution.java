@@ -1,6 +1,5 @@
 package ee.sampling;
 
-import ee.Randomised;
 
 import java.util.Random;
 

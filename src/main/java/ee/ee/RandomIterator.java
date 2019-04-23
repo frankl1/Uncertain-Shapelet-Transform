@@ -27,7 +27,7 @@ public class RandomIterator implements Iterator<String[]> {
 
     @Override
     public String[] next() { // todo deal with pool already empty
-        Random random = ee.getRandom();
+        Random random = ee.getTrainRandom();
         int parameterPoolIndex = random.nextInt(ee.parameterPools.size());
         ParameterPool parameterPool = ee.parameterPools.get(parameterPoolIndex);
         List<Integer> indices = indicesMap.get(parameterPool);

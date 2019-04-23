@@ -1,11 +1,10 @@
 package ee.selection;
 
-import ee.Randomised;
 
 import java.util.*;
 import java.util.function.Function;
 
-public class BestPerTypeSelector<A, B> implements Selector<A>, Randomised {
+public class BestPerTypeSelector<A, B> implements Selector<A> {
 
     private Function<A, B> typeExtractor;
     private Comparator<A> comparator;
@@ -61,12 +60,10 @@ public class BestPerTypeSelector<A, B> implements Selector<A>, Randomised {
 
     private Random random = new Random();;
 
-    @Override
     public void setRandom(Random random) {
         this.random = random;
     }
 
-    @Override
     public Random getRandom() {
         return random;
     }

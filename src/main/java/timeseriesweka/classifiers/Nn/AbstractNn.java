@@ -1,8 +1,6 @@
 package timeseriesweka.classifiers.Nn;
 
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
-import timeseriesweka.classifiers.CheckpointClassifier;
-import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.Nn.NeighbourWeighting.NeighbourWeighter;
 import timeseriesweka.classifiers.Nn.NeighbourWeighting.UniformWeighting;
 import timeseriesweka.classifiers.Nn.NeighbourWeighting.WeightByDistance;
@@ -17,12 +15,10 @@ import weka.core.Instances;
 import evaluation.storage.ClassifierResults;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
-    private static final String CHECKPOINT_FILE_NAME = "checkpoint.ser.gzip";
     private static final String SAMPLE_SIZE_PERCENTAGE_KEY = "sampleSizePercentage";
     private static final String K_PERCENTAGE_KEY = "kPercentage";
     private static final String RANDOM_TIE_BREAK_KEY = "randomTieBreak";
@@ -57,11 +53,11 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 //        trainInstances = splitInstances[0];
 //        testInstances = splitInstances[1];
 //        Nn Nn = new Nn();
-//        Nn.setSavePath("checkpoints");
-//        Nn.setCheckpointing(true);
+//        Nn.setTrainCheckpointDirPath("checkpoints");
+//        Nn.setTrainCheckpointing(true);
 //        Nn.setSeed(0);
 //        Nn.setSampleSizePercentage(1);
-//        Nn.setCvTrain(true);
+//        Nn.setEstimateTrain(true);
 //        Nn.buildClassifier(trainInstances);
 //        ClassifierResults testResults = Nn.getTestResults(testInstances);
 //        ClassifierResults trainResults = Nn.getTrainResults();
@@ -110,8 +106,8 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 //                        DTW1NN orig = new DTW1NN();
 ////                        Dtw1Nn2 orig2 = new Dtw1Nn2();
 //                        Nn Nn = new Nn();
-////                        Nn.setSavePath("/scratch/checkpoints/" + datasetName);
-//                        Nn.setCvTrain(true);
+////                        Nn.setTrainCheckpointDirPath("/scratch/checkpoints/" + datasetName);
+//                        Nn.setEstimateTrain(true);
 //                        Nn.setUseEarlyAbandon(false);
 //                        Nn.setUseRandomTieBreak(false);
 //                        Nn.setNeighbourWeighter(WEIGHT_UNIFORM);
@@ -171,7 +167,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 //        nearestNeighbour.setUseRandomTieBreak(false);
 //        nearestNeighbour.setUseEarlyAbandon(false);
 //        nearestNeighbour.setSampleSizePercentage(1);
-//        nearestNeighbour.setCvTrain(true);
+//        nearestNeighbour.setEstimateTrain(true);
 //        Dtw dtw = new Dtw();
 //        dtw.setWarpingWindow(0.02);
 //        nearestNeighbour.setDistanceMeasure(dtw);
@@ -180,7 +176,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 //        String datasetName = "GunPoint";
 //        String checkpointDirPath = "/scratch/checkpoints/" + datasetName;
 //        new File(checkpointDirPath).mkdirs();
-////        nearestNeighbour.setSavePath(checkpointDirPath);
+////        nearestNeighbour.setTrainCheckpointDirPath(checkpointDirPath);
 //        String datasetPath = "/scratch/Datasets/TSCProblems2015/" + datasetName;
 //        Instances[] split = Utilities.loadSplitInstances(new File(datasetPath));
 //        Instances trainInstances = split[0];
@@ -198,9 +194,8 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
 
     @Override
-    public void setSavePath(String path) {
-        super.setSavePath(path);
-        this.checkpointFilePath = new File(path).getPath() + "/" + CHECKPOINT_FILE_NAME;
+    public void setTrainCheckpointDirPath(String path) {
+        super.setTrainCheckpointDirPath(path);
     }
 
 
@@ -252,7 +247,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
                 setSampleSizePercentage(Double.parseDouble(value));
             } else if(key.equals(K_PERCENTAGE_KEY)) {
                 setKPercentage(Double.parseDouble(value));
-            } else if(key.equals(DISTANCE_MEASURE_KEY)) { // todo ignore case
+            } else if(key.equals(DISTANCE_MEASURE_KEY)) {
                 // todo put in getOptions too
                 try {
                     setDistanceMeasure(DistanceMeasureFactory.getInstance().produce(value));
@@ -296,22 +291,19 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
     @Override
     public void buildClassifier(Instances trainInstances) throws Exception {
-        resumeFromCheckpoint();
-        trainTimeStamp = System.nanoTime();
-        if(resetOnTrain) {
-            trainTime = 0;
-            resetOnTrain = false;
-            this.originalTrainInstances = trainInstances;
-            trainInstances = originalTrainInstances;
+        super.buildClassifier(trainInstances);
+        if(resetsOnTrain()) {
+            setOriginalTrainInstances(trainInstances);
+            sampler.setRandom(getTrainRandom());
             sampler.setInstances(trainInstances);
             originalSampledTrainInstances.clear();
             trainNearestNeighbourFinders.clear();
-            if(cvTrain) {
+            if(isEstimateTrain()) {
                 for(Instance trainInstance : trainInstances) {
                     trainNearestNeighbourFinders.add(new NearestNeighbourFinder(trainInstance));
                 }
             }
-            k = 1 + (int) kPercentage * originalTrainInstances.numInstances();
+            k = 1 + (int) kPercentage * trainInstances.numInstances();
             trainCheckpoint();
         }
         sampleSize = (int) (trainInstances.numInstances() * sampleSizePercentage);
@@ -321,30 +313,29 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
             }
             Instance sampledInstance = sampler.next();
             originalSampledTrainInstances.add(sampledInstance);
-            if (cvTrain) {
+            if (isEstimateTrain()) {
                 for(NearestNeighbourFinder nearestNeighbourFinder : trainNearestNeighbourFinders) {
                     if(!nearestNeighbourFinder.getInstance().equals(sampledInstance)) {
                         nearestNeighbourFinder.addNeighbour(sampledInstance);
                     }
                 }
             }
-            trainResults = null;
+            setTrainResults(null);
             trainCheckpoint();
         }
-        if(trainResults == null) {
+        if(getTrainResults() == null) {
             updateTrainTime();
-            if(cvTrain) {
-                trainResults = getResults(trainNearestNeighbourFinders);
+            if(isEstimateTrain()) {
+                setTrainResults(resultsFromNeighbourFinders(trainNearestNeighbourFinders, getTrainRandom()));
             }
-            checkpoint(true);
-            if(cvTrain && trainFilePath != null) {
-                Utilities.mkdirParent(new File(trainFilePath));
-                trainResults.writeFullResultsToFile(trainFilePath);
+            trainCheckpoint(true);
+            if(isEstimateTrain() && isWriteTrainEstimate()) {
+                getTrainResults().writeFullResultsToFile(getTrainEstimateFilePath());
             }
         }
     }
 
-    private ClassifierResults getResults(List<NearestNeighbourFinder> nearestNeighbourFinders) throws Exception {
+    private ClassifierResults resultsFromNeighbourFinders(List<NearestNeighbourFinder> nearestNeighbourFinders, Random random) throws Exception {
         ClassifierResults results = new ClassifierResults();
         for (int i = 0; i < nearestNeighbourFinders.size(); i++) {
             NearestNeighbourFinder nearestNeighbourFinder = nearestNeighbourFinders.get(i);
@@ -358,32 +349,35 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
         return results;
     }
 
+    @Override
+    protected void resetTest() throws Exception {
+        super.resetTest();
+        sampledTrainInstances.clear();
+        testNearestNeighbourFinders.clear();
+        sampledTrainInstances.addAll(originalSampledTrainInstances);
+    }
+
     public ClassifierResults getTestResults(Instances testInstances) throws Exception {
-        resumeFromCheckpoint();
-        testTimeStamp = System.nanoTime();
-        if(resetOnTest) {
-            testTime = 0;
-            sampledTrainInstances.clear();
-            testNearestNeighbourFinders.clear();
-            sampledTrainInstances.addAll(originalSampledTrainInstances);
+        resumeFromTestCheckpoint();
+        if(resetsOnTest()) {
             for(Instance testInstance : testInstances) {
                 testNearestNeighbourFinders.add(new NearestNeighbourFinder(testInstance));
             }
             testCheckpoint();
         }
         while (!sampledTrainInstances.isEmpty() && withinTestContract()) {
-            testResults = null;
-            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
+            setTestResults(null);
+            Instance sampledTrainInstance = sampledTrainInstances.remove(getTestRandom().nextInt(sampledTrainInstances.size()));
             for(NearestNeighbourFinder nearestNeighbourFinder : testNearestNeighbourFinders) {
                 nearestNeighbourFinder.addNeighbour(sampledTrainInstance);
             }
             testCheckpoint();
         }
-        if(testResults == null) {
-            testResults = getResults(testNearestNeighbourFinders);
-            checkpoint(true);
+        if(getTestResults() == null) {
+            setTestResults(resultsFromNeighbourFinders(testNearestNeighbourFinders, getTestRandom()));
+            testCheckpoint(true);
         }
-        return testResults;
+        return getTestResults();
     }
 
     @Override
@@ -397,11 +391,10 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
     public void setSampler(final Sampler sampler) {
         this.sampler = sampler;
-        sampler.setRandom(random);
     }
 
     private int getSampleSize() {
-        return (int) (sampleSizePercentage * originalTrainInstances.numInstances());
+        return (int) (sampleSizePercentage * getOriginalTrainInstances().numInstances());
     }
 
     public double getSampleSizePercentage() {
@@ -429,17 +422,16 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
 
     @Override
     public double classifyInstance(final Instance testInstance) throws Exception {
-        return Utilities.argMax(distributionForInstance(testInstance), random);
+        return Utilities.argMax(distributionForInstance(testInstance), getTestRandom());
     }
 
     @Override
     public double[] distributionForInstance(final Instance testInstance) throws Exception {
-        predictionTimeStamp = System.nanoTime();
-        predictionTime = 0;
+
         NearestNeighbourFinder nearestNeighbourFinder = new NearestNeighbourFinder(testInstance);
         List<Instance> sampledTrainInstances = new ArrayList<>(originalSampledTrainInstances);
         while (!sampledTrainInstances.isEmpty() && withinPredictionContract()) {
-            Instance sampledTrainInstance = sampledTrainInstances.remove(random.nextInt(sampledTrainInstances.size()));
+            Instance sampledTrainInstance = sampledTrainInstances.remove(getTestRandom().nextInt(sampledTrainInstances.size()));
             nearestNeighbourFinder.addNeighbour(sampledTrainInstance);
             updatePredictionTime();
         }
@@ -513,7 +505,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
             double[] predictions = new double[instance.numClasses()];
             Iterator<Map.Entry<Double, List<Instance>>> iterator = nearestNeighbours.entrySet().iterator();
             if(!iterator.hasNext()) {
-                predictions[random.nextInt(predictions.length)]++;
+                predictions[getTestRandom().nextInt(predictions.length)]++;
                 return predictions;
             }
             Map.Entry<Double, List<Instance>> entry = iterator.next();

@@ -31,7 +31,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import development.go.Ee.BasedOnTrainSet;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.Logable;
@@ -627,10 +626,6 @@ public class Experiments  {
      */
     public static double runExperiment(ExperimentalArguments expSettings, Instances trainSet, Instances testSet, Classifier classifier, String resultsPath) {
 
-        if(classifier instanceof BasedOnTrainSet) {
-            ((BasedOnTrainSet) classifier).useTrainInstances(trainSet);
-        }
-
         //if this is a parameter split run, train file name is defined by this
         //otherwise generally if the classifier wants to save parameter info itnerally, set that up here too
         String trainFoldFilename = setupParameterSavingInfo(expSettings, classifier, trainSet, resultsPath);
@@ -648,7 +643,7 @@ public class Experiments  {
             if(expSettings.checkpointing && classifier instanceof CheckpointClassifier) {
                 ((CheckpointClassifier) classifier).setSavePath(resultsPath + "cp");
                 if(classifier instanceof AdvancedAbstractClassifier) {
-                    ((AdvancedAbstractClassifier) classifier).setCheckpointing(true);
+                    ((AdvancedAbstractClassifier) classifier).setTrainCheckpointing(true);
                 }
             }
             //Setup train results
