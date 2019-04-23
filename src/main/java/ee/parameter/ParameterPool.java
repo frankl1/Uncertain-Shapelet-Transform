@@ -1,7 +1,5 @@
 package ee.parameter;
 
-import ee.Randomised;
-import ee.iteration.Indexed;
 import ee.sampling.Distribution;
 import utilities.Utilities;
 
@@ -19,8 +17,8 @@ public class ParameterPool {
         return continuousParameterPools;
     }
 
-    public void add(String name, List parameterPool) {
-        putWithWarning(name, parameterPool, discreteParameterPools);
+    public void add(String name, List list) {
+        putWithWarning(name, list, discreteParameterPools);
     }
 
     private <A> void putWithWarning(String key, A value, Map<String, A> map) {
@@ -39,9 +37,27 @@ public class ParameterPool {
         List<Integer> indices = Utilities.fromPermutation(index, getDiscreteParameterPoolSizes());
         int i = 0;
         for(Map.Entry<String, List> entry : discreteParameterPools.entrySet()) {
-            parameterPermutation.addParameterValue(entry.getKey(), entry.getValue().get(indices.get(i++)));
+            parameterPermutation.add(entry.getKey(), entry.getValue().get(indices.get(i++)));
         }
         return parameterPermutation;
+    }
+
+    public ParameterPermutation getContinuousParameterPermutation(Random random) {
+        ParameterPermutation parameterPermutation = new ParameterPermutation();
+        for(Map.Entry<String, Distribution> entry : continuousParameterPools.entrySet()) {
+            parameterPermutation.add(entry.getKey(), entry.getValue().sample(random));
+        }
+        return parameterPermutation;
+    }
+
+    public ParameterPermutation getParameterPermutationFromIndexAndRandom(int index, Random random) {
+        ParameterPermutation parameterPermutation = getDiscreteParameterPermutationFromIndex(index);
+        parameterPermutation.add(getContinuousParameterPermutation(random));
+        return parameterPermutation;
+    }
+
+    public int getNumDiscreteParameterPermutations() {
+        return Utilities.numPermutations(getDiscreteParameterPoolSizes());
     }
 
     public List<Integer> getDiscreteParameterPoolSizes() {
@@ -78,5 +94,6 @@ public class ParameterPool {
     public boolean containsContinuous() {
         return !continuousParameterPools.isEmpty();
     }
+
 
 }

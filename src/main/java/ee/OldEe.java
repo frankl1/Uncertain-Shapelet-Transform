@@ -10,7 +10,6 @@ import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
 import timeseriesweka.classifiers.Nn.AbstractNn;
-import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.classifiers.Nn.Specialised.Ddtw.DdtwNn;
 import timeseriesweka.classifiers.Nn.Specialised.Dtw.DtwNn;
 import timeseriesweka.classifiers.Nn.Specialised.Erp.ErpNn;
@@ -47,9 +46,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static utilities.Utilities.incrementalDiffList;
-import static utilities.Utilities.incrementalDiffListInt;
 
-public class Ee
+public class OldEe
     extends AdvancedAbstractClassifier
     {
 
@@ -106,7 +104,6 @@ public class Ee
         }
         while(withinTrainContract() && constituentIterator.hasNext()) {
             Classifier classifier = constituentIterator.next();
-            System.out.print(classifier.toString()); // todo logger
             if(classifier instanceof AbstractNn) {
                 AbstractNn nn = (AbstractNn) classifier;
                 System.out.println(" " + Utilities.join(nn.getDistanceMeasure().getOptions(), ", "));
@@ -232,17 +229,13 @@ public class Ee
     }
 
     public static ParameterPool getDtwParameterPool(Instances instances) {
-        int instanceLength = instances.numAttributes() - 1;
         ParameterPool parameterPool = new ParameterPool();
-        parameterPool.add(Dtw.WARPING_WINDOW_KEY, incrementalDiffListInt(0, instanceLength, 100));
+        parameterPool.add(Dtw.WARPING_WINDOW_KEY, incrementalDiffList(0, 1, 100));
         return parameterPool;
     }
 
     public static ParameterPool getLcssParameterPool(Instances instances) {
-        ParameterPool parameterPool = new ParameterPool();
-        int instanceLength = instances.numAttributes() - 1;
-        instanceLength *= 0.25;
-        parameterPool.add(Lcss.WARPING_WINDOW_KEY, incrementalDiffListInt(0, instanceLength, 10));
+        ParameterPool parameterPool = getDtwParameterPool(instances);
         double maxTolerance = StatisticUtilities.populationStandardDeviation(instances);
         double minTolerance = maxTolerance * 0.2;
         parameterPool.add(Lcss.TOLERANCE_KEY, incrementalDiffList(minTolerance, maxTolerance, 10));
@@ -250,10 +243,7 @@ public class Ee
     }
 
     public static ParameterPool getErpParameterPool(Instances instances) {
-        ParameterPool parameterPool = new ParameterPool();
-        int instanceLength = instances.numAttributes() - 1;
-        instanceLength *= 0.25;
-        parameterPool.add(Erp.WARPING_WINDOW_KEY, incrementalDiffListInt(0, instanceLength, 10));
+        ParameterPool parameterPool = getDtwParameterPool(instances);
         double maxPenalty = StatisticUtilities.populationStandardDeviation(instances);
         double minPenalty = maxPenalty * 0.2;
         parameterPool.add(Erp.PENALTY_KEY, incrementalDiffList(minPenalty, maxPenalty, 10));
@@ -287,6 +277,7 @@ public class Ee
 
     public static ParameterPool getMsmParameterPool(Instances instances) {
         ParameterPool parameterPool = new ParameterPool();
+        parameterPool.add(Msm.WARPING_WINDOW_KEY, new ArrayList<>(Arrays.asList(1.0)));
         parameterPool.add(Msm.PENALTY_KEY, new ArrayList<>(Arrays.asList(
                 0.01,
                 0.01375,
@@ -395,10 +386,11 @@ public class Ee
     public static ParameterPool getWdtwParameterPool(Instances instances) {
         ParameterPool parameterPool = new ParameterPool();
         parameterPool.add(Wdtw.WEIGHT_KEY, Utilities.linearInterpolate(100, 100));
+        parameterPool.add(Wdtw.WARPING_WINDOW_KEY, new ArrayList(Arrays.asList(1.0)));
         return parameterPool;
     }
 
-    public Ee() {
+    public OldEe() {
         setRandom(new Random());
         applyStandardConfiguration();
     }
@@ -406,14 +398,14 @@ public class Ee
     public void applyStandardConfiguration() {
         constituentBuilders.clear();
 
-        addConstituentBuilder(DtwNn::new, Ee::getDtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(DdtwNn::new, Ee::getDtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(WdtwNn::new, Ee::getWdtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(WddtwNn::new, Ee::getWdtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(LcssNn::new, Ee::getLcssParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(MsmNn::new, Ee::getMsmParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(ErpNn::new, Ee::getErpParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
-        addConstituentBuilder(TweNn::new, Ee::getTweParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(DtwNn::new, OldEe::getDtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(DdtwNn::new, OldEe::getDtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(WdtwNn::new, OldEe::getWdtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(WddtwNn::new, OldEe::getWdtwParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(LcssNn::new, OldEe::getLcssParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(MsmNn::new, OldEe::getMsmParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(ErpNn::new, OldEe::getErpParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
+        addConstituentBuilder(TweNn::new, OldEe::getTweParameterPool, iterationParameters -> new ParameterPermutationIterator(iterationParameters.parameterPool, iterationParameters.random));
 
     }
 
@@ -428,7 +420,7 @@ public class Ee
 ////        ParameterPermutationIterator randomIterator = new ParameterPermutationIterator(pool, new Random(0), 20);
 //
 
-        Ee ee = new Ee();
+        OldEe ee = new OldEe();
         String datasetsDir = "/scratch/Datasets/TSCProblems2019";
         String datasetName = "OliveOil";
         int seed = 0;
@@ -443,4 +435,5 @@ public class Ee
         results.findAllStatsOnce();
         System.out.println(results.getAcc());
     }
-}
+
+    }

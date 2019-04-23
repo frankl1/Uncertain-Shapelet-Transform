@@ -24,12 +24,12 @@ public class LcssNn extends AbstractNn implements LcssInterface {
     }
 
     @Override
-    public int getWarpingWindow() {
+    public double getWarpingWindow() {
         return lcss.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final int warpingWindow) {
+    public void setWarpingWindow(final double warpingWindow) {
         lcss.setWarpingWindow(warpingWindow);
     }
 

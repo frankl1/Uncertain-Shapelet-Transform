@@ -13,12 +13,12 @@ public class DdtwNn extends AbstractNn implements DdtwInterface {
     }
 
     @Override
-    public int getWarpingWindow() {
+    public double getWarpingWindow() {
         return ddtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final int warpingWindow) {
+    public void setWarpingWindow(final double warpingWindow) {
         ddtw.setWarpingWindow(warpingWindow);
     }
 

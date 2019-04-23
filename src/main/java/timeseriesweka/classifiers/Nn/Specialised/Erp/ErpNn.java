@@ -24,12 +24,12 @@ public class ErpNn extends AbstractNn implements ErpInterface {
     }
 
     @Override
-    public int getWarpingWindow() {
+    public double getWarpingWindow() {
         return erp.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final int warpingWindow) {
+    public void setWarpingWindow(final double warpingWindow) {
         erp.setWarpingWindow(warpingWindow);
     }
 }

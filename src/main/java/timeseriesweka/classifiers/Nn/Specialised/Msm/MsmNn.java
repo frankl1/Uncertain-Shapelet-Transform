@@ -24,12 +24,12 @@ public class MsmNn extends AbstractNn implements MsmInterface {
     }
 
     @Override
-    public int getWarpingWindow() {
+    public double getWarpingWindow() {
         return msm.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final int warpingWindow) {
+    public void setWarpingWindow(final double warpingWindow) {
         msm.setWarpingWindow(warpingWindow);
     }
 }

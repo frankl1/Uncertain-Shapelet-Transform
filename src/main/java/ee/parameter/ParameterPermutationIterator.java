@@ -46,19 +46,20 @@ public class ParameterPermutationIterator implements Iterator<ParameterPermutati
             for(String key : discreteParameterPools.keySet()) {
                 List list = discreteParameterPools.get(key);
                 Object value = list.get(permutationIndices.get(i));
-                parameterPermutation.addParameterValue(key, value);
+                parameterPermutation.add(key, value);
                 i++;
             }
         } else {
             parameterPermutation = new ParameterPermutation();
             for(String key : pool.getDiscreteParameterPools().keySet()) {
                 List list = pool.getDiscreteParameterPools().get(key);
-                parameterPermutation.addParameterValue(key, list.get(random.nextInt(list.size())));
+                parameterPermutation.add(key, list.get(random.nextInt(list.size())));
             }
         }
         for(Map.Entry<String, Distribution> entry : pool.getContinuousParameterPools().entrySet()) {
-            parameterPermutation.addParameterValue(entry.getKey(), entry.getValue().sample(random));
+            parameterPermutation.add(entry.getKey(), entry.getValue().sample(random));
         }
+        System.out.println(count);
         count++;
         return parameterPermutation;
     }

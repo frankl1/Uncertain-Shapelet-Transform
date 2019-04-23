@@ -24,12 +24,12 @@ public class WddtwNn extends AbstractNn implements WddtwInterface {
     }
 
     @Override
-    public int getWarpingWindow() {
+    public double getWarpingWindow() {
         return wddtw.getWarpingWindow();
     }
 
     @Override
-    public void setWarpingWindow(final int warpingWindow) {
+    public void setWarpingWindow(final double warpingWindow) {
         wddtw.setWarpingWindow(warpingWindow);
     }
 }

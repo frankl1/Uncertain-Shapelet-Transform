@@ -9,6 +9,7 @@ import timeseriesweka.classifiers.Nn.NeighbourWeighting.WeightByDistance;
 import timeseriesweka.Sampling.RandomRoundRobinSampler;
 import timeseriesweka.Sampling.Sampler;
 import timeseriesweka.measures.DistanceMeasure;
+import timeseriesweka.measures.DistanceMeasureFactory;
 import timeseriesweka.measures.dtw.Dtw;
 import utilities.*;
 import weka.core.Instance;
@@ -16,6 +17,7 @@ import weka.core.Instances;
 import evaluation.storage.ClassifierResults;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public abstract class AbstractNn extends AdvancedAbstractClassifier {
@@ -27,6 +29,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
     private static final String USE_EARLY_ABANDON_KEY = "earlyAbandon";
     private static final String NEIGHBOUR_WEIGHTER_KEY = "neighbourWeighter";
     private static final String SAMPLER_KEY = "sampler";
+    public static final String DISTANCE_MEASURE_KEY = "dm";
     private final List<Instance> sampledTrainInstances = new ArrayList<>();
     private final List<NearestNeighbourFinder> trainNearestNeighbourFinders = new ArrayList<>();
     private final List<Instance> originalSampledTrainInstances = new ArrayList<>();
@@ -249,6 +252,13 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
                 setSampleSizePercentage(Double.parseDouble(value));
             } else if(key.equals(K_PERCENTAGE_KEY)) {
                 setKPercentage(Double.parseDouble(value));
+            } else if(key.equals(DISTANCE_MEASURE_KEY)) { // todo ignore case
+                // todo put in getOptions too
+                try {
+                    setDistanceMeasure(DistanceMeasureFactory.getInstance().produce(value));
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                }
             } else if(key.equals(USE_EARLY_ABANDON_KEY)) {
                 setUseEarlyAbandon(Boolean.parseBoolean(value));
             } else if(key.equals(RANDOM_TIE_BREAK_KEY)) {
@@ -270,7 +280,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
                     return false;
                 }
             } else {
-                return getDistanceMeasure().setOption(key, value);
+                return getDistanceMeasure().setOption(key, value); // must be called after distance measure set otherwise previous distance measure will be used
             }
         }
         return true;

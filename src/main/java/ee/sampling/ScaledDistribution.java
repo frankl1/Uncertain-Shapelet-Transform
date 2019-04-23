@@ -2,7 +2,7 @@ package ee.sampling;
 
 import java.util.Random;
 
-public class ScaledDistribution extends Distribution<Double> {
+public class ScaledDistribution implements Distribution<Double> {
     private final Distribution<Double> distribution;
     private final double scale;
 

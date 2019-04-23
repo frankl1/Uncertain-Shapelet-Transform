@@ -21,5 +21,5 @@ public class ClassifierParameterList {
 
     private final List<ClassifierParameterPool> list = new ArrayList<>();
 
-    
+
 }

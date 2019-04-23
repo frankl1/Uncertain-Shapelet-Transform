@@ -6,10 +6,14 @@ import weka.core.OptionHandler;
 import java.util.*;
 
 public class ParameterPermutation implements OptionHandler {
-    private final Map<String, Object> permutation = new HashMap<>();
+    private final Map<String, Object> permutation = new LinkedHashMap<>();
 
-    public void addParameterValue(String name, Object value) {
+    public void add(String name, Object value) {
         permutation.put(name, value);
+    }
+
+    public void add(ParameterPermutation parameterPermutation) {
+        permutation.putAll(parameterPermutation.permutation);
     }
 
     @Override
@@ -25,7 +29,7 @@ public class ParameterPermutation implements OptionHandler {
     @Override
     public void setOptions(String[] options) throws Exception {
         for(int i = 0; i < options.length; i += 2) {
-            addParameterValue(options[i], options[i + 1]);
+            add(options[i], options[i + 1]);
         }
     }
 
