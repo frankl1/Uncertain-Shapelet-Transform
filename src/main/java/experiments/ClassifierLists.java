@@ -38,6 +38,8 @@ import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
 
+import java.util.Random;
+
 /**
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -78,6 +80,12 @@ public class ClassifierLists {
     public static Classifier setClassifierClassic(String classifier, int fold){
         Classifier c=null;
         switch(classifier){
+
+            case "CEE":
+                Ee ee = new Ee();
+                c = ee;
+                ee.setSeed(fold);
+                break;
 
             case "ShapeletI": case "Shapelet_I": case "ShapeletD": case "Shapelet_D": case  "Shapelet_Indep"://Multivariate version 1
                 c=new MultivariateShapeletTransformClassifier();

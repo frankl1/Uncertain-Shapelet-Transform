@@ -236,6 +236,8 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
         strings.add(SAMPLER_KEY);
         strings.add(sampler.getClass().getSimpleName());
         strings.addAll(Arrays.asList(super.getOptions()));
+        strings.add(DISTANCE_MEASURE_KEY);
+        strings.add(DistanceMeasureFactory.getInstance().getKey(distanceMeasure));
         strings.addAll(Arrays.asList(getDistanceMeasure().getOptions()));
         return strings.toArray(new String[0]);
     }
@@ -248,7 +250,6 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
             } else if(key.equals(K_PERCENTAGE_KEY)) {
                 setKPercentage(Double.parseDouble(value));
             } else if(key.equals(DISTANCE_MEASURE_KEY)) {
-                // todo put in getOptions too
                 try {
                     setDistanceMeasure(DistanceMeasureFactory.getInstance().produce(value));
                 } catch (Exception e) {
@@ -526,7 +527,7 @@ public abstract class AbstractNn extends AdvancedAbstractClassifier {
             if(neighbourCount < k) {
                 neighbours = new ArrayList<>(neighbours);
                 while (neighbourCount < k) {
-                    Instance neighbour = neighbours.remove(0);
+                    Instance neighbour = neighbours.remove(getTrainRandom().nextInt(neighbours.size()));
                     predictions[(int) neighbour.classValue()] += neighbourWeighter.weight(distance);
                     neighbourCount++;
                 }

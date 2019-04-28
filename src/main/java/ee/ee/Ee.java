@@ -12,6 +12,7 @@ import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.Nn.AbstractNn;
 import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
+import timeseriesweka.classifiers.ensembles.elastic_ensemble.LCSS1NN;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
@@ -121,6 +122,7 @@ public class Ee extends AdvancedAbstractClassifier {
             }
             parameterPermutationIterator = iteratorObtainer.apply(this);
             selector.setRandom(getTrainRandom());
+            selector.clear();
         }
         while (withinTrainContract() && parameterPermutationIterator.hasNext()) {
             String[] parameterPermutation = parameterPermutationIterator.next();
@@ -128,16 +130,24 @@ public class Ee extends AdvancedAbstractClassifier {
             AbstractClassifier classifier = classifierSupplier.get();
             classifier.setOptions(parameterPermutation);
             if(classifier instanceof ContractClassifier) {
-                ((ContractClassifier) classifier).setTimeLimit(getRemainingTrainTime());
+                long remainingTrainTime = getRemainingTrainTime();
+                if(remainingTrainTime >= 0) {
+                    ((ContractClassifier) classifier).setTimeLimit(remainingTrainTime);
+                }
             }
-            if(classifier instanceof CheckpointClassifier) {
-                ((CheckpointClassifier) classifier).setSavePath(new File(getTrainCheckpointDirPath(), String.valueOf(count)).getPath());
-            }
-            ClassifierResults trainResults = null;
-            File iterationTrainFile = new File(getTrainCheckpointDirPath(), String.valueOf(count));
+//            if(classifier instanceof CheckpointClassifier) {
+//                ((CheckpointClassifier) classifier).setSavePath(new File(getTrainCheckpointDirPath(), String.valueOf(count)).getPath());
+//            }
+            ClassifierResults trainResults;
+            File iterationTrainFile = new File(getTrainCheckpointDirPath(), count + ".csv");
             if(isTrainCheckpointing() && iterationTrainFile.exists()) {
                 trainResults = new ClassifierResults();
                 trainResults.loadResultsFromFile(iterationTrainFile.getPath());
+                String parametersFromFile = trainResults.getParas();
+                String parameterPermutationString = Utilities.join(parameterPermutation, ",");
+//                if(!parametersFromFile.contains(parameterPermutationString)) {
+//                    throw new IllegalStateException("parameter indices don't match");
+//                } todo string of vars (kv pairs) contain another string of vars out of order
             } else {
                 classifier.buildClassifier(trainInstances);
                 if(classifier instanceof TrainAccuracyEstimate) {
@@ -147,7 +157,9 @@ public class Ee extends AdvancedAbstractClassifier {
                     trainResults = trainEstimateEvaluator.evaluate(classifier, trainInstances);
                 }
                 if(isTrainCheckpointing()) {
+                    updateTrainTime();
                     trainResults.writeFullResultsToFile(iterationTrainFile.getPath());
+                    setTrainTimeStamp(System.nanoTime());
                 }
             }
             EnsembleModule ensembleModule = new EnsembleModule(classifier.toString(), classifier, Utilities.join(classifier.getOptions(), ","));
@@ -160,6 +172,16 @@ public class Ee extends AdvancedAbstractClassifier {
             ensembleModules = selector.getSelected().toArray(new EnsembleModule[0]);
             weightingScheme.defineWeightings(ensembleModules, trainInstances.numClasses());
             votingScheme.trainVotingScheme(ensembleModules, trainInstances.numClasses());
+            if(isEstimateTrain()) {
+                ClassifierResults trainResults = new ClassifierResults();
+                setTrainResults(trainResults);
+                for(int i = 0; i < trainInstances.numInstances(); i++) {
+                    long timeStamp = System.nanoTime();
+                    double[] prediction = votingScheme.distributionForTrainInstance(ensembleModules, i);
+                    long predictionTime = System.nanoTime() - timeStamp;
+                    trainResults.addPrediction(trainInstances.get(i).classValue(), prediction, Utilities.argMax(prediction, getTrainRandom()), predictionTime, null);
+                }
+            }
             updateTrainTime();
         }
     }
@@ -208,9 +230,16 @@ public class Ee extends AdvancedAbstractClassifier {
         Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
         trainInstances = splitInstances[0];
         testInstances = splitInstances[1];
-        ClassifierResults results = Utilities.trainAndTest(ee, trainInstances, testInstances, random);
-        results.findAllStatsOnce();
-        System.out.println(results.getAcc());
+        LCSS1NN o = new LCSS1NN();
+        Lcss n = new Lcss();
+        n.setWarpingWindow(1.0);
+        n.setTolerance(1);
+        o.setParamsFromParamId(trainInstances, 99);
+        System.out.println(o.distance(trainInstances.get(0),  trainInstances.get(1)));
+        System.out.println(n.distance(trainInstances.get(0),  trainInstances.get(1)));
+//        ClassifierResults results = Utilities.trainAndTest(ee, trainInstances, testInstances, random);
+//        results.findAllStatsOnce();
+//        System.out.println(results.getAcc());
     }
 
     @Override

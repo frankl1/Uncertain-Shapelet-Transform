@@ -50,6 +50,8 @@ public abstract class AdvancedAbstractClassifier extends AbstractClassifier impl
     @Override
     public void setSeed(final int seed) {
         this.seed = seed;
+        setTrainRandom(new Random(seed));
+        setTestRandom(new Random(seed));
     }
     private long predictionTime;
     private boolean estimateTrain = true;
@@ -372,15 +374,27 @@ public void setEstimateTrain(final boolean estimateTrain) {
 
     protected void resumeFromTrainCheckpoint() throws Exception {
         if (isTrainCheckpointing() && !hasResumedFromTrainCheckpoint) {
-            loadFromFile(trainCheckpointFilePath);
-            hasResumedFromTrainCheckpoint = true;
+            File checkpointFile = new File(trainCheckpointFilePath);
+            if(checkpointFile.exists()) {
+                loadFromFile(trainCheckpointFilePath);
+                hasResumedFromTrainCheckpoint = true;
+                getLogger().info("resumed from train checkpoint");
+            } else {
+                getLogger().info("no train checkpoint file to resume from");
+            }
         }
     }
 
     protected void resumeFromTestCheckpoint() throws Exception {
         if (isTestCheckpointing() && !hasResumedFromTestCheckpoint) {
-            loadFromFile(testCheckpointFilePath);
-            hasResumedFromTestCheckpoint = true;
+            File checkpointFile = new File(testCheckpointFilePath);
+            if(checkpointFile.exists()) {
+                loadFromFile(testCheckpointFilePath);
+                hasResumedFromTestCheckpoint = true;
+                getLogger().info("resumed from test checkpoint");
+            } else {
+                getLogger().info("no test checkpoint file to resume from");
+            }
         }
     }
 
@@ -492,10 +506,16 @@ public void setEstimateTrain(final boolean estimateTrain) {
     }
 
     protected long getRemainingTrainTime() {
+        if(trainContract < 0) {
+            return -1;
+        }
         return Math.max(trainContract - trainTime, 0);
     }
 
     protected long getRemainingTestTime() {
+        if(trainContract < 0) {
+            return -1;
+        }
         return Math.max(testContract - testTime, 0);
     }
 

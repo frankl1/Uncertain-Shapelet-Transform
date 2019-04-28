@@ -42,18 +42,21 @@ public class Lcss extends Dtw implements LcssInterface {
 
         int warpingWindow = (int) (this.getWarpingWindow() * first.length);
 
-        for(int i = 0; i < m; i++){ // another version which gives no diff in results!
+        for(int i = 0; i < m; i++){
             for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
-//                System.out.println("here");
-                if(j < 0 || j >= n){
-                    //do nothing
-                }else if(b[j]+this.tolerance >= a[i] && b[j]-tolerance <=a[i]){
+                if(j < 0){
+                    j = -1;
+                }else if(j >= n){
+                    j = i+warpingWindow;
+                }else if(second[j]+this.tolerance >= first[i] && second[j]-tolerance <=first[i]){
                     lcss[i+1][j+1] = lcss[i][j]+1;
                 }else if(lcss[i][j+1] > lcss[i+1][j]){
                     lcss[i+1][j+1] = lcss[i][j+1];
                 }else{
                     lcss[i+1][j+1] = lcss[i+1][j];
                 }
+
+                // could maybe do an early abandon here? Not sure, investigate further
             }
         }
 
@@ -64,32 +67,6 @@ public class Lcss extends Dtw implements LcssInterface {
             }
         }
         return 1-((double)max/m);
-
-//        for(int i = 0; i < m; i++){ // another version, calculates the same distance
-//            for(int j = i-warpingWindow; j <= i+warpingWindow; j++){
-//                if(j < 0){
-//                    j = -1;
-//                }else if(j >= n){
-//                    j = i+warpingWindow;
-//                }else if(second[j]+this.tolerance >= first[i] && second[j]-tolerance <=first[i]){
-//                    lcss[i+1][j+1] = lcss[i][j]+1;
-//                }else if(lcss[i][j+1] > lcss[i+1][j]){
-//                    lcss[i+1][j+1] = lcss[i][j+1];
-//                }else{
-//                    lcss[i+1][j+1] = lcss[i+1][j];
-//                }
-//
-//                // could maybe do an early abandon here? Not sure, investigate further
-//            }
-//        }
-//
-//        int max = -1;
-//        for(int i = 1; i < lcss[lcss.length-1].length; i++){
-//            if(lcss[lcss.length-1][i] > max){
-//                max = lcss[lcss.length-1][i];
-//            }
-//        }
-//        return 1-((double)max/m);
     }
 
     public static final String TOLERANCE_KEY = "tolerance";

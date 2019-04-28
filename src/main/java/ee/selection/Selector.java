@@ -8,4 +8,5 @@ public interface Selector<A> {
     List<A> getSelected();
     void setRandom(Random random);
     Random getRandom();
+    void clear();
 }

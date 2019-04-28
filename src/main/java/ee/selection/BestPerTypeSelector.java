@@ -23,7 +23,7 @@ public class BestPerTypeSelector<A, B> implements Selector<A> {
         if(bestOfSameType.isEmpty()) {
             bestOfSameType.add(candidate);
         } else {
-            int comparison = comparator.compare(bestOfSameType.get(0), candidate);
+            int comparison = comparator.compare(candidate, bestOfSameType.get(0));
             if(comparison >= 0) {
                 if(comparison > 0) {
                     bestOfSameType.clear();
@@ -66,5 +66,10 @@ public class BestPerTypeSelector<A, B> implements Selector<A> {
 
     public Random getRandom() {
         return random;
+    }
+
+    @Override
+    public void clear() {
+        bestCandidateTypes.clear();
     }
 }

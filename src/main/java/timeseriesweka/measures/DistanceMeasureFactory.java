@@ -28,9 +28,14 @@ public class DistanceMeasureFactory {
 
     private static final Class[] classes = new Class[] {Ddtw.class, Dtw.class, Wdtw.class, Wddtw.class, Lcss.class, Erp.class, Msm.class, Twe.class};
 
+    public String getKey(Object object) {
+        return getKey(object.getClass());
+    }
+
     public String getKey(Class clazz) {
         return clazz.getSimpleName();
     }
+
 
     public DistanceMeasure produce(String name) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         for(Class clazz : classes) {
