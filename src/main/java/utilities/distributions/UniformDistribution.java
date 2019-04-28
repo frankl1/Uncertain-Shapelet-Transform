@@ -1,4 +1,4 @@
-package ee.sampling;
+package utilities.distributions;
 
 
 import java.util.Random;

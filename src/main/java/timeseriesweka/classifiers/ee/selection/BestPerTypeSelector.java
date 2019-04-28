@@ -1,4 +1,4 @@
-package ee.selection;
+package timeseriesweka.classifiers.ee.selection;
 
 
 import java.util.*;

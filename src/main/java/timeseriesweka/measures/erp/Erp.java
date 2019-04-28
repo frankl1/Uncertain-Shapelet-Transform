@@ -42,7 +42,7 @@ public class Erp extends Dtw implements ErpInterface {
 //        int band = (int) Math.ceil(v2.getDimensionality() * bandSize);
         int band = (int) Math.ceil(timeSeriesB.length * getWarpingWindow());
 
-        // g parameter for local usage
+        // g parameters for local usage
         double gValue = penalty;
 
         for (int i = 0; i < timeSeriesA.length; i++) {

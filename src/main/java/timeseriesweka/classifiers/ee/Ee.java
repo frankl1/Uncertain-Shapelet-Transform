@@ -1,28 +1,23 @@
-package ee.ee;
+package timeseriesweka.classifiers.ee;
 
-import ee.parameter.ParameterPool;
-import ee.selection.BestPerTypeSelector;
-import ee.selection.Selector;
+import utilities.parameters.ParameterPermutation;
+import utilities.parameters.ParameterPool;
+import timeseriesweka.classifiers.ee.selection.BestPerTypeSelector;
+import timeseriesweka.classifiers.ee.selection.Selector;
 import evaluation.evaluators.CrossValidationEvaluator;
 import evaluation.evaluators.Evaluator;
 import evaluation.storage.ClassifierResults;
 import timeseriesweka.classifiers.AdvancedAbstractClassifier.AdvancedAbstractClassifier;
-import timeseriesweka.classifiers.CheckpointClassifier;
 import timeseriesweka.classifiers.ContractClassifier;
 import timeseriesweka.classifiers.Nn.AbstractNn;
 import timeseriesweka.classifiers.Nn.Nn;
 import timeseriesweka.classifiers.ensembles.EnsembleModule;
-import timeseriesweka.classifiers.ensembles.elastic_ensemble.LCSS1NN;
 import timeseriesweka.classifiers.ensembles.voting.MajorityVote;
 import timeseriesweka.classifiers.ensembles.voting.ModuleVotingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.ModuleWeightingScheme;
 import timeseriesweka.classifiers.ensembles.weightings.TrainAcc;
-import timeseriesweka.measures.DistanceMeasureFactory;
-import timeseriesweka.measures.erp.Erp;
-import timeseriesweka.measures.lcss.Lcss;
 import utilities.*;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
@@ -31,21 +26,20 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static utilities.Utilities.incrementalDiffList;
-
 public class Ee extends AdvancedAbstractClassifier {
 
-    protected final List<ParameterPool> parameterPools = new ArrayList<>();
-    private final List<Function<Instances, ParameterPool>> parameterPoolObtainers = new ArrayList<>();
-    private Iterator<String[]> parameterPermutationIterator;
-    private Selector<EnsembleModule> selector = new BestPerTypeSelector<>(ensembleModule -> {
+    public static final Selector<EnsembleModule> DEFAULT_SELECTOR = new BestPerTypeSelector<>(ensembleModule -> {
         if (!(ensembleModule.getClassifier() instanceof AbstractNn)) {
             throw new IllegalArgumentException();
         } else {
             return ((AbstractNn) ensembleModule.getClassifier()).getDistanceMeasure().toString();
         }
     }, Comparator.comparingDouble(ensembleModule -> ensembleModule.trainResults.getAcc()));
-    private Function<Ee, Iterator<String[]>> iteratorObtainer = RandomIterator::new;
+    protected final List<ParameterPool> parameterPools = new ArrayList<>();
+    private final List<Function<Instances, ParameterPool>> parameterPoolObtainers = new ArrayList<>();
+    private Iterator<String[]> parameterPermutationIterator;
+    private Selector<EnsembleModule> selector = DEFAULT_SELECTOR;
+    private IterationMethod iterationMethod = IterationMethod.RANDOM;
     private EnsembleModule[] ensembleModules;
 
     public List<Function<Instances, ParameterPool>> getParameterPoolObtainers() {
@@ -58,14 +52,6 @@ public class Ee extends AdvancedAbstractClassifier {
 
     public void setSelector(final Selector<EnsembleModule> selector) {
         this.selector = selector;
-    }
-
-    public Function<Ee, Iterator<String[]>> getIteratorObtainer() {
-        return iteratorObtainer;
-    }
-
-    public void setIteratorObtainer(final Function<Ee, Iterator<String[]>> iteratorObtainer) {
-        this.iteratorObtainer = iteratorObtainer;
     }
 
     public ModuleWeightingScheme getWeightingScheme() {
@@ -120,13 +106,13 @@ public class Ee extends AdvancedAbstractClassifier {
             for(Function<Instances, ParameterPool> parameterPoolObtainer : parameterPoolObtainers) {
                 parameterPools.add(parameterPoolObtainer.apply(trainInstances));
             }
-            parameterPermutationIterator = iteratorObtainer.apply(this);
+            parameterPermutationIterator = generateIterator(iterationMethod);
             selector.setRandom(getTrainRandom());
             selector.clear();
         }
         while (withinTrainContract() && parameterPermutationIterator.hasNext()) {
             String[] parameterPermutation = parameterPermutationIterator.next();
-            getLogger().info("Running parameter permutation: " + Utilities.join(parameterPermutation, ", "));
+            getLogger().info("Running parameters permutation: " + Utilities.join(parameterPermutation, ", "));
             AbstractClassifier classifier = classifierSupplier.get();
             classifier.setOptions(parameterPermutation);
             if(classifier instanceof ContractClassifier) {
@@ -146,7 +132,7 @@ public class Ee extends AdvancedAbstractClassifier {
                 String parametersFromFile = trainResults.getParas();
                 String parameterPermutationString = Utilities.join(parameterPermutation, ",");
 //                if(!parametersFromFile.contains(parameterPermutationString)) {
-//                    throw new IllegalStateException("parameter indices don't match");
+//                    throw new IllegalStateException("parameters indices don't match");
 //                } todo string of vars (kv pairs) contain another string of vars out of order
             } else {
                 classifier.buildClassifier(trainInstances);
@@ -186,25 +172,6 @@ public class Ee extends AdvancedAbstractClassifier {
         }
     }
 
-    public static ParameterPool findLcssParameterPool(Instances instances) {
-        ParameterPool parameterPool = new ParameterPool();
-        parameterPool.add(Nn.DISTANCE_MEASURE_KEY, new ArrayList<>(Arrays.asList(DistanceMeasureFactory.getInstance().getKey(Lcss.class))));
-        parameterPool.add(Lcss.WARPING_WINDOW_KEY, incrementalDiffList(0, 1, 10));
-        double maxTolerance = StatisticUtilities.populationStandardDeviation(instances);
-        double minTolerance = maxTolerance * 0.2;
-        parameterPool.add(Lcss.TOLERANCE_KEY, incrementalDiffList(minTolerance, maxTolerance, 10));
-        return parameterPool;
-    }
-
-    public static ParameterPool findErpParameterPool(Instances instances) {
-        ParameterPool parameterPool = new ParameterPool();
-        parameterPool.add(Nn.DISTANCE_MEASURE_KEY, new ArrayList<>(Arrays.asList(DistanceMeasureFactory.getInstance().getKey(Erp.class))));
-        parameterPool.add(Erp.WARPING_WINDOW_KEY, incrementalDiffList(0, 1, 10));
-        double maxPenalty = StatisticUtilities.populationStandardDeviation(instances);
-        double minPenalty = maxPenalty * 0.2;
-        parameterPool.add(Erp.PENALTY_KEY, incrementalDiffList(minPenalty, maxPenalty, 10));
-        return parameterPool;
-    }
 
     public Ee() {
         setClassicConfig();
@@ -212,10 +179,33 @@ public class Ee extends AdvancedAbstractClassifier {
 
     public void setClassicConfig() {
         parameterPoolObtainers.clear();
-        parameterPoolObtainers.add(Ee::findErpParameterPool);
-        parameterPoolObtainers.add(Ee::findLcssParameterPool);
-        // todo set iteration
-        // todo set selection
+        parameterPoolObtainers.add(ParameterPoolFactory::classicDtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::euclideanParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::fullWindowDtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::classicDdtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::classicWdtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::classicWddtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::lcssParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::erpParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::tweParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::msmParameterPool);
+        setIterationMethod(IterationMethod.LINEAR);
+        setSelector(DEFAULT_SELECTOR);
+    }
+
+    public void setDefaultConfig() {
+        parameterPoolObtainers.clear();
+        parameterPoolObtainers.add(ParameterPoolFactory::dtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::ddtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::wddtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::wddtwParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::lcssParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::erpParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::tweParameterPool);
+        parameterPoolObtainers.add(ParameterPoolFactory::msmParameterPool);
+        setIterationMethod(IterationMethod.RANDOM);
+        setSelector(DEFAULT_SELECTOR);
+
     }
 
     public static void main(String[] args) throws Exception {
@@ -230,16 +220,9 @@ public class Ee extends AdvancedAbstractClassifier {
         Instances[] splitInstances = InstanceTools.resampleTrainAndTestInstances(trainInstances, testInstances, seed);
         trainInstances = splitInstances[0];
         testInstances = splitInstances[1];
-        LCSS1NN o = new LCSS1NN();
-        Lcss n = new Lcss();
-        n.setWarpingWindow(1.0);
-        n.setTolerance(1);
-        o.setParamsFromParamId(trainInstances, 99);
-        System.out.println(o.distance(trainInstances.get(0),  trainInstances.get(1)));
-        System.out.println(n.distance(trainInstances.get(0),  trainInstances.get(1)));
-//        ClassifierResults results = Utilities.trainAndTest(ee, trainInstances, testInstances, random);
-//        results.findAllStatsOnce();
-//        System.out.println(results.getAcc());
+        ClassifierResults results = Utilities.trainAndTest(ee, trainInstances, testInstances, random);
+        results.findAllStatsOnce();
+        System.out.println(results.getAcc());
     }
 
     @Override
@@ -256,4 +239,94 @@ public class Ee extends AdvancedAbstractClassifier {
     public ClassifierResults getTestResults(final Instances testInstances) throws Exception {
         throw new UnsupportedOperationException();
     }
+
+    public IterationMethod getIterationMethod() {
+        return iterationMethod;
+    }
+
+    public void setIterationMethod(IterationMethod iterationMethod) {
+        this.iterationMethod = iterationMethod;
+    }
+
+    public enum IterationMethod {
+        LINEAR,
+        RANDOM;
+
+        @Override
+        public String toString() {
+            return name();
+        }
+
+        public static IterationMethod fromString(String str) {
+            for(int i = 0; i < IterationMethod.values().length; i++) {
+                IterationMethod method = IterationMethod.values()[i];
+                if(str.equals(method)) {
+                    return method;
+                }
+            }
+            throw new IllegalArgumentException("unrecognised iteration method: " + str);
+        }
+    }
+
+    private Iterator<String[]> generateIterator(IterationMethod iterationMethod) {
+        if (iterationMethod.equals(IterationMethod.LINEAR)) {
+            return new LinearIterator();
+        } else if (iterationMethod.equals(IterationMethod.RANDOM)) {
+            return new RandomIterator();
+        }
+        throw new IllegalArgumentException("Unknown iteration method: " + iterationMethod);
+    }
+
+    private class LinearIterator implements Iterator<String[]> {
+        private int index = 0;
+
+        @Override
+        public boolean hasNext() {
+            return !parameterPools.isEmpty();
+        }
+
+        @Override
+        public String[] next() { // todo deal with pool already empty
+            ParameterPool parameterPool = parameterPools.get(0);
+            ParameterPermutation parameterPermutation = parameterPool.getParameterPermutationFromIndexAndRandom(index, getTrainRandom());
+            index++;
+            if(index >= Utilities.numPermutations(parameterPool.getDiscreteParameterPoolSizes())) {
+                index = 0;
+                parameterPools.remove(0);
+            }
+            return parameterPermutation.getOptions();
+        }
+    }
+
+    private class RandomIterator implements Iterator<String[]> {
+
+        private final Map<ParameterPool, List<Integer>> indicesMap = new HashMap<>();
+
+        public RandomIterator() {
+            for(ParameterPool parameterPool : parameterPools) {
+                indicesMap.put(parameterPool, Utilities.naturalNumbersFromZero(parameterPool.getNumDiscreteParameterPermutations() - 1));
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !parameterPools.isEmpty();
+        }
+
+        @Override
+        public String[] next() { // todo deal with pool already empty
+            Random random = getTrainRandom();
+            int parameterPoolIndex = random.nextInt(parameterPools.size());
+            ParameterPool parameterPool = parameterPools.get(parameterPoolIndex);
+            List<Integer> indices = indicesMap.get(parameterPool);
+            int index = indices.remove(random.nextInt(indices.size()));
+            ParameterPermutation parameterPermutation = parameterPool.getParameterPermutationFromIndexAndRandom(index, random);
+            if(indices.isEmpty()) {
+                parameterPools.remove(parameterPoolIndex);
+                indicesMap.remove(parameterPool);
+            }
+            return parameterPermutation.getOptions();
+        }
+    }
+
 }

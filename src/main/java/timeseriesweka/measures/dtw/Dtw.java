@@ -119,7 +119,7 @@ public class Dtw extends DistanceMeasure implements DtwInterface {
 //        boolean tooBig=true; // todo use only window to save mem rather than entire row
 //
 //        //		System.out.println("\t\t\tIn Efficient with cutoff ="+cutoff);
-//        // Set the longest series to ee
+//        // Set the longest series to timeseriesweka.classifiers.ee
 //        double[] temp;
 //        if(a.length<b.length){
 //            temp=a;
@@ -142,7 +142,7 @@ public class Dtw extends DistanceMeasure implements DtwInterface {
 //        for(int j=1;j<n&&j<=windowSize;j++){
 //            row1[j]=Double.MAX_VALUE;
 //        }
-//        //Warp ee[0] onto all b[1]...b[WindowSize]
+//        //Warp timeseriesweka.classifiers.ee[0] onto all b[1]...b[WindowSize]
 //        for(int j=1;j<windowSize && j<m;j++){
 //            row1[j]=row1[j-1]+(a[0]-b[j])*(a[0]-b[j]);
 //            if(row1[j]<cutOff)

@@ -1,6 +1,6 @@
-package ee.parameter;
+package utilities.parameters;
 
-import ee.sampling.Distribution;
+import utilities.distributions.Distribution;
 import utilities.Utilities;
 
 import java.util.*;
@@ -23,7 +23,7 @@ public class ParameterPool {
 
     private <A> void putWithWarning(String key, A value, Map<String, A> map) {
         if(map.get(key) != null) {
-            System.err.println("warning: overwriting parameter");
+            System.err.println("warning: overwriting parameters"); // todo use logger
         }
         map.put(key, value);
     }
@@ -37,7 +37,7 @@ public class ParameterPool {
         List<Integer> indices = Utilities.fromPermutation(index, getDiscreteParameterPoolSizes());
         int i = 0;
         for(Map.Entry<String, List> entry : discreteParameterPools.entrySet()) {
-            parameterPermutation.add(entry.getKey(), entry.getValue().get(indices.get(i++)));
+            parameterPermutation.put(entry.getKey(), entry.getValue().get(indices.get(i++)));
         }
         return parameterPermutation;
     }
@@ -45,14 +45,14 @@ public class ParameterPool {
     public ParameterPermutation getContinuousParameterPermutation(Random random) {
         ParameterPermutation parameterPermutation = new ParameterPermutation();
         for(Map.Entry<String, Distribution> entry : continuousParameterPools.entrySet()) {
-            parameterPermutation.add(entry.getKey(), entry.getValue().sample(random));
+            parameterPermutation.put(entry.getKey(), entry.getValue().sample(random));
         }
         return parameterPermutation;
     }
 
     public ParameterPermutation getParameterPermutationFromIndexAndRandom(int index, Random random) {
         ParameterPermutation parameterPermutation = getDiscreteParameterPermutationFromIndex(index);
-        parameterPermutation.add(getContinuousParameterPermutation(random));
+        parameterPermutation.putAll(getContinuousParameterPermutation(random));
         return parameterPermutation;
     }
 

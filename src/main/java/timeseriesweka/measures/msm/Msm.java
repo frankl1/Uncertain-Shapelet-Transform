@@ -103,10 +103,10 @@ public class Msm extends Dtw implements MsmInterface {
 //            rowTwo[0] = rowOne[0] + findCost(timeSeriesA[rowIndex], timeSeriesA[rowIndex - 1], timeSeriesB[0]);
 //            min = rowTwo[0];
 //            for(int columnIndex = 1; columnIndex < timeSeriesB.length; columnIndex++) {
-//                double ee = rowOne[columnIndex - 1] + Math.abs(timeSeriesA[rowIndex] - timeSeriesB[columnIndex]);
+//                double timeseriesweka.classifiers.ee = rowOne[columnIndex - 1] + Math.abs(timeSeriesA[rowIndex] - timeSeriesB[columnIndex]);
 //                double b = rowOne[columnIndex] + findCost(timeSeriesA[rowIndex], timeSeriesA[rowIndex - 1], timeSeriesB[columnIndex]);
 //                double c = rowTwo[columnIndex - 1] + findCost(timeSeriesB[columnIndex], timeSeriesA[rowIndex], timeSeriesB[columnIndex - 1]);
-//                rowTwo[columnIndex] = min(ee,b,c);
+//                rowTwo[columnIndex] = min(timeseriesweka.classifiers.ee,b,c);
 //                min = min(min, rowTwo[columnIndex]);
 //            }
 //            if(min > cutOff) {
@@ -126,10 +126,10 @@ public class Msm extends Dtw implements MsmInterface {
 //        }
 //        for(int i = 1; i < timeSeriesA.length; i++) {
 //            for(int j = 1; j < timeSeriesB.length; j++) {
-//                double ee = penalty[i - 1][j - 1] + Math.abs(timeSeriesA[i] - timeSeriesB[j]);
+//                double timeseriesweka.classifiers.ee = penalty[i - 1][j - 1] + Math.abs(timeSeriesA[i] - timeSeriesB[j]);
 //                double b = penalty[i - 1][j] + findCost(timeSeriesA[i], timeSeriesA[i - 1], timeSeriesB[j]);
 //                double c = penalty[i][j - 1] + findCost(timeSeriesB[j], timeSeriesA[i], timeSeriesB[j - 1]);
-//                penalty[i][j] = min(ee,b,c);
+//                penalty[i][j] = min(timeseriesweka.classifiers.ee,b,c);
 //            }
 //        }
 //        return penalty[timeSeriesA.length - 1][timeSeriesB.length - 1];

@@ -14,7 +14,7 @@
  */
 package experiments;
 
-import ee.ee.Ee;
+import timeseriesweka.classifiers.ee.Ee;
 import multivariate_timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.*;
 import timeseriesweka.classifiers.FastWWS.FastDTWWrapper;
@@ -37,8 +37,6 @@ import weka.classifiers.trees.J48;
 import weka.classifiers.trees.RandomForest;
 import weka.classifiers.trees.RandomTree;
 import weka.core.EuclideanDistance;
-
-import java.util.Random;
 
 /**
  *

@@ -1,6 +1,6 @@
-package ee.parameter;
+package utilities.parameters;
 
-import ee.sampling.Distribution;
+import utilities.distributions.Distribution;
 import utilities.Utilities;
 
 import java.util.*;
@@ -46,18 +46,18 @@ public class ParameterPermutationIterator implements Iterator<ParameterPermutati
             for(String key : discreteParameterPools.keySet()) {
                 List list = discreteParameterPools.get(key);
                 Object value = list.get(permutationIndices.get(i));
-                parameterPermutation.add(key, value);
+                parameterPermutation.put(key, value);
                 i++;
             }
         } else {
             parameterPermutation = new ParameterPermutation();
             for(String key : pool.getDiscreteParameterPools().keySet()) {
                 List list = pool.getDiscreteParameterPools().get(key);
-                parameterPermutation.add(key, list.get(random.nextInt(list.size())));
+                parameterPermutation.put(key, list.get(random.nextInt(list.size())));
             }
         }
         for(Map.Entry<String, Distribution> entry : pool.getContinuousParameterPools().entrySet()) {
-            parameterPermutation.add(entry.getKey(), entry.getValue().sample(random));
+            parameterPermutation.put(entry.getKey(), entry.getValue().sample(random));
         }
         System.out.println(count);
         count++;
