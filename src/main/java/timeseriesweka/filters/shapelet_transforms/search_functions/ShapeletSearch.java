@@ -76,7 +76,15 @@ public class ShapeletSearch implements Serializable{
         maxShapeletLength = max;
     }
     
-    public int getMin(){
+    public int getLengthIncrement() {
+		return lengthIncrement;
+	}
+
+	public void setLengthIncrement(int lengthIncrement) {
+		this.lengthIncrement = lengthIncrement;
+	}
+
+	public int getMin(){
         return minShapeletLength;
     }
     

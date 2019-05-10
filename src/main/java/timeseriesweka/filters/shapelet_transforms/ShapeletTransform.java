@@ -1178,8 +1178,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     
     public static void main(String[] args){
         try {
-            final String resampleLocation = "../../Dropbox//TSC Problems";
-            final String dataset = "ItalyPowerDemand";
+            final String resampleLocation = "/home/frankl1/Desktop/dataset/";
+            final String dataset = "BirdChicken";
             final int fold = 1;
             final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
             Instances test, train;
@@ -1265,5 +1265,13 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         public void setRemoveSelfSimilar(boolean removeSelfSimilar) {
         this.removeSelfSimilar = removeSelfSimilar;
     }
+    
+        /**
+         * 
+         * @param lenghtIncrement the increment to set
+         */
+	public void setLengthIncrement(int lenghtIncrement) {
+		searchFunction.setLengthIncrement(lenghtIncrement);
+	}
              
 }

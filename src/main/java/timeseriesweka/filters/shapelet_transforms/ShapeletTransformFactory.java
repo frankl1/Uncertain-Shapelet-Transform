@@ -25,6 +25,7 @@ import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearc
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.CachedSubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.DimensionDistance;
+import timeseriesweka.filters.shapelet_transforms.distance_functions.FOTS;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.MultivariateDependentDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.MultivariateIndependentDistance;
@@ -39,6 +40,7 @@ import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubS
 import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.NORMAL;
 import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.ONLINE;
 import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.ONLINE_CACHED;
+import static timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance.DistanceType.FOTS;
 
 /**
  *
@@ -59,6 +61,7 @@ public class ShapeletTransformFactory {
         dCons.put(DEPENDENT, MultivariateDependentDistance::new);
         dCons.put(INDEPENDENT, MultivariateIndependentDistance::new);
         dCons.put(DIMENSION, DimensionDistance::new);
+        dCons.put(FOTS, FOTS::new);
         return dCons;
     }
     

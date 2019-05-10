@@ -27,7 +27,7 @@ import weka.core.Instance;
  */
 public class SubSeqDistance implements Serializable{
        
-    public enum DistanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT, DIMENSION};
+    public enum DistanceType{NORMAL, ONLINE, IMP_ONLINE, CACHED, ONLINE_CACHED, DEPENDENT, INDEPENDENT, DIMENSION, FOTS};
     
     public static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;
     

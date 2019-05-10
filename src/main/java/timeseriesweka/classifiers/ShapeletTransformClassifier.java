@@ -419,11 +419,13 @@ public class ShapeletTransformClassifier  extends AbstractClassifierWithTraining
     }
     
     public static void main(String[] args) throws Exception {
-        String dataLocation = "C:\\Temp\\TSC\\";
+        String dataLocation = "/home/frankl1/Desktop/dataset/";
         //String dataLocation = "..\\..\\resampled transforms\\BalancedClassShapeletTransform\\";
-        String saveLocation = "C:\\Temp\\TSC\\";
-        String datasetName = "ItalyPowerDemand";
+        String saveLocation = "/home/frankl1/Desktop/dataset/";
+        String datasetName = "BirdChicken";
         int fold = 0;
+        
+        System.out.println("Started .....");
         
         Instances train= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TRAIN");
         Instances test= ClassifierTools.loadData(dataLocation+datasetName+File.separator+datasetName+"_TEST");
