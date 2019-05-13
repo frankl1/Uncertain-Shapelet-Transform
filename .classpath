@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry excluding="statistics/" kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/main/java/statistics"/>
+	<classpathentry kind="lib" path="gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="lib" path="lib/GavinHackCollateResults.jar"/>
+	<classpathentry kind="lib" path="lib/hppc-0.8.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/Jcommander.jar"/>
+	<classpathentry kind="lib" path="lib/jtransforms-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/jxl.jar"/>
+	<classpathentry kind="lib" path="lib/kryo-5.0.0-RC1.jar"/>
+	<classpathentry kind="lib" path="lib/lib/commons-lang3-3.7.jar"/>
+	<classpathentry kind="lib" path="lib/lib/gson-2.8.2.jar"/>
+	<classpathentry kind="lib" path="lib/lib/matlabcontrol-4.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/liblinear-java-2.11.jar"/>
+	<classpathentry kind="lib" path="lib/libsvm.jar"/>
+	<classpathentry kind="lib" path="lib/matlabcontrol-4.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/org-apache-commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/ProximityForest.jar"/>
+	<classpathentry kind="lib" path="lib/ResultsProcessing.jar"/>
+	<classpathentry kind="lib" path="lib/SizeOf.jar"/>
+	<classpathentry kind="lib" path="lib/xgboost4j-0.8-SNAPSHOT-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="lib/xgboost4j-0.81-criteo-20180821_2.11-linux.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
