@@ -90,7 +90,9 @@ public class FOTS extends SubSeqDistance {
 	public void setShapelet(Shapelet shp) {
 		// TODO Auto-generated method stub
 		super.setShapelet(shp);
-		if(this.length < w)
+		
+		this.w = this.length / 2;
+		if(this.w < 4)
 			this.w = this.length;
 	}
 
@@ -168,8 +170,6 @@ public class FOTS extends SubSeqDistance {
             // get subsequence of two that is the same lengh as one
             subseq = new double[length];
             System.arraycopy(timeSeries, i, subseq, 0, length);
-
-            subseq = zNormalise(subseq, false); // Z-NORM HERE
             
             Matrix subSeqAutoCorr = this.auto_corr_matrix(subseq);
             
@@ -196,17 +196,156 @@ public class FOTS extends SubSeqDistance {
 		}
 	}
 	
-	public void shapeletTransform(int nb_of_thread) {
+	public double mean(Instance inst) {
+		double sum = 0;
+		
+		for(int i = 0; i < inst.numAttributes() - 1; i++) {
+			sum += inst.value(i);
+		}
+		
+		return sum / (inst.numAttributes() - 1);
+	}
+	
+	public double std(Instance inst) {
+		double sum = 0;
+		double mean = mean(inst);
+		
+		for(int i = 0; i < inst.numAttributes() - 1; i++) {
+			sum += Math.pow((inst.value(i) - mean), 2);
+		}
+		
+		return Math.sqrt(sum / (inst.numAttributes() - 1));
+	}
+	
+	public void zNormalise(Instance inst) {
+		double mean = mean(inst);
+		double std = mean(inst);
+		
+		for(int i = 0; i < inst.numAttributes() - 1; i++) {
+			inst.setValue(i, (inst.value(i) - mean) / std);
+		}
+	}
+	
+	public void zNormalise(Instances instances) {
+		for (int i = 0; i < instances.numInstances(); i++) {
+			zNormalise(instances.get(i));
+		}
+	}
+	
+	public void shapeletTransform(String dataset, String datasetfolder, String resultfolder_name, int lenghtIncrement) throws Exception {
+		final String resampleLocation = datasetfolder; 
+		ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+        final String resultPath = new File(datasetfolder).getParent() + File.separator + resultfolder_name + File.separator;
+		final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
+
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		String date = format.format(new Date());
+        String outfile = "results-"+date+".csv";
+        File file = new File(resultPath + outfile);
+        file.getParentFile().mkdirs();
+        FileWriter fileWriter = new FileWriter(file);
+        String header = "dataset,train_size,test_size,series_length,no_classes,fots_acc,ed_acc,fots_duration,ed_duration,min_shp,max_shp,increment\n";
+        fileWriter.write(header);
+        fileWriter.close();
+
+		Instances test, train;
+		test = utilities.ClassifierTools.loadData(filePath + "_TEST");
+		train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
+
+		int min = 3;
+		int max = train.numAttributes() - 1;
+
+		// use fold as the seed.
+		// train = InstanceTools.subSample(train, 100, fold);
+
+		System.out.println(dataset + " min=" + min + " max=" + max + " increment=" + lenghtIncrement);
+
+		FOTS fots_distance = new FOTS();
+		fots_distance.setW(4).setStep(1);
+
+		ShapeletTransform transform = new ShapeletTransform();
+		transform.setRoundRobin(true);
+		transform.setClassValue(new BinaryClassValue());
+		transform.setSubSeqDistance(new SubSeqDistance());
+		transform.setShapeletMinAndMax(min, max);
+		transform.setLengthIncrement(lenghtIncrement);
+		transform.useCandidatePruning();
+		transform.setNumberOfShapelets(train.numInstances() * 10);
+		transform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
+		transform.setLogOutputFile(resultPath + dataset + File.separator + "ED_Shapelets.csv");
+		transform.supressOutput();
+
+		long startTime = bean.getCurrentThreadUserTime();
+
+		System.out.println(dataset + " ED started");
+		Instances tranTrain = transform.process(train);
+		Instances tranTest = transform.process(test);
+
+		long endTime = bean.getCurrentThreadUserTime();
+
+		RotationForest rot1 = new RotationForest();
+		
+		rot1.buildClassifier(tranTrain);
+		double ed_acc = ClassifierTools.accuracy(tranTest, rot1);
+		long ed_duration = (long) ((endTime - startTime) * 1e-9);
+
+		System.out.println(dataset + " ED finished");
+
+		ShapeletTransform transform1 = new ShapeletTransform();
+		transform1.setRoundRobin(true);
+		transform1.setClassValue(new BinaryClassValue());
+		transform1.setSubSeqDistance(fots_distance);
+		transform1.setShapeletMinAndMax(min, max);
+		transform.setLengthIncrement(lenghtIncrement);
+		transform1.useCandidatePruning();
+		transform1.setNumberOfShapelets(train.numInstances() * 10);
+		transform1.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
+		transform1.setLogOutputFile(resultPath + dataset + File.separator + "FOTS_Shapelets.csv");
+		transform1.supressOutput();
+
+		startTime = bean.getCurrentThreadUserTime();
+
+		System.out.println(dataset + " FOST started");
+		
+		zNormalise(train);
+		zNormalise(test);
+
+		Instances tranTrain1 = transform1.process(train);
+		Instances tranTest1 = transform1.process(test);
+
+		endTime = bean.getCurrentThreadUserTime();
+
+		rot1 = new RotationForest();
+
+		rot1.buildClassifier(tranTrain1);
+		double fots_acc = ClassifierTools.accuracy(tranTest1, rot1);
+		long fots_duration = (long) ((endTime - startTime) * 1e-9);
+
+		System.out.println(dataset + " FOTS finished");
+
+		String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
+				+ train.numAttributes() + "," + train.numClasses() + "," + fots_acc + "," + ed_acc + ","
+				+ fots_duration + "," + ed_duration + "," + min + "," + max + "," + lenghtIncrement
+				+ "\n";
+		writeResult(resultPath + outfile, content);
+        System.out.println("\tED: Accuracy: " + ed_acc + ", transform duration: " + ed_duration + " sec");
+        System.out.println("\tFOTS: Accuracy: " + fots_acc + ", transform duration: " + fots_duration + " sec");
+	}
+	
+	
+	public void shapeletTransform(int nb_of_thread, String datasetfolder, String resultFolderName, int lenghtIncrement) {
         try {
-            final String resampleLocation = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset"; 
-            final String resultPath = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\results" + File.separator;
+            final String resampleLocation = datasetfolder; 
+            final String resultPath = new File(datasetfolder).getParent() + File.separator + resultFolderName + File.separator;
             File folder = new File(resampleLocation);
             final String[] datasets = folder.list();
 
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
             String date = format.format(new Date());
             String outfile = "results-"+date+".csv";
-			FileWriter fileWriter = new FileWriter(resultPath + outfile);
+            File file = new File(resultPath + outfile);
+            file.getParentFile().mkdirs();
+            FileWriter fileWriter = new FileWriter(file);
             String header = "dataset,train_size,test_size,series_length,no_classes,fots_acc,ed_acc,fots_duration,ed_duration,min_shp,max_shp,increment\n";
             fileWriter.write(header);
             fileWriter.close();
@@ -230,8 +369,7 @@ public class FOTS extends SubSeqDistance {
 
 						int min = 3;
 						int max = train.numAttributes() - 1;
-
-						int lenghtIncrement = 10;
+						
 						// use fold as the seed.
 						// train = InstanceTools.subSample(train, 100, fold);
 
@@ -281,6 +419,9 @@ public class FOTS extends SubSeqDistance {
 						transform1.supressOutput();
 
 						startTime = bean.getCurrentThreadUserTime();
+						
+						zNormalise(train);
+						zNormalise(test);
 
 						System.out.println(dataset + " FOST started");
 
@@ -340,17 +481,47 @@ public class FOTS extends SubSeqDistance {
         }
 	}
 
+//	public static void main(String argv[]) {
+//		FOTS fots = new FOTS();
+//		
+////		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
+////		
+////		Matrix corr = fots.auto_corr_matrix(ts);
+////	
+////		System.out.println(corr);
+////		
+////		System.out.println("\n"+fots.eigenVectors(corr));
+//		String datasetfolder = argv[0];
+//		String resultFolderName = argv[1];
+//		int lenghtIncrement = Integer.parseInt(argv[2]);
+//		final int MAX_NB_THREAD = 20;
+//		
+//		System.out.println(datasetfolder);
+//		
+//		fots.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName, lenghtIncrement);
+//	} 
+
 	public static void main(String argv[]) {
 		FOTS fots = new FOTS();
+		String datasetfolder_noise = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\noised_dataset_nomal_std_1";
+		String datasetfolder_clean = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset";
+		String dataset = "Chinatown";
 		
-//		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
-//		
-//		Matrix corr = fots.auto_corr_matrix(ts);
-//	
-//		System.out.println(corr);
-//		
-//		System.out.println("\n"+fots.eigenVectors(corr));
-		final int MAX_NB_THREAD = 10;
-		fots.shapeletTransform(MAX_NB_THREAD);
+		int lenghtIncrement = 1;
+		
+		try {
+			System.out.println("\n\n" + datasetfolder_clean);
+			fots.shapeletTransform(dataset, datasetfolder_clean, "result_cleaned", lenghtIncrement);
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			System.out.println("\n\n" + datasetfolder_noise);
+			fots.shapeletTransform(dataset, datasetfolder_noise, "result_noised_nomal_std_1", lenghtIncrement);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

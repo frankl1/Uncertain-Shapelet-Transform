@@ -1,20 +1,5 @@
-/*
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */   
-package timeseriesweka.filters.shapelet_transforms;
+package u_shapelet_transform;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -22,61 +7,44 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import utilities.ClassifierTools;
+
 import timeseriesweka.classifiers.SaveParameterInfo;
-import utilities.class_counts.ClassCounts;
-import weka.classifiers.meta.RotationForest;
-import weka.core.*;
-import weka.filters.SimpleBatchFilter;
+import timeseriesweka.filters.shapelet_transforms.OrderLineObj;
+import timeseriesweka.filters.shapelet_transforms.Shapelet;
+import timeseriesweka.filters.shapelet_transforms.ShapeletCandidate;
+import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
+import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactory;
+import timeseriesweka.filters.shapelet_transforms.ShapeletTransformFactoryOptions;
 import timeseriesweka.filters.shapelet_transforms.class_value.BinaryClassValue;
 import timeseriesweka.filters.shapelet_transforms.class_value.NormalClassValue;
-import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality;
-import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
-import timeseriesweka.filters.shapelet_transforms.search_functions.FastShapeletSearch;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
-import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.ImprovedOnlineSubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
+import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality;
+import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
+import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearch;
 import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchFactory;
+import timeseriesweka.filters.shapelet_transforms.search_functions.ShapeletSearchOptions;
+import utilities.ClassifierTools;
+import utilities.class_counts.ClassCounts;
+import weka.classifiers.meta.RotationForest;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+import weka.filters.SimpleBatchFilter;
 
-/**
-
- * NOTE: As shapelet extraction can be time consuming, there is an option to output shapelets
- * to a text file (Default location is in the root dir of the project, file name "defaultShapeletOutput.txt").
- *
- * Default settings are TO NOT PRODUCE OUTPUT FILE - unless file name is changed, each successive filter will
- * overwrite the output (see "setLogOutputFile(String fileName)" to change file dir and name).
- *
- * To reconstruct a filter from this output, please see the method "createFilterFromFile(String fileName)".
- * 
- * 
- * 
- * A filter to transform a dataset by k shapelets. Once built on a training set,
- * the filter can be used to transform subsequent datasets using the extracted
- * shapelets.
- * <p>
- * See <a
- * href="http://delivery.acm.org/10.1145/2340000/2339579/p289-lines.pdf?ip=139.222.14.198&acc=ACTIVE%20SERVICE&CFID=221649628&CFTOKEN=31860141&__acm__=1354814450_3dacfa9c5af84445ea2bfd7cc48180c8">Lines,
- * J., Davis, L., Hills, J., Bagnall, A.: A shapelet transform for time series
- * classification. In: Proc. 18th ACM SIGKDD (2012)</a>
- *
- * @author Aaron Bostrom
- */
-public class ShapeletTransform extends SimpleBatchFilter implements SaveParameterInfo, Serializable{
-
-    //Variables for experiments
+public class UShapeletTransform extends SimpleBatchFilter implements SaveParameterInfo, Serializable{
+	//Variables for experiments
     protected static long subseqDistOpCount;
     private boolean removeSelfSimilar = true;
     
@@ -90,7 +58,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     
     protected boolean supressOutput; // defaults to print in System.out AS WELL as file, set to true to stop printing to console
     protected int numShapelets;
-    protected ArrayList<Shapelet> shapelets;
+    protected ArrayList<UShapelet> shapelets;
     protected String ouputFileLocation = "defaultShapeletOutput.txt"; // default store location
     protected boolean recordShapelets; // default action is to write an output file
     protected boolean roundRobin;
@@ -99,7 +67,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     public final static int DEFAULT_MINSHAPELETLENGTH = 3;
     public final static int DEFAULT_MAXSHAPELETLENGTH = 23;
 
-    protected transient ShapeletQuality quality;
+    protected transient UShapeletQuality quality;
     
     /*protected transient QualityMeasures.ShapeletQualityMeasure qualityMeasure;
     protected transient QualityMeasures.ShapeletQualityChoice qualityChoice;
@@ -108,21 +76,22 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     protected boolean useCandidatePruning;
     protected boolean useRoundRobin;
 
-    protected Comparator<Shapelet> shapeletComparator;
+    protected Comparator<UShapelet> shapeletComparator;
 
-    protected SubSeqDistance subseqDistance;
+    protected USubSeqDistance subseqDistance;
     protected NormalClassValue classValue;
-    protected ShapeletSearch searchFunction;
+    protected UShapeletSearch searchFunction;
     protected String serialName;
-    protected Shapelet worstShapelet;
+    protected UShapelet worstShapelet;
     
     protected Instances inputData;
+    protected Instances inputDataErr;
     
-    protected ArrayList<Shapelet> kShapelets;
+    protected ArrayList<UShapelet> kShapelets;
     
     protected long count;
 
-    public void setSubSeqDistance(SubSeqDistance ssd) {
+    public void setSubSeqDistance(USubSeqDistance ssd) {
         subseqDistance = ssd;
     }
     
@@ -134,11 +103,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         classValue = cv;
     }
     
-    public void setSearchFunction(ShapeletSearch shapeletSearch) {
+    public void setSearchFunction(UShapeletSearch shapeletSearch) {
         searchFunction = shapeletSearch;
     }
 
-    public ShapeletSearch getSearchFunction(){
+    public UShapeletSearch getSearchFunction(){
         return searchFunction;
     }
     
@@ -147,10 +116,10 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     }
 
     public void useSeparationGap() {
-        shapeletComparator = new Shapelet.ReverseSeparationGap();
+        shapeletComparator = new UShapelet.ReverseSeparationGap();
     }
     
-    public void setShapeletComparator(Comparator<Shapelet> comp){
+    public void setShapeletComparator(Comparator<UShapelet> comp){
         shapeletComparator = comp;
     }
 
@@ -158,12 +127,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         useRoundRobin = b;
     }
     
-    public SubSeqDistance getSubSequenceDistance(){
+    public USubSeqDistance getSubSequenceDistance(){
         return subseqDistance;
     }
-        
 
-    protected int candidatePruningStartPercentage;
+	protected int candidatePruningStartPercentage;
 
     protected static final double ROUNDING_ERROR_CORRECTION = 0.000000000000001;
     protected int[] dataSourceIDs;
@@ -171,7 +139,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     /**
      * Default constructor; Quality measure defaults to information gain.
      */
-    public ShapeletTransform() {
+    public UShapeletTransform() {
         this(DEFAULT_NUMSHAPELETS, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
     }
     
@@ -181,7 +149,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      *
      * @param shapes
      */
-    public ShapeletTransform(ArrayList<Shapelet> shapes) {
+    public UShapeletTransform(ArrayList<UShapelet> shapes) {
         this();
         this.shapelets = shapes;
         this.m_FirstBatchDone = true;
@@ -193,7 +161,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      *
      * @param k the number of shapelets to be generated
      */
-    public ShapeletTransform(int k) {
+    public UShapeletTransform(int k) {
         this(k, DEFAULT_MINSHAPELETLENGTH, DEFAULT_MAXSHAPELETLENGTH, ShapeletQualityChoice.INFORMATION_GAIN);
     }
 
@@ -205,7 +173,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param minShapeletLength minimum length of shapelets
      * @param maxShapeletLength maximum length of shapelets
      */
-    public ShapeletTransform(int k, int minShapeletLength, int maxShapeletLength) {
+    public UShapeletTransform(int k, int minShapeletLength, int maxShapeletLength) {
         this(k, minShapeletLength, maxShapeletLength, ShapeletQualityChoice.INFORMATION_GAIN);
 
     }
@@ -220,7 +188,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param qualityChoice the shapelet quality measure to be used with this
      * filter
      */    
-    public ShapeletTransform(int k, int minShapeletLength, int maxShapeletLength, ShapeletQualityChoice qualityChoice) {
+    public UShapeletTransform(int k, int minShapeletLength, int maxShapeletLength, ShapeletQualityChoice qualityChoice) {
         this.numShapelets = k;
         this.shapelets = new ArrayList<>();
         this.m_FirstBatchDone = false;
@@ -230,15 +198,15 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         this.recordShapelets = true; // default action is to write an output file
         this.roundRobin = false;
         this.useRoundRobin = false;
-        this.shapeletComparator = new Shapelet.LongOrder();
+        this.shapeletComparator = new UShapelet.LongOrder();
         this.kShapelets = new ArrayList<>();
 
         setQualityMeasure(qualityChoice);
-        this.subseqDistance = new SubSeqDistance();
+        this.subseqDistance = new USubSeqDistance();
         this.classValue = new NormalClassValue();
         
-        ShapeletSearchOptions sOp = new ShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
-        this.searchFunction = new ShapeletSearchFactory(sOp).getShapeletSearch();
+        UShapeletSearchOptions sOp = new UShapeletSearchOptions.Builder().setMin(minShapeletLength).setMax(maxShapeletLength).build();   
+        this.searchFunction = new UShapeletSearchFactory(sOp).getShapeletSearch();
     }
 
     /**
@@ -247,7 +215,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return An ArrayList of Shapelets representing the shapelets found for
      * this Shapelet Transform.
      */
-    public ArrayList<Shapelet> getShapelets() {
+    public ArrayList<UShapelet> getShapelets() {
         return this.shapelets;
     }
 
@@ -356,7 +324,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param qualityChoice
      */
     public void setQualityMeasure(ShapeletQualityChoice qualityChoice) {
-        quality = new ShapeletQuality(qualityChoice);
+        quality = new UShapeletQuality(qualityChoice);
     }
     
         /**
@@ -402,6 +370,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         String name;
         for (int i = 0; i < length; i++) {
             name = "Shapelet_" + i;
+            atts.addElement(new Attribute(name));
+        }
+        
+        for (int i = length; i < 2*length; i++) {
+            name = "Err_" + i;
             atts.addElement(new Attribute(name));
         }
 
@@ -465,37 +438,39 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return the transformed representation of data, according to the
      * distances from each instance to each of the k shapelets
      */
-    @Override
-    public Instances process(Instances data) throws IllegalArgumentException {
+    public Instances process(Instances data, Instances dataError) throws IllegalArgumentException {
         inputData = data;
+        inputDataErr = dataError;
+        dataError.setClassIndex(-1);
+        inputDataErr.setClassIndex(-1);
 
         //check the input data is correct and assess whether the filter has been setup correctly.
         inputCheck(data);
         
         //checks if the shapelets haven't been found yet, finds them if it needs too.
         if (!m_FirstBatchDone) {
-            trainShapelets(data);
+            trainShapelets(data, dataError);
             //we log the count from the subseqdistance before we reset it in the transform.
             //we only care about the count from the train.
             count = subseqDistance.getCount();
         }
 
         //build the transformed dataset with the shapelets we've found either on this data, or the previous training data
-        return buildTansformedDataset(data);
+        return buildTansformedDataset(data, dataError);
     }
 
-    protected void trainShapelets(Instances data) {
+    protected void trainShapelets(Instances data, Instances dataErr) {
         //we might round robin the data in here. So we need to override the input data with the new ordering.
         inputData = initDataSource(data);
         
         searchFunction.setComparator(shapeletComparator);
-        searchFunction.init(inputData);
+        searchFunction.init(inputData, inputDataErr);
                 //setup subseqDistance
         subseqDistance.init(inputData);
         //setup classsValue
         classValue.init(inputData);
                 
-        shapelets = findBestKShapeletsCache(inputData); // get k shapelets
+        shapelets = findBestKShapeletsCache(inputData, inputDataErr); // get k shapelets
         m_FirstBatchDone = true;
 
         outputPrint(shapelets.size() + " Shapelets have been generated");
@@ -523,7 +498,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     }
 
     //given a set of instances transform it by the internal shapelets.
-    public Instances buildTansformedDataset(Instances data) {
+    public Instances buildTansformedDataset(Instances data, Instances dataErr) {
         
         //Reorder the training data and reset the shapelet indexes
         Instances output = determineOutputFormat(data);
@@ -533,32 +508,32 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         //setup classsValue
         classValue.init(inputData);
 
-        Shapelet s;
-        // for each data, get distance to each shapelet and create new instance
-        System.out.println("Number of shapelets =========== " + shapelets.size());
+        UShapelet s;
+        // for each data, get distance) to each shapelet and create new instance
         int size = shapelets.size();
         int dataSize = data.numInstances();
 
         //create our data instances
         for (int j = 0; j < dataSize; j++) {
-            output.add(new DenseInstance(size + 1));
+            output.add(new DenseInstance(2*size + 1));
         }
 
-        double dist;
+        UDistance dist;
         for (int i = 0; i < size; i++) {
             s = shapelets.get(i);
             subseqDistance.setShapelet(s);
 
             for (int j = 0; j < dataSize; j++) {
-                dist = subseqDistance.calculate(data.instance(j), j);
-                output.instance(j).setValue(i, dist);
+                dist = subseqDistance.calculate(data.instance(j), dataErr.instance(j), j);
+                output.instance(j).setValue(i, dist.getDistance());
+                output.instance(j).setValue(i + size, dist.getErr());
             }
         }
 
         //do the classValues.
         for (int j = 0; j < dataSize; j++) {
             //we always want to write the true ClassValue here. Irrelevant of binarised or not.
-            output.instance(j).setValue(size, data.instance(j).classValue());
+            output.instance(j).setValue(2*size, data.instance(j).classValue());
         }
 
         return output;
@@ -571,8 +546,8 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return an ArrayList of FullShapeletTransform objects in order of their
      * fitness (by infoGain, seperationGap then shortest length)
      */
-    public ArrayList<Shapelet> findBestKShapeletsCache(Instances data) {
-        ArrayList<Shapelet> seriesShapelets;                                    // temp store of all shapelets for each time series
+    public ArrayList<UShapelet> findBestKShapeletsCache(Instances data, Instances dataErr) {
+        ArrayList<UShapelet> seriesShapelets;                                    // temp store of all shapelets for each time series
 
         //for all time series
         outputPrint("Processing data: ");
@@ -591,7 +566,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
             //set the clas value of the series we're working with.
             classValue.setShapeletValue(data.get(casesSoFar));
            
-            seriesShapelets = searchFunction.SearchForShapeletsInSeries(data.get(casesSoFar), this::checkCandidate);
+            seriesShapelets = searchFunction.SearchForShapeletsInSeries(data.get(casesSoFar), dataErr.get(casesSoFar), this::checkCandidate);
 
             if(seriesShapelets != null){
                 Collections.sort(seriesShapelets, shapeletComparator);
@@ -647,14 +622,14 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return an ArrayList of FullShapeletTransform objects in order of their
      * fitness (by infoGain, seperationGap then shortest length)
      */
-    public ArrayList<Shapelet> findBestKShapeletsCache(int numShapelets, Instances data, int minShapeletLength, int maxShapeletLength) {
+    public ArrayList<UShapelet> findBestKShapeletsCache(int numShapelets, Instances data, Instances dataErr, int minShapeletLength, int maxShapeletLength) {
         this.numShapelets = numShapelets;
         //setup classsValue
         classValue.init(data);
         //setup subseqDistance
         subseqDistance.init(data);
         initDataSource(data);
-        return findBestKShapeletsCache(data);
+        return findBestKShapeletsCache(data, dataErr);
     }
 
 
@@ -672,10 +647,10 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return an ordered ArrayList of the best k (or less) (sorted)
      * FullShapeletTransform objects from the union of the input ArrayLists
      */
-    protected ArrayList<Shapelet> combine(int k, ArrayList<Shapelet> kBestSoFar, ArrayList<Shapelet> timeSeriesShapelets) {
+    protected ArrayList<UShapelet> combine(int k, ArrayList<UShapelet> kBestSoFar, ArrayList<UShapelet> timeSeriesShapelets) {
         //both kBestSofar and timeSeries are sorted so we can explot this.
         //maintain a pointer for each list.
-        ArrayList<Shapelet> newBestSoFar = new ArrayList<>();
+        ArrayList<UShapelet> newBestSoFar = new ArrayList<>();
 
         //best so far pointer
         int bsfPtr = 0;
@@ -684,7 +659,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
 
         for (int i = 0; i < k; i++) {
-            Shapelet shapelet1 = null, shapelet2 = null;
+            UShapelet shapelet1 = null, shapelet2 = null;
 
             if (bsfPtr < kBestSoFar.size()) {
                 shapelet1 = kBestSoFar.get(bsfPtr);
@@ -740,10 +715,10 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * FullShapeletTransform objects from
      * @return a copy of the input ArrayList with self-similar shapelets removed
      */
-    protected static ArrayList<Shapelet> removeSelfSimilar(ArrayList<Shapelet> shapelets) {
+    protected static ArrayList<UShapelet> removeSelfSimilar(ArrayList<UShapelet> shapelets) {
         // return a new pruned array list - more efficient than removing
         // self-similar entries on the fly and constantly reindexing
-        ArrayList<Shapelet> outputShapelets = new ArrayList<>();
+        ArrayList<UShapelet> outputShapelets = new ArrayList<>();
         int size = shapelets.size();
         boolean[] selfSimilar = new boolean[size];
 
@@ -764,7 +739,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         return outputShapelets;
     }
 
-    protected Shapelet checkCandidate(Instance series, int start, int length, int dimension) {
+    protected UShapelet checkCandidate(Instance series, Instance seriesErr, int start, int length, int dimension) {
         //init qualityBound.        
         initQualityBound(classValue.getClassDistributions());        
         
@@ -774,11 +749,11 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         }
         
         //set the candidate. This is the instance, start and length.
-        subseqDistance.setCandidate(series, start, length, dimension);
+        subseqDistance.setCandidate(series, seriesErr, start, length, dimension);
 
         // create orderline by looping through data set and calculating the subsequence
         // distance from candidate to all data, inserting in order.
-        ArrayList<OrderLineObj> orderline = new ArrayList<>();
+        ArrayList<UOrderLineObj> orderline = new ArrayList<>();
 
         int dataSize = inputData.numInstances();
 
@@ -789,23 +764,23 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
                 return null;
             }
 
-            double distance = 0.0;
+            UDistance udistance = new UDistance();
             //don't compare the shapelet to the the time series it came from because we know it's 0.
             if (i != casesSoFar) {
-                distance = subseqDistance.calculate(inputData.instance(i), i);
+                udistance = new UDistance(subseqDistance.calculate(inputData.instance(i), inputDataErr.instance(i), i));
             }
 
             //this could be binarised or normal. 
             double classVal = classValue.getClassValue(inputData.instance(i));
 
             // without early abandon, it is faster to just add and sort at the end
-            orderline.add(new OrderLineObj(distance, classVal));
+            orderline.add(new UOrderLineObj(udistance, classVal));
 
             //Update qualityBound - presumably each bounding method for different quality measures will have a different update procedure.
             quality.updateOrderLine(orderline.get(orderline.size() - 1));
         }
 
-        Shapelet shapelet = new Shapelet(subseqDistance.getCandidate(), dataSourceIDs[casesSoFar], start, quality.getQualityMeasure());
+        UShapelet shapelet = new UShapelet(subseqDistance.getCandidate(), dataSourceIDs[casesSoFar], start, quality.getQualityMeasure());
         
         //this class distribution could be binarised or normal.
         shapelet.calculateQuality(orderline, classValue.getClassDistributions());
@@ -845,7 +820,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param candidate the second FullShapeletTransform
      * @return
      */
-    private static boolean selfSimilarity(Shapelet shapelet, Shapelet candidate) {
+    private static boolean selfSimilarity(UShapelet shapelet, UShapelet candidate) {
         //check whether they're the same dimension or not.
         if (candidate.seriesId == shapelet.seriesId && candidate.dimension == shapelet.dimension) {
             if (candidate.startPos >= shapelet.startPos && candidate.startPos < shapelet.startPos + shapelet.getLength()) { //candidate starts within exisiting shapelet
@@ -869,7 +844,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * original log file
      * @throws Exception
      */
-    public static ShapeletTransform createFilterFromFile(String fileName) throws Exception {
+    public static UShapeletTransform createFilterFromFile(String fileName) throws Exception {
         return createFilterFromFile(fileName, Integer.MAX_VALUE);
     }
 
@@ -882,15 +857,15 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @param maxShapeletLength maximum shapelet length
      * @return time in seconds to find the best shapelet
      */
-    public double timingForSingleShapelet(Instances data, int minShapeletLength, int maxShapeletLength) {
+    public double timingForSingleShapelet(Instances data, Instances dataErr, int minShapeletLength, int maxShapeletLength) {
         data = roundRobinData(data, null);
         long startTime = System.nanoTime();
-        findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
+        findBestKShapeletsCache(1, data, dataErr, minShapeletLength, maxShapeletLength);
         long finishTime = System.nanoTime();
         return (double) (finishTime - startTime) / 1000000000.0;
     }
 
-    protected void recordShapelets(ArrayList<Shapelet> kShapelets, String saveLocation) {
+    protected void recordShapelets(ArrayList<UShapelet> kShapelets, String saveLocation) {
         //just in case the file doesn't exist or the directories.
         File file = new File(saveLocation);
         if (file.getParentFile() != null) {
@@ -905,15 +880,19 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     }
 
     
-    protected void writeShapelets(ArrayList<Shapelet> kShapelets, OutputStreamWriter out){
+    protected void writeShapelets(ArrayList<UShapelet> kShapelets, OutputStreamWriter out){
         try {
             out.append("informationGain,seriesId,startPos,classVal,numChannels,dimension\n");
-            for (Shapelet kShapelet : kShapelets) {
+            for (UShapelet kShapelet : kShapelets) {
                 out.append(kShapelet.qualityValue + "," + kShapelet.seriesId + "," + kShapelet.startPos + "," + kShapelet.classValue + "," + kShapelet.getNumDimensions() + "," + kShapelet.dimension+"\n");
                 for (int i = 0; i < kShapelet.numDimensions; i++) {
                     double[] shapeletContent = kShapelet.getContent().getShapeletContent(i);
+                    double[] shapeletContentErr = kShapelet.getContent().getShapeletContentErr(i);
                     for (int j = 0; j < shapeletContent.length; j++) {
                         out.append(shapeletContent[j] + ",");
+                    }
+                    for (int j = 0; j < shapeletContentErr.length; j++) {
+                        out.append(shapeletContentErr[j] + ",");
                     }
                     out.append("\n");
                 }
@@ -933,7 +912,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
         ArrayList<Integer> shapeletLengths = new ArrayList<>();
 
         if (m_FirstBatchDone) {
-            for (Shapelet s : this.shapelets) {
+            for (UShapelet s : this.shapelets) {
                 shapeletLengths.add(s.getLength());
             }
         }
@@ -953,19 +932,21 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * original log file
      * @throws Exception
      */
-    public static ShapeletTransform createFilterFromFile(String fileName, int maxShapelets) throws Exception {
+    public static UShapeletTransform createFilterFromFile(String fileName, int maxShapelets) throws Exception {
 
         File input = new File(fileName);
         Scanner scan = new Scanner(input);
         scan.useDelimiter("\n");
 
-        ShapeletTransform sf = new ShapeletTransform();
-        ArrayList<Shapelet> shapelets = new ArrayList<>();
+        UShapeletTransform sf = new UShapeletTransform();
+        ArrayList<UShapelet> shapelets = new ArrayList<>();
 
         String shapeletContentString;
         String shapeletStatsString;
         ArrayList<Double> content;
+        ArrayList<Double> contentErr;
         double[] contentArray;
+        double[] contentErrArray;
         Scanner lineScan;
         Scanner statScan;
         double qualVal;
@@ -991,24 +972,28 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
             lineScan.useDelimiter(",");
 
             content = new ArrayList<>();
+            contentErr = new ArrayList<>();
             while (lineScan.hasNext()) {
                 String next = lineScan.next().trim();
                 if (!next.isEmpty()) {
                     content.add(Double.parseDouble(next));
+                    contentErr.add(Double.parseDouble(next));
                 }
             }
 
             contentArray = new double[content.size()];
+            contentErrArray = new double[contentErr.size()];
             for (int i = 0; i < content.size(); i++) {
                 contentArray[i] = content.get(i);
+                contentErrArray[i] = contentErr.get(i);
             }
 
             contentArray = sf.subseqDistance.zNormalise(contentArray, false);
             
-            ShapeletCandidate cand = new ShapeletCandidate();
-            cand.setShapeletContent(contentArray);
+            UShapeletCandidate cand = new UShapeletCandidate();
+            cand.setShapeletContent(contentArray, contentErrArray);
 
-            Shapelet s = new Shapelet(cand, qualVal, serID, starPos);
+            UShapelet s = new UShapelet(cand, qualVal, serID, starPos);
 
             shapelets.add(s);
             shapeletCount++;
@@ -1148,7 +1133,7 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
     @Override
     public String toString() {
         String str = "Shapelets: ";
-        for (Shapelet s : shapelets) {
+        for (UShapelet s : shapelets) {
             str += s.toString() + "\n";
         }
         return str;
@@ -1169,10 +1154,10 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
      * @return
      * @throws Exception
      */
-    public long opCountForSingleShapelet(Instances data, int minShapeletLength, int maxShapeletLength) throws Exception {
+    public long opCountForSingleShapelet(Instances data, Instances dataErr, int minShapeletLength, int maxShapeletLength) throws Exception {
         data = roundRobinData(data, null);
         subseqDistOpCount = 0;
-        findBestKShapeletsCache(1, data, minShapeletLength, maxShapeletLength);
+        findBestKShapeletsCache(1, data, dataErr, minShapeletLength, maxShapeletLength);
         return subseqDistOpCount;
     }
 
@@ -1274,5 +1259,10 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 	public void setLengthIncrement(int lenghtIncrement) {
 		searchFunction.setLengthIncrement(lenghtIncrement);
 	}
-             
+
+		@Override
+		protected Instances process(Instances instances) throws Exception {
+			// TODO Auto-generated method stub
+			return null;
+		}
 }
