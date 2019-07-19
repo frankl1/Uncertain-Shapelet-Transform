@@ -38,20 +38,42 @@ public class UShapeletTransformTest {
 
 	double[] attrMeans;
 	double[][] attrIntervals;
-	AbstractClassifier combinerClf;
+	String classifier;
 	
-	public UShapeletTransformTest(AbstractClassifier combinerClf) {
+	public UShapeletTransformTest(String clf) {
 		super();
-		this.combinerClf = combinerClf;
+		this.classifier = clf;
 	}
 	
 	public UShapeletTransformTest() {
 		super();
-		this.combinerClf = new SMO();
+		this.classifier = "svm";
+	}
+	
+	public AbstractClassifier getClassifier(){
+		if(this.classifier.equals("RandF")) {
+			return new RandomForest();
+		} else if(this.classifier.equals("MLP")) {
+			return new MultilayerPerceptron();
+		} else if (this.classifier.equals("DT")) {
+			return new J48();
+		} else if (this.classifier.equals("RotF")) {
+			return new RotationForest();
+		}
+		return new SMO();
 	}
 
-	public void setCombinerClassifier(AbstractClassifier clf){
-		this.combinerClf = clf;
+	public void setClassifier(String clf){
+		this.classifier = clf;
+		if(clf.equals("RandF")) {
+			System.out.println("Combiner classifier: Random Forest");
+		} else if(clf.equals("MLP")) {
+			System.out.println("Combiner classifier: Multi-Layer Perceptron");
+		} else if (clf.equals("DT")) {
+			System.out.println("Combiner classifier: Decision Tree (J48)");
+		} else if (clf.equals("RotF")) {
+			System.out.println("Combiner classifier: Rotation Forest");
+		}
 	}
 	
 	double std = 1 / Math.sqrt(2*Math.PI);
@@ -276,8 +298,8 @@ public class UShapeletTransformTest {
 		System.out.println("Transform Instance 0: " + tranTrain.get(0));
 		System.out.println("uTransform Instance 0: " + uTranTrain.get(0));
 		System.out.println("Transform G-Instance 0(train): " + gaussianTrain.get(0));;
-
-		RotationForest stClf = new RotationForest();
+		
+		AbstractClassifier stClf = getClassifier();
 		
 		stClf.buildClassifier(tranTrain);
 		double st_acc = ClassifierTools.accuracy(tranTest, stClf);
@@ -285,7 +307,7 @@ public class UShapeletTransformTest {
 
 		System.out.println("\tST: Accuracy: " + st_acc + ", transform duration: " + st_duration + " sec");
 		
-		RotationForest gaussClf = new RotationForest();
+		AbstractClassifier gaussClf = getClassifier();
 
 		gaussClf.buildClassifier(gaussianTrain);
 		double ust_gauss_accuracy = ClassifierTools.accuracy(gaussianTest, gaussClf);
@@ -293,7 +315,7 @@ public class UShapeletTransformTest {
 
 		System.out.println("\tUST-Gauss: Accuracy: " + ust_gauss_accuracy + ", transform duration: " + ust_gauss_duration + " sec");
 		
-		RotationForest flatClf = new RotationForest();
+		AbstractClassifier flatClf = getClassifier();
 
 		flatClf.buildClassifier(uTranTrain);
 		double ust_flat_accuracy = ClassifierTools.accuracy(uTranTest, flatClf);
@@ -307,8 +329,10 @@ public class UShapeletTransformTest {
 		Instances combinedTrain = makeUSTInstance(flatClf, gaussClf, uTranTrain, gaussianTrain);
 		Instances combinedTest = makeUSTInstance(flatClf, gaussClf, uTranTest, gaussianTest);
 
-		combinerClf.buildClassifier(combinedTrain);
-		double flat_gauss_accuracy = ClassifierTools.accuracy(combinedTest, combinerClf);
+		AbstractClassifier clf = getClassifier();
+		
+		clf.buildClassifier(combinedTrain);
+		double flat_gauss_accuracy = ClassifierTools.accuracy(combinedTest, clf);
 
 		System.out.println("\tUST-Flat-Gauss: Accuracy: " + flat_gauss_accuracy);
 		
@@ -321,7 +345,7 @@ public class UShapeletTransformTest {
 //		System.out.println("UST instances:\n" + makeUSTInstance(flatClf, gaussClf, uTranTrain, gaussianTrain));
 	}
 	
-	public Instances makeUSTInstance(RotationForest flatClf, RotationForest gaussClf, Instances flatInstances, Instances gaussIntances) throws Exception {
+	public Instances makeUSTInstance(AbstractClassifier flatClf, AbstractClassifier gaussClf, Instances flatInstances, Instances gaussIntances) throws Exception {
 		int length = flatInstances.numClasses();
 		double[] distFlat, distGauss;
 		 FastVector atts = new FastVector();
@@ -437,10 +461,10 @@ public class UShapeletTransformTest {
 
 						long endTime = bean.getCurrentThreadUserTime();
 
-						RotationForest rot1 = new RotationForest();
+						AbstractClassifier stClf = getClassifier();
 
-						rot1.buildClassifier(tranTrain);
-						double st_acc = ClassifierTools.accuracy(tranTest, rot1);
+						stClf.buildClassifier(tranTrain);
+						double st_acc = ClassifierTools.accuracy(tranTest, stClf);
 						long st_duration = (long) ((endTime - startTime) * 1e-9);
 
 						System.out.println(dataset + " ST finished");
@@ -476,7 +500,7 @@ public class UShapeletTransformTest {
 
 						endTime = bean.getCurrentThreadUserTime();
 
-						RotationForest gaussClf = new RotationForest();
+						AbstractClassifier gaussClf = getClassifier();
 
 						gaussClf.buildClassifier(gaussianTrain);
 						double ust_gauss_accuracy = ClassifierTools.accuracy(gaussianTest, gaussClf);
@@ -484,7 +508,7 @@ public class UShapeletTransformTest {
 
 						System.out.println(dataset + " UST finished");
 						
-						RotationForest flatClf = new RotationForest();
+						AbstractClassifier flatClf = getClassifier();
 
 						flatClf.buildClassifier(uTranTrain);
 						double ust_flat_accuracy = ClassifierTools.accuracy(uTranTest, flatClf);
@@ -492,8 +516,10 @@ public class UShapeletTransformTest {
 						
 						Instances combinedTrain = makeUSTInstance(flatClf, gaussClf, uTranTrain, gaussianTrain);
 						Instances combinedTest = makeUSTInstance(flatClf, gaussClf, uTranTest, gaussianTest);
-						combinerClf.buildClassifier(combinedTrain);
-						double flat_gauss_accuracy = ClassifierTools.accuracy(combinedTest, combinerClf);
+						
+						AbstractClassifier clf = getClassifier();
+						clf.buildClassifier(combinedTrain);
+						double flat_gauss_accuracy = ClassifierTools.accuracy(combinedTest, clf);
 
 //						zNormalise(train);
 //						zNormalise(test);
@@ -565,16 +591,7 @@ public class UShapeletTransformTest {
 		
 		System.out.println(datasetfolder);
 		if(argv.length == 4) {
-			if(argv[3].equals("RandF")) {
-				test.setCombinerClassifier(new RandomForest());
-				System.out.println("Combiner classifier: Random Forest");
-			} else if(argv[3].equals("MLP")) {
-				System.out.println("Combiner classifier: Multi-Layer Perceptron");
-				test.setCombinerClassifier(new MultilayerPerceptron());
-			} else if (argv[3].equals("DT")) {
-				System.out.println("Combiner classifier: Decision Tree (J48)");
-				test.setCombinerClassifier(new J48());
-			}
+			test.setClassifier(argv[3]);
 		}
 		
 		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName, lenghtIncrement);
@@ -582,7 +599,7 @@ public class UShapeletTransformTest {
 
 //	public static void main(String[] argv) {
 //		UShapeletTransformTest test = new UShapeletTransformTest();
-//		String datasetfolder_noise = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\noised_dataset_nomal_std_1";
+//		String datasetfolder_noise = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset_stdcoef_1_prclean_0";
 //		String datasetfolder_clean = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset";
 //		String dataset = "Chinatown";
 //
@@ -595,6 +612,7 @@ public class UShapeletTransformTest {
 ////			// TODO Auto-generated catch block
 ////			e1.printStackTrace();
 ////		}
+//		test.setClassifier("DT");
 //		try {
 //			System.out.println("\n\n" + datasetfolder_noise);
 //			test.shapeletTransform(dataset, datasetfolder_noise, "result_noised_nomal_std_1", lenghtIncrement);
