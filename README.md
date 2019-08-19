@@ -5,7 +5,7 @@ UST is as extension of the ST algorithm that take into account the uncertaintity
 **Test class**: src/main/java/u_shapelet_transform/UShapeletTransformTest.java
 
 ## Uncertain Euclidian Distance
-![Uncertain Euclidean Distance](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/ued.png)
+![Uncertain Euclidean Distance](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/ued.PNG)
 
 ## Flat Architecture
 ![Flat architecture](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/ust-flat-architecture.png)
