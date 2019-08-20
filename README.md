@@ -16,7 +16,7 @@ UST is as extension of the ST algorithm that take into account the uncertaintity
 ## Flat-Gauss  Architecture
 ![Flat-Gauss architecture](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/ust-flat-gauss-architecture.png)
 
-## Add noise illustration
+## Uncertainty illustration
 ![noise illustration](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/Chinatown-noised.png)
 
 
