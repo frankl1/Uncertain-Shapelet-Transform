@@ -574,57 +574,57 @@ public class UShapeletTransformTest {
 		}
 	}
 
-	public static void main(String argv[]) {
-		UShapeletTransformTest test = new UShapeletTransformTest();
-		
-//		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
-//		
-//		Matrix corr = fots.auto_corr_matrix(ts);
-//	
-//		System.out.println(corr);
-//		
-//		System.out.println("\n"+fots.eigenVectors(corr));
-		String datasetfolder = argv[0];
-		String resultFolderName = argv[1];
-		int lenghtIncrement = Integer.parseInt(argv[2]);
-		final int MAX_NB_THREAD = 20;
-		
-		System.out.println(datasetfolder);
-		if(argv.length == 4) {
-			test.setClassifier(argv[3]);
-		}
-		
-		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName, lenghtIncrement);
-	} 
-
-//	public static void main(String[] argv) {
+//	public static void main(String argv[]) {
 //		UShapeletTransformTest test = new UShapeletTransformTest();
-//		String datasetfolder_noise = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset_stdcoef_1_prclean_0";
-//		String datasetfolder_clean = "C:\\Users\\mfmbouopda\\Desktop\\stage-m2-limos\\Source-code\\dataset";
-//		String dataset = "Chinatown";
-//
-//		int lenghtIncrement = 1;
-//
-////		try {
-////			System.out.println("\n\n" + datasetfolder_clean);
-////			test.shapeletTransform(dataset, datasetfolder_clean, "result_cleaned", lenghtIncrement);
-////		} catch (Exception e1) {
-////			// TODO Auto-generated catch block
-////			e1.printStackTrace();
-////		}
-//		test.setClassifier("DT");
-//		try {
-//			System.out.println("\n\n" + datasetfolder_noise);
-//			test.shapeletTransform(dataset, datasetfolder_noise, "result_noised_nomal_std_1", lenghtIncrement);
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-////		double mu = 0;
-////		double std = 1 / Math.sqrt(2*Math.PI);
+//		
+////		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
 ////		
-////		System.out.println(test.gaussianPDF(0, mu, std));
-//	}
+////		Matrix corr = fots.auto_corr_matrix(ts);
+////	
+////		System.out.println(corr);
+////		
+////		System.out.println("\n"+fots.eigenVectors(corr));
+//		String datasetfolder = argv[0];
+//		String resultFolderName = argv[1];
+//		int lenghtIncrement = Integer.parseInt(argv[2]);
+//		final int MAX_NB_THREAD = 20;
+//		
+//		System.out.println(datasetfolder);
+//		if(argv.length == 4) {
+//			test.setClassifier(argv[3]);
+//		}
+//		
+//		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName, lenghtIncrement);
+//	} 
+
+	public static void main(String[] argv) {
+		UShapeletTransformTest test = new UShapeletTransformTest();
+		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/noised_dataset_nomal_pr_0_stdcoef1";
+		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
+		String dataset = "Chinatown";
+
+		int lenghtIncrement = 1;
+
+//		try {
+//			System.out.println("\n\n" + datasetfolder_clean);
+//			test.shapeletTransform(dataset, datasetfolder_clean, "result_cleaned", lenghtIncrement);
+//		} catch (Exception e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+		test.setClassifier("DT");
+		try {
+			System.out.println("\n\n" + datasetfolder_noise);
+			test.shapeletTransform(dataset, datasetfolder_noise, "result_noised_nomal_std_1", lenghtIncrement);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+//		double mu = 0;
+//		double std = 1 / Math.sqrt(2*Math.PI);
+//		
+//		System.out.println(test.gaussianPDF(0, mu, std));
+	}
 
 }
