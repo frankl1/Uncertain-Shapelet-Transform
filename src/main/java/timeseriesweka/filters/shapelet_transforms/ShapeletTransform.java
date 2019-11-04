@@ -535,7 +535,6 @@ public class ShapeletTransform extends SimpleBatchFilter implements SaveParamete
 
         Shapelet s;
         // for each data, get distance to each shapelet and create new instance
-        System.out.println("Number of shapelets =========== " + shapelets.size());
         int size = shapelets.size();
         int dataSize = data.numInstances();
 
