@@ -15,10 +15,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ml.dmlc.xgboost4j.java.Rabit.DataType;
 import timeseriesweka.filters.shapelet_transforms.ShapeletTransform;
 import timeseriesweka.filters.shapelet_transforms.class_value.BinaryClassValue;
 import timeseriesweka.filters.shapelet_transforms.distance_functions.SubSeqDistance;
 import timeseriesweka.filters.shapelet_transforms.quality_measures.ShapeletQuality.ShapeletQualityChoice;
+import u_shapelet_transform.DustSubSeqDistance.DataDistribution;
 import utilities.ClassifierTools;
 import vector_classifiers.MultiLinearRegression;
 import weka.classifiers.AbstractClassifier;
@@ -44,7 +46,9 @@ public class UShapeletTransformTest {
 	public enum ExecMode{
 		UST_FLAT("UST_FLAT"),
 		UST_GAUSS("UST_GAUSS"), 
-		UST_FLAT_GAUSS("UST_FLAT_GAUSS"), 
+		UST_FLAT_GAUSS("UST_FLAT_GAUSS"),
+		DUST_NORMAL("DUST_NORMAL"),
+		DUST_UNIFORM("DUST_UNIFORM"),
 		ST("ST");
 		
 		private String name;
@@ -203,6 +207,14 @@ public class UShapeletTransformTest {
 		}
 	}
 	
+	public DustSubSeqDistance getDustSubSeqDistance() {
+		if(execMode.equals(ExecMode.DUST_UNIFORM)) {
+			return new DustSubSeqDistance(DataDistribution.UNIFORM);
+		}else {
+			return new DustSubSeqDistance(DataDistribution.NORMAL);
+		}
+	}
+	
 	public boolean isInInterval(double x, double[] interval) {
 		if(x < interval[0] || x > interval[1])
 			return false;
@@ -264,7 +276,7 @@ public class UShapeletTransformTest {
 		transform.useCandidatePruning();
 		transform.setNumberOfShapelets(train.numInstances() * 10);
 		transform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
-		transform.setLogOutputFile(resultPath + dataset + File.separator + "ED_Shapelets.csv");
+		transform.setLogOutputFile(resultPath + dataset + File.separator + "Shapelets.csv");
 		transform.supressOutput();
 
 		long startTime = bean.getCurrentThreadUserTime();
@@ -307,7 +319,7 @@ public class UShapeletTransformTest {
 		utransform.useCandidatePruning();
 		utransform.setNumberOfShapelets(train.numInstances() * 10);
 		utransform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
-		utransform.setLogOutputFile(resultPath + dataset + File.separator + "UST_Shapelets.csv");
+		utransform.setLogOutputFile(resultPath + dataset + File.separator + "Shapelets.csv");
 		utransform.supressOutput();
 
 		long startTime = bean.getCurrentThreadUserTime(), endTime;
@@ -357,6 +369,53 @@ public class UShapeletTransformTest {
 		writeResult(resultPath + outfile, content);
 
 	}
+	
+	public void dustShapeletTransform(String filePath, String resultPath, String outfile, String dataset) throws Exception {
+		Instances test, train;
+		test = utilities.ClassifierTools.loadData(filePath + "_TEST");
+		train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
+		int min = 3;
+		int max = train.numAttributes() - 1;
+		long duration;
+		double acc;
+		ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+		System.out.println("Running " + this.execMode.getName() + " on " + dataset + "\n\tmin=" + min + " max=" + max + " increment=" + lenghtIncrement);
+		
+		UShapeletTransform utransform = new UShapeletTransform();
+		utransform.setClassValue(new BinaryClassValue());
+		utransform.setSubSeqDistance(getDustSubSeqDistance());
+		utransform.setShapeletMinAndMax(min, max);
+		utransform.setLengthIncrement(lenghtIncrement);
+		utransform.useCandidatePruning();
+		utransform.setNumberOfShapelets(train.numInstances() * 10);
+		utransform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
+		utransform.setLogOutputFile(resultPath + dataset + File.separator + "Shapelets.csv");
+		utransform.supressOutput();
+
+		long startTime = bean.getCurrentThreadUserTime(), endTime;
+
+		Instances errorTrain, errorTest;
+		errorTrain = utilities.ClassifierTools.loadData(filePath + "_NOISE_TRAIN");
+		errorTest = utilities.ClassifierTools.loadData(filePath + "_NOISE_TEST");
+
+		Instances uTranTrain = utransform.process(train, errorTrain);
+		Instances uTranTest = utransform.process(test, errorTest);
+		
+		AbstractClassifier clf = getClassifier();
+		
+		clf.buildClassifier(uTranTrain);
+		acc = ClassifierTools.accuracy(uTranTest, clf);
+		
+		endTime = bean.getCurrentThreadUserTime();
+		duration = (long) ((endTime - startTime) * 1e-9);
+		System.out.println("\tAccuracy: " + acc + ", duration: " + duration + " sec");
+		
+		String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
+				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + "," + duration + "," + min + "," + max + "," + lenghtIncrement
+				+ "\n";
+		writeResult(resultPath + outfile, content);
+
+	}
 
 	public void shapeletTransform(String dataset, String datasetfolder, String resultfolder_name)
 			throws Exception {
@@ -375,9 +434,11 @@ public class UShapeletTransformTest {
 		fileWriter.write(header);
 		fileWriter.close();
 		
-		if(execMode.equals(ExecMode.ST)) {
+		if(ExecMode.ST.equals(execMode)) {
 			classicalShapeletTransform(filePath, resultPath, outfile, dataset);
-		} else {
+		} else if(ExecMode.DUST_NORMAL.equals(execMode) || ExecMode.DUST_UNIFORM.equals(execMode)){
+			dustShapeletTransform(filePath, resultPath, outfile, datasetfolder);
+		}else {
 			uShapeletTransform(filePath, resultPath, outfile, dataset);
 		}
 		
@@ -463,114 +524,14 @@ public class UShapeletTransformTest {
 					String dataset;
 
 					while ((dataset = blockingQueue.poll()) != null) {
-
-						ThreadMXBean bean = ManagementFactory.getThreadMXBean();
 						final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
-
-						Instances test, train;
-						test = utilities.ClassifierTools.loadData(filePath + "_TEST");
-						train = utilities.ClassifierTools.loadData(filePath + "_TRAIN");
-
-						int min = 3;
-						int max = train.numAttributes() - 1;
-
-						// use fold as the seed.
-						// train = InstanceTools.subSample(train, 100, fold);
-
-						System.out.println(dataset + " min=" + min + " max=" + max + " increment=" + lenghtIncrement);
-
-						ShapeletTransform transform = new ShapeletTransform();
-						transform.setClassValue(new BinaryClassValue());
-						transform.setSubSeqDistance(new SubSeqDistance());
-						transform.setShapeletMinAndMax(min, max);
-						transform.setLengthIncrement(lenghtIncrement);
-						transform.useCandidatePruning();
-						transform.setNumberOfShapelets(train.numInstances() * 10);
-						transform.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
-						transform.setLogOutputFile(resultPath + dataset + File.separator + "ED_Shapelets.csv");
-						transform.supressOutput();
-
-						long startTime = bean.getCurrentThreadUserTime();
-
-						System.out.println(dataset + " ST started");
-						Instances tranTrain = transform.process(train);
-						Instances tranTest = transform.process(test);
-
-						long endTime = bean.getCurrentThreadUserTime();
-
-						AbstractClassifier stClf = getClassifier();
-
-						stClf.buildClassifier(tranTrain);
-						double st_acc = ClassifierTools.accuracy(tranTest, stClf);
-						long st_duration = (long) ((endTime - startTime) * 1e-9);
-
-						System.out.println(dataset + " ST finished");
-
-						UShapeletTransform utransform1 = new UShapeletTransform();
-						utransform1.setClassValue(new BinaryClassValue());
-						utransform1.setSubSeqDistance(new USubSeqDistance());
-						utransform1.setShapeletMinAndMax(min, max);
-						transform.setLengthIncrement(lenghtIncrement);
-						utransform1.useCandidatePruning();
-						utransform1.setNumberOfShapelets(train.numInstances() * 10);
-						utransform1.setQualityMeasure(ShapeletQualityChoice.INFORMATION_GAIN);
-						utransform1.setLogOutputFile(resultPath + dataset + File.separator + "UST_Shapelets.csv");
-						utransform1.supressOutput();
-
-						startTime = bean.getCurrentThreadUserTime();
-
-						System.out.println(dataset + " UST started");
-
-						Instances errorTrain, errorTest;
-						errorTrain = utilities.ClassifierTools.loadData(filePath + "_NOISE_TRAIN");
-						errorTest = utilities.ClassifierTools.loadData(filePath + "_NOISE_TEST");
-						normalizeErrors(errorTest, test);
-						normalizeErrors(errorTrain, train);
-
-						Instances uTranTrain = utransform1.process(train, errorTrain);
-						Instances uTranTest = utransform1.process(test, errorTest);
-						
-						computeAttrMean(uTranTrain);
-						
-						Instances gaussianTrain = makeDataset(uTranTrain);
-						Instances gaussianTest = makeDataset(uTranTest);
-
-						endTime = bean.getCurrentThreadUserTime();
-
-						AbstractClassifier gaussClf = getClassifier();
-
-						gaussClf.buildClassifier(gaussianTrain);
-						double ust_gauss_accuracy = ClassifierTools.accuracy(gaussianTest, gaussClf);
-						long ust_gauss_duration = (long) ((endTime - startTime) * 1e-9);
-
-						System.out.println(dataset + " UST finished");
-						
-						AbstractClassifier flatClf = getClassifier();
-
-						flatClf.buildClassifier(uTranTrain);
-						double ust_flat_accuracy = ClassifierTools.accuracy(uTranTest, flatClf);
-						long ust_flat_duration = (long) ((endTime - startTime) * 1e-9);
-						
-						Instances combinedTrain = makeUSTInstance(flatClf, gaussClf, uTranTrain, gaussianTrain);
-						Instances combinedTest = makeUSTInstance(flatClf, gaussClf, uTranTest, gaussianTest);
-						
-						AbstractClassifier clf = getClassifier();
-						clf.buildClassifier(combinedTrain);
-						double flat_gauss_accuracy = ClassifierTools.accuracy(combinedTest, clf);
-
-//						zNormalise(train);
-//						zNormalise(test);
-
-						String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
-								+ train.numAttributes() + "," + train.numClasses() + "," + ust_gauss_accuracy + "," + st_acc + "," + ust_flat_accuracy + "," + flat_gauss_accuracy
-								+ "," + ust_gauss_duration + "," + st_duration + "," + ust_flat_duration + "," + min + "," + max + "," + lenghtIncrement
-								+ "\n";
-						writeResult(resultPath + outfile, content);
-
-						System.out.println("\tST: Accuracy: " + st_acc + ", transform duration: " + st_duration + " sec");
-						System.out.println("\tUST-Flat: Accuracy: " + ust_flat_accuracy + ", transform duration: " + ust_flat_duration + " sec");
-						System.out.println("\tUST-Gauss: Accuracy: " + ust_gauss_accuracy + ", transform duration: " + ust_gauss_duration + " sec");
-						System.out.println("\tUST-Flat-Gauss: Accuracy: " + flat_gauss_accuracy);
+						if(ExecMode.ST.equals(execMode)) {
+							classicalShapeletTransform(filePath, resultPath, outfile, dataset);
+						} else if(ExecMode.DUST_NORMAL.equals(execMode) || ExecMode.DUST_UNIFORM.equals(execMode)){
+							dustShapeletTransform(filePath, resultPath, outfile, datasetfolder);
+						}else {
+							uShapeletTransform(filePath, resultPath, outfile, dataset);
+						}
 
 					}
 
@@ -611,61 +572,77 @@ public class UShapeletTransformTest {
 		}
 	}
 
-//	public static void main(String argv[]) {
-//		UShapeletTransformTest test = new UShapeletTransformTest();
-//		
-////		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
-////		
-////		Matrix corr = fots.auto_corr_matrix(ts);
-////	
-////		System.out.println(corr);
-////		
-////		System.out.println("\n"+fots.eigenVectors(corr));
-//		String datasetfolder = argv[0];
-//		String resultFolderName = argv[1];
-//		int lenghtIncrement = Integer.parseInt(argv[2]);
-//		final int MAX_NB_THREAD = 20;
-//		
-//		System.out.println(datasetfolder);
-//		if(argv.length == 4) {
-//			test.setClassifier(argv[3]);
-//		}
-//		
-//		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName, lenghtIncrement);
-//	} 
-
-	public static void main(String[] argv) {
+	public static void main(String argv[]) {
 		UShapeletTransformTest test = new UShapeletTransformTest();
-		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
-		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
-		String dataset = "ItalyPowerDemand";
-
-//		try {
-//			System.out.println("\n\n" + datasetfolder_clean);
-//			test.shapeletTransform(dataset, datasetfolder_clean, "result_cleaned", lenghtIncrement);
-//		} catch (Exception e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//		}
-		System.out.println("Dataset folder :" + datasetfolder_noise);
-		test.setClassifier("DT");
-		test.setLenghtIncrement(1);
 		
-		for(ExecMode em : ExecMode.values()) {
-			test.setExecMode(em);
-			try {
-				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println("\n");
-		}
-
-//		double mu = 0;
-//		double std = 1 / Math.sqrt(2*Math.PI);
+//		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
 //		
-//		System.out.println(test.gaussianPDF(0, mu, std));
-	}
+//		Matrix corr = fots.auto_corr_matrix(ts);
+//	
+//		System.out.println(corr);
+//		
+//		System.out.println("\n"+fots.eigenVectors(corr));
+		String datasetfolder = argv[0];
+		String resultFolderName = argv[1];
+		int lenghtIncrement = Integer.parseInt(argv[2]);
+		final int MAX_NB_THREAD = 20;
+		
+		System.out.println(datasetfolder);
+		if(argv.length == 4) {
+			test.setClassifier(argv[3]);
+		}
+		
+		switch (argv[4]) {
+		case "DUST_UNIFORM":
+			test.setExecMode(ExecMode.DUST_UNIFORM);
+			break;
+		case "DUST_NORMAL":
+			test.setExecMode(ExecMode.DUST_NORMAL);
+			break;
+		case "UST_FLAT":
+			test.setExecMode(ExecMode.UST_FLAT);
+			break;
+		case "UST_GAUSS":
+			test.setExecMode(ExecMode.UST_GAUSS);
+			break;
+		case "UST_FLAT_GAUSS":
+			test.setExecMode(ExecMode.UST_FLAT_GAUSS);
+			break;
+		default:
+			test.setExecMode(ExecMode.ST);
+			break;
+		}
+		
+		test.setLenghtIncrement(lenghtIncrement);
+		
+		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
+	} 
+
+//	public static void main(String[] argv) {
+//		UShapeletTransformTest test = new UShapeletTransformTest();
+//		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
+//		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
+//		String dataset = "ItalyPowerDemand";
+//
+//		System.out.println("Dataset folder :" + datasetfolder_noise);
+//		test.setClassifier("DT");
+//		test.setLenghtIncrement(1);
+//		
+//		for(ExecMode em : ExecMode.values()) {
+//			test.setExecMode(em);
+//			try {
+//				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			System.out.println("\n");
+//		}
+//
+////		double mu = 0;
+////		double std = 1 / Math.sqrt(2*Math.PI);
+////		
+////		System.out.println(test.gaussianPDF(0, mu, std));
+//	}
 
 }

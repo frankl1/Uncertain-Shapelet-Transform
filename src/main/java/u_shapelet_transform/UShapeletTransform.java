@@ -78,7 +78,7 @@ public class UShapeletTransform extends SimpleBatchFilter implements SaveParamet
 
     protected Comparator<UShapelet> shapeletComparator;
 
-    protected USubSeqDistance subseqDistance;
+    protected BaseUSubSeqDistance subseqDistance;
     protected NormalClassValue classValue;
     protected UShapeletSearch searchFunction;
     protected String serialName;
@@ -91,7 +91,7 @@ public class UShapeletTransform extends SimpleBatchFilter implements SaveParamet
     
     protected long count;
 
-    public void setSubSeqDistance(USubSeqDistance ssd) {
+    public void setSubSeqDistance(BaseUSubSeqDistance ssd) {
         subseqDistance = ssd;
     }
     
@@ -127,7 +127,7 @@ public class UShapeletTransform extends SimpleBatchFilter implements SaveParamet
         useRoundRobin = b;
     }
     
-    public USubSeqDistance getSubSequenceDistance(){
+    public BaseUSubSeqDistance getSubSequenceDistance(){
         return subseqDistance;
     }
 
