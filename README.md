@@ -22,4 +22,4 @@ UST is as extension of the ST algorithm that take into account the uncertaintity
 
 
 
-Find more info in this ![report](https://github.com/frankl1/Uncertain-Shapelet-Transform/blob/master/rapport-stage.pdf).
+Find more info in this ![report](https://github.com/frankl1/Uncertain-Shapelet-Transform/raw/master/rapport-stage.pdf).
