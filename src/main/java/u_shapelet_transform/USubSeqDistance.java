@@ -8,6 +8,21 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 public class USubSeqDistance extends BaseUSubSeqDistance {
+	/**
+	 * true if the measures are independent, random and governed by a normal distribution 
+	 */
+	protected boolean is_gaussian;
+
+	public USubSeqDistance() {
+		super();
+		this.is_gaussian = true;
+	}
+	
+	public USubSeqDistance(boolean is_gaussian) {
+		super();
+		this.is_gaussian = is_gaussian;
+	}
+
 	public UDistance calculate(Instance timeSeries, Instance timeSeriesErr, int timeSeriesId) {
 		return calculate(timeSeries.toDoubleArray(), timeSeriesErr.toDoubleArray(), timeSeriesId);
 	}
@@ -24,7 +39,7 @@ public class USubSeqDistance extends BaseUSubSeqDistance {
 		double sum;
 		double[] subseq;
 		double[] subseqErr;
-		double temp;
+		double temp, tempErr;
 		double err;
 
 		for (int i = 0; i < timeSeries.length - length; i++) {
@@ -43,13 +58,20 @@ public class USubSeqDistance extends BaseUSubSeqDistance {
 				count++;
 				temp = (cand.getShapeletContent()[j] - subseq[j]);
 				sum = sum + (temp * temp);
-				err = err + Math.abs(temp) * ( Math.abs(cand.getShapeletContent()[j]) * cand.getShapeletContentErr()[j] +  Math.abs(subseq[j]) * subseqErr[j]);
+				if(is_gaussian) {
+					tempErr = Math.pow(Math.abs(cand.getShapeletContent()[j]) * cand.getShapeletContentErr()[j], 2);
+					tempErr +=  Math.pow(Math.abs(subseq[j]) * subseqErr[j], 2);
+					tempErr = Math.sqrt(tempErr);
+				} else {
+					tempErr = (Math.abs(cand.getShapeletContent()[j]) * cand.getShapeletContentErr()[j] +  Math.abs(subseq[j]) * subseqErr[j]);
+				}
+				err += (Math.abs(temp) * tempErr / 100);
 			}
 			
-			err = err * 2 /  length;
+			err = (err * 2) / sum; // relative error
 			sum = sum / length;
 			
-			uDistance = new UDistance(sum, err/sum);
+			uDistance = new UDistance(sum, err);
 			
 			if(uDistance.compareTo(bestDist) == -1) {
 				bestDist = new UDistance(uDistance);

@@ -43,6 +43,11 @@ public class UShapeletTransformTest {
 	String classifier;
 	int lenghtIncrement;
 	
+	/**
+	 * true if the measures are independent, random and following normal distribution
+	 */
+	boolean isGaussian = false;
+	
 	public enum ExecMode{
 		UST_FLAT("UST_FLAT"),
 		UST_GAUSS("UST_GAUSS"), 
@@ -75,6 +80,14 @@ public class UShapeletTransformTest {
 		this.classifier = "svm";
 	}
 	
+	public boolean isGaussian() {
+		return isGaussian;
+	}
+
+	public void setGaussian(boolean isGaussian) {
+		this.isGaussian = isGaussian;
+	}
+
 	public ExecMode getExecMode() {
 		return execMode;
 	}
@@ -119,6 +132,7 @@ public class UShapeletTransformTest {
 	
 	double std = 1 / Math.sqrt(2*Math.PI);
 
+	// from absolute errors to relative errors
 	private void normalizeErrors(Instances errors, Instances data) {
 		for (int j = 0; j < errors.size(); j++) {
 			for (int i = 0; i < data.numAttributes() - 1; i++) {
@@ -313,7 +327,7 @@ public class UShapeletTransformTest {
 		
 		UShapeletTransform utransform = new UShapeletTransform();
 		utransform.setClassValue(new BinaryClassValue());
-		utransform.setSubSeqDistance(new USubSeqDistance());
+		utransform.setSubSeqDistance(new USubSeqDistance(isGaussian));
 		utransform.setShapeletMinAndMax(min, max);
 		utransform.setLengthIncrement(lenghtIncrement);
 		utransform.useCandidatePruning();
@@ -574,14 +588,6 @@ public class UShapeletTransformTest {
 
 	public static void main(String argv[]) {
 		UShapeletTransformTest test = new UShapeletTransformTest();
-		
-//		double[] ts = {5, 2, 3, 5, 6, 1, 1, 0, 9, 4};
-//		
-//		Matrix corr = fots.auto_corr_matrix(ts);
-//	
-//		System.out.println(corr);
-//		
-//		System.out.println("\n"+fots.eigenVectors(corr));
 		String datasetfolder = argv[0];
 		String resultFolderName = argv[1];
 		int lenghtIncrement = Integer.parseInt(argv[2]);
@@ -613,6 +619,12 @@ public class UShapeletTransformTest {
 			break;
 		}
 		
+		if(argv[4].startsWith("UST")){
+			if("gaussian".equals(argv[5])) {
+				test.setGaussian(true);
+			}
+		}
+		
 		test.setLenghtIncrement(lenghtIncrement);
 		
 		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
@@ -622,11 +634,12 @@ public class UShapeletTransformTest {
 //		UShapeletTransformTest test = new UShapeletTransformTest();
 //		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
 //		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
-//		String dataset = "ItalyPowerDemand";
+//		String dataset = "Chinatown";
 //
 //		System.out.println("Dataset folder :" + datasetfolder_noise);
 //		test.setClassifier("DT");
 //		test.setLenghtIncrement(1);
+//		test.setGaussian(true);
 //		
 //		for(ExecMode em : ExecMode.values()) {
 //			test.setExecMode(em);
@@ -638,11 +651,6 @@ public class UShapeletTransformTest {
 //			}
 //			System.out.println("\n");
 //		}
-//
-////		double mu = 0;
-////		double std = 1 / Math.sqrt(2*Math.PI);
-////		
-////		System.out.println(test.gaussianPDF(0, mu, std));
 //	}
 
 }
