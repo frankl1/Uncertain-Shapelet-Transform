@@ -620,9 +620,7 @@ public class UShapeletTransformTest {
 		}
 		
 		if(argv[4].startsWith("UST")){
-			if("gaussian".equals(argv[5])) {
-				test.setGaussian(true);
-			}
+			test.setGaussian("gaussian".equals(argv[5]));
 		}
 		
 		test.setLenghtIncrement(lenghtIncrement);
