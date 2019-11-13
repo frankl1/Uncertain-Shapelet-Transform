@@ -101,12 +101,12 @@ public class UShapeletTransformTest {
 			return new RandomForest();
 		} else if(this.classifier.equals("MLP")) {
 			return new MultilayerPerceptron();
-		} else if (this.classifier.equals("DT")) {
-			return new J48();
+		} else if (this.classifier.equals("SVM")) {
+			return new SMO();
 		} else if (this.classifier.equals("RotF")) {
 			return new RotationForest();
 		}
-		return new SMO();
+		return new J48();
 	}
 
 	public int getLenghtIncrement() {
@@ -438,9 +438,7 @@ public class UShapeletTransformTest {
 				+ File.separator;
 		final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
 
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-		String date = format.format(new Date());
-		String outfile = "results-" + date + ".csv";
+		String outfile = "results.csv";
 		File file = new File(resultPath + outfile);
 		file.getParentFile().mkdirs();
 		FileWriter fileWriter = new FileWriter(file);
@@ -519,9 +517,7 @@ public class UShapeletTransformTest {
 			File folder = new File(resampleLocation);
 			final String[] datasets = folder.list();
 
-			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-			String date = format.format(new Date());
-			String outfile = "results-" + date + ".csv";
+			String outfile = "results.csv";
 			File file = new File(resultPath + outfile);
 			file.getParentFile().mkdirs();
 			FileWriter fileWriter = new FileWriter(file);
@@ -542,7 +538,7 @@ public class UShapeletTransformTest {
 						if(ExecMode.ST.equals(execMode)) {
 							classicalShapeletTransform(filePath, resultPath, outfile, dataset);
 						} else if(ExecMode.DUST_NORMAL.equals(execMode) || ExecMode.DUST_UNIFORM.equals(execMode)){
-							dustShapeletTransform(filePath, resultPath, outfile, datasetfolder);
+							dustShapeletTransform(filePath, resultPath, outfile, dataset);
 						}else {
 							uShapeletTransform(filePath, resultPath, outfile, dataset);
 						}
@@ -586,69 +582,70 @@ public class UShapeletTransformTest {
 		}
 	}
 
-	public static void main(String argv[]) {
-		UShapeletTransformTest test = new UShapeletTransformTest();
-		String datasetfolder = argv[0];
-		String resultFolderName = argv[1];
-		int lenghtIncrement = Integer.parseInt(argv[2]);
-		final int MAX_NB_THREAD = 20;
-		
-		System.out.println(datasetfolder);
-		if(argv.length == 4) {
-			test.setClassifier(argv[3]);
-		}
-		
-		switch (argv[4]) {
-		case "DUST_UNIFORM":
-			test.setExecMode(ExecMode.DUST_UNIFORM);
-			break;
-		case "DUST_NORMAL":
-			test.setExecMode(ExecMode.DUST_NORMAL);
-			break;
-		case "UST_FLAT":
-			test.setExecMode(ExecMode.UST_FLAT);
-			break;
-		case "UST_GAUSS":
-			test.setExecMode(ExecMode.UST_GAUSS);
-			break;
-		case "UST_FLAT_GAUSS":
-			test.setExecMode(ExecMode.UST_FLAT_GAUSS);
-			break;
-		default:
-			test.setExecMode(ExecMode.ST);
-			break;
-		}
-		
-		if(argv[4].startsWith("UST")){
-			test.setGaussian("gaussian".equals(argv[5]));
-		}
-		
-		test.setLenghtIncrement(lenghtIncrement);
-		
-		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
-	} 
-
-//	public static void main(String[] argv) {
+//	public static void main(String argv[]) {
 //		UShapeletTransformTest test = new UShapeletTransformTest();
-//		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
-//		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
-//		String dataset = "Chinatown";
-//
-//		System.out.println("Dataset folder :" + datasetfolder_noise);
-//		test.setClassifier("DT");
-//		test.setLenghtIncrement(1);
-//		test.setGaussian(true);
+//		String datasetfolder = argv[0];
+//		String resultFolderName = argv[1];
+//		int lenghtIncrement = Integer.parseInt(argv[2]);
+//		final int MAX_NB_THREAD = 20;
 //		
-//		for(ExecMode em : ExecMode.values()) {
-//			test.setExecMode(em);
-//			try {
-//				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//			System.out.println("\n");
+//		System.out.println(datasetfolder);
+//		test.setClassifier(argv[3]);
+//		
+//		switch (argv[4]) {
+//		case "DUST_UNIFORM":
+//			test.setExecMode(ExecMode.DUST_UNIFORM);
+//			break;
+//		case "DUST_NORMAL":
+//			test.setExecMode(ExecMode.DUST_NORMAL);
+//			break;
+//		case "UST_FLAT":
+//			test.setExecMode(ExecMode.UST_FLAT);
+//			break;
+//		case "UST_GAUSS":
+//			test.setExecMode(ExecMode.UST_GAUSS);
+//			break;
+//		case "UST_FLAT_GAUSS":
+//			test.setExecMode(ExecMode.UST_FLAT_GAUSS);
+//			break;
+//		default:
+//			test.setExecMode(ExecMode.ST);
+//			break;
 //		}
-//	}
+//		
+//		if(argv[4].startsWith("UST")){
+//			test.setGaussian("gaussian".equals(argv[5]));
+//		}
+//		
+//		test.setLenghtIncrement(lenghtIncrement);
+//		
+//		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
+//	} 
+
+	public static void main(String[] argv) {
+		UShapeletTransformTest test = new UShapeletTransformTest();
+		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
+		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
+		String dataset = "Chinatown";
+
+		System.out.println("Dataset folder :" + datasetfolder_noise);
+		test.setClassifier("DT");
+		test.setLenghtIncrement(1);
+		test.setGaussian(true);
+		
+		for(ExecMode em : ExecMode.values()) {
+			test.setExecMode(em);
+			try {
+				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("\n");
+		}
+	}
+	
+	
+//	java -cp ../UST.jar u_shapelet_transform.UShapeletTransformTest /home/etud/mbouopda/stage-limos/noised_ds/noised_dataset_nomal_pr_0_stdcoef0.1/ results01_mlp 1 MLP
 
 }
