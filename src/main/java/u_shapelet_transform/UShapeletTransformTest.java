@@ -309,7 +309,7 @@ public class UShapeletTransformTest {
 		System.out.println("\tAccuracy: " + acc + ", duration: " + duration + " sec");
 		
 		String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
-				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + "," + duration + "," + min + "," + max + "," + lenghtIncrement
+				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + duration + "," + min + "," + max + "," + lenghtIncrement
 				+ "\n";
 		writeResult(resultPath + outfile, content);
 	}
@@ -378,7 +378,7 @@ public class UShapeletTransformTest {
 		System.out.println("\tAccuracy: " + acc + ", duration: " + duration + " sec");
 		
 		String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
-				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + "," + duration + "," + min + "," + max + "," + lenghtIncrement
+				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + duration + "," + min + "," + max + "," + lenghtIncrement
 				+ "\n";
 		writeResult(resultPath + outfile, content);
 
@@ -425,7 +425,7 @@ public class UShapeletTransformTest {
 		System.out.println("\tAccuracy: " + acc + ", duration: " + duration + " sec");
 		
 		String content = dataset + "," + train.numInstances() + "," + test.numInstances() + ","
-				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + "," + duration + "," + min + "," + max + "," + lenghtIncrement
+				+ train.numAttributes() + "," + train.numClasses() + "," + acc + "," + duration + "," + min + "," + max + "," + lenghtIncrement
 				+ "\n";
 		writeResult(resultPath + outfile, content);
 
@@ -521,7 +521,7 @@ public class UShapeletTransformTest {
 			File file = new File(resultPath + outfile);
 			file.getParentFile().mkdirs();
 			FileWriter fileWriter = new FileWriter(file);
-			String header = "dataset,train_size,test_size,series_length,no_classes,ust_gauss_acc,st_acc,ust_flat_acc,ust_flat_gauss_acc,ued_duration,ed_duration,ued_flat_duration,min_shp,max_shp,increment\n";
+			String header = "dataset,train_size,test_size,series_length,no_classes,acc,duration,min_shp,max_shp,increment\n";
 			fileWriter.write(header);
 			fileWriter.close();
 
@@ -582,70 +582,70 @@ public class UShapeletTransformTest {
 		}
 	}
 
-//	public static void main(String argv[]) {
-//		UShapeletTransformTest test = new UShapeletTransformTest();
-//		String datasetfolder = argv[0];
-//		String resultFolderName = argv[1];
-//		int lenghtIncrement = Integer.parseInt(argv[2]);
-//		final int MAX_NB_THREAD = 20;
-//		
-//		System.out.println(datasetfolder);
-//		test.setClassifier(argv[3]);
-//		
-//		switch (argv[4]) {
-//		case "DUST_UNIFORM":
-//			test.setExecMode(ExecMode.DUST_UNIFORM);
-//			break;
-//		case "DUST_NORMAL":
-//			test.setExecMode(ExecMode.DUST_NORMAL);
-//			break;
-//		case "UST_FLAT":
-//			test.setExecMode(ExecMode.UST_FLAT);
-//			break;
-//		case "UST_GAUSS":
-//			test.setExecMode(ExecMode.UST_GAUSS);
-//			break;
-//		case "UST_FLAT_GAUSS":
-//			test.setExecMode(ExecMode.UST_FLAT_GAUSS);
-//			break;
-//		default:
-//			test.setExecMode(ExecMode.ST);
-//			break;
-//		}
-//		
-//		if(argv[4].startsWith("UST")){
-//			test.setGaussian("gaussian".equals(argv[5]));
-//		}
-//		
-//		test.setLenghtIncrement(lenghtIncrement);
-//		
-//		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
-//	} 
-
-	public static void main(String[] argv) {
+	public static void main(String argv[]) {
 		UShapeletTransformTest test = new UShapeletTransformTest();
-		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
-		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
-		String dataset = "Chinatown";
-
-		System.out.println("Dataset folder :" + datasetfolder_noise);
-		test.setClassifier("DT");
-		test.setLenghtIncrement(1);
-		test.setGaussian(true);
+		String datasetfolder = argv[0];
+		String resultFolderName = argv[1];
+		int lenghtIncrement = Integer.parseInt(argv[2]);
+		final int MAX_NB_THREAD = 20;
 		
-		for(ExecMode em : ExecMode.values()) {
-			test.setExecMode(em);
-			try {
-				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println("\n");
+		System.out.println(datasetfolder);
+		test.setClassifier(argv[3]);
+		
+		switch (argv[4]) {
+		case "DUST_UNIFORM":
+			test.setExecMode(ExecMode.DUST_UNIFORM);
+			break;
+		case "DUST_NORMAL":
+			test.setExecMode(ExecMode.DUST_NORMAL);
+			break;
+		case "UST_FLAT":
+			test.setExecMode(ExecMode.UST_FLAT);
+			break;
+		case "UST_GAUSS":
+			test.setExecMode(ExecMode.UST_GAUSS);
+			break;
+		case "UST_FLAT_GAUSS":
+			test.setExecMode(ExecMode.UST_FLAT_GAUSS);
+			break;
+		default:
+			test.setExecMode(ExecMode.ST);
+			break;
 		}
-	}
+		
+		if(argv[4].startsWith("UST")){
+			test.setGaussian("gaussian".equals(argv[5]));
+		}
+		
+		test.setLenghtIncrement(lenghtIncrement);
+		
+		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
+	} 
+
+//	public static void main(String[] argv) {
+//		UShapeletTransformTest test = new UShapeletTransformTest();
+//		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-dataset-10-10-0_1";
+//		String datasetfolder_clean = "/home/mimbouop/Codes/ust/Source-code/dataset";
+//		String dataset = "Chinatown";
+//
+//		System.out.println("Dataset folder :" + datasetfolder_noise);
+//		test.setClassifier("DT");
+//		test.setLenghtIncrement(1);
+//		test.setGaussian(true);
+//		
+//		for(ExecMode em : ExecMode.values()) {
+//			test.setExecMode(em);
+//			try {
+//				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			System.out.println("\n");
+//		}
+//	}
 	
 	
-//	java -cp ../UST.jar u_shapelet_transform.UShapeletTransformTest /home/etud/mbouopda/stage-limos/noised_ds/noised_dataset_nomal_pr_0_stdcoef0.1/ results01_mlp 1 MLP
+//	java -cp UST.jar u_shapelet_transform.UShapeletTransformTest /home/etud/mbouopda/stage-limos/uncertain-dataset-0_2 results0_2/ust_gauss 1 DT UST_GAUSS gaussian
 
 }

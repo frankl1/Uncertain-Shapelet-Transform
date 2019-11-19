@@ -5,9 +5,7 @@ import java.util.List;
 
 public class PartitionStats {
 	protected int[] classes;
-	protected int majorityClass;
-	protected int numInstances;
-	protected HashMap<Integer, Integer> countByClass;
+	protected HashMap<Integer, Double> probaByClass;
 	
 	public PartitionStats(UInstances partition) {
 		super();
@@ -15,39 +13,22 @@ public class PartitionStats {
 	}
 	
 	public static void computeStats(List<UInstance> partition, PartitionStats stats) {
-		int majorityClass;
 		int numInstances = partition.size();
 		HashMap<Integer, Integer> countByClass = new HashMap<Integer, Integer>();
 		
 		if(numInstances == 0) {
 			return;
 		}
-		majorityClass = partition.get(0).getClassAttribute().getClassLabel();
 		int[] classes = new int [numInstances];
 		for(int i = 0; i < numInstances; i++) {
 			int _class = partition.get(i).getClassAttribute().getClassLabel();
 			if(countByClass.containsKey(_class)) {
-				countByClass.put(_class, countByClass.get(_class) + 1);
+				countByClass.put(_class, countByClass.get(_class) + 1 / numInstances);
 			} else {
-				countByClass.put(_class, 1);
+				countByClass.put(_class, 1 / numInstances);
 				classes[i] = _class;
 			}
-			if(countByClass.containsKey(majorityClass)) {
-				if(countByClass.get(majorityClass) < countByClass.get(_class)) {
-					majorityClass = _class;
-				}
-			} else {
-				majorityClass = _class;
-			}
 		}
-	}
-
-	public int getMajorityClass() {
-		return majorityClass;
-	}
-
-	public void setMajorityClass(int majorityClass) {
-		this.majorityClass = majorityClass;
 	}
 
 	public int[] getClasses() {
@@ -58,28 +39,20 @@ public class PartitionStats {
 		this.classes = classes;
 	}
 
-	public int getNumInstances() {
-		return numInstances;
+	public HashMap<Integer, Double> getProbaByClass() {
+		return probaByClass;
 	}
 
-	public void setNumInstances(int numInstances) {
-		this.numInstances = numInstances;
-	}
-
-	public HashMap<Integer, Integer> getCountByClass() {
-		return countByClass;
-	}
-
-	public void setCountByClass(HashMap<Integer, Integer> countByClass) {
-		this.countByClass = countByClass;
+	public void setProbaByClass(HashMap<Integer, Double> pByClass) {
+		this.probaByClass = pByClass;
 	}
 
 	public int getNumClasses() {
 		return classes.length;
 	}
 	
-	public int getCountForClass(int _class) {
-		return countByClass.get(_class);
+	public double getProba(int c) {
+		return probaByClass.get(c);
 	}
 	
 	public double getEntropy() {
@@ -87,7 +60,7 @@ public class PartitionStats {
 		double p;
 		
 		for(int c : classes) {
-			p = countByClass.get(c) / numInstances;
+			p = probaByClass.get(c);
 			entropy -= (p * Math.log(p));
 		}
 		
