@@ -9,15 +9,32 @@ public class UNode {
 	protected UNode leftChild;
 	protected UNode rightChild;
 	protected HashMap<Integer, Double> probaByClass;
+	protected int id;
+	public static int lastId = 0;
 	
 	public UNode() {
 		super();
 		probaByClass = new HashMap<Integer, Double>();
 		isLeaf = false;
+		id = generateId();
+	}
+	
+	protected synchronized int generateId() {
+		int id = lastId;
+		lastId++;
+		return id;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public HashMap<Integer, Double> getProbaByClass() {
-		return probaByClass;
+		return probaByClass; 
 	}
 
 	public void setProbaByClass(HashMap<Integer, Double> probaByClass) {
@@ -62,6 +79,16 @@ public class UNode {
 
 	public void setLeaf(boolean isLeaf) {
 		this.isLeaf = isLeaf;
+	}
+
+	@Override
+	public String toString() {
+		if (isLeaf) {
+			return "UNode [attribute_pos=" + attribute_pos + ", split_value=" + split_value + ", id=" + id + "]";
+		} else {
+			return "UNode [attribute_pos=" + attribute_pos + ", split_value=" + split_value + ", isLeaf=" + isLeaf
+					+ ", leftChildID=" + leftChild.getId() + ", rightChildID=" + rightChild.getId() + ", id=" + id + "]";
+		}
 	}
 	
 }

@@ -14,13 +14,16 @@ public class UInstances {
 	
 	public UInstances() {
 		instances = new ArrayList<UInstance>();
+		classes = new HashSet<Integer>();
 	}
 	
 	public UInstances(Instances means, Instances stds) {
+		int numInstances = means.numInstances();
 		instances = new ArrayList<UInstance>();
-		for (int i = 0; i < means.numInstances(); i++) {
-			instances.add(new UInstance(means.get(i), stds.get(i)));
-			classes.add((int) means.get(i).classValue());
+		classes = new HashSet<Integer>();
+		for (int i = 0; i < numInstances; i++) {
+			instances.add(new UInstance(means.instance(i), stds.instance(i)));
+			classes.add((int) means.instance(i).classValue());
 		}
 	}
 	

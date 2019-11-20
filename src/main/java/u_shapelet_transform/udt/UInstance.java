@@ -30,6 +30,17 @@ public class UInstance {
 		attributes[classIndex].setLabel(true);
 	}
 	
+	public UInstance(Instance flatInstance) {
+		int numAttr = 1 + (flatInstance.numAttributes() - 1) / 2;
+		attributes = new UAttribute [numAttr];
+		classIndex = numAttr - 1;
+		for (int i = 0; i < numAttr - 1; i++) {
+			attributes[i] = new UAttribute(flatInstance.value(i), flatInstance.value(i + numAttr), flatInstance.attribute(i).name());
+		}
+		attributes[classIndex] = new UAttribute(flatInstance.value(flatInstance.numAttributes() - 1), 0, flatInstance.attribute(flatInstance.numAttributes() - 1).name());
+		attributes[classIndex].setLabel(true);
+	}
+	
 	public double getFuzziness() {
 		return fuzziness;
 	}
@@ -68,5 +79,16 @@ public class UInstance {
 
 	public int getNumAttribute() {
 		return attributes.length;
+	}
+
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < attributes.length; i++) {
+			if (i != classIndex)
+				sb.append(attributes[i].getMean() + "(" + attributes[i].getStd() + "), ");
+		}
+		sb.append(attributes[classIndex].getMean());
+		return sb.toString();
 	}
 }

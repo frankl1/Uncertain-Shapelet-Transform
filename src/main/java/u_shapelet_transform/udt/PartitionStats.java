@@ -2,9 +2,10 @@ package u_shapelet_transform.udt;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.function.IntFunction;
 
 public class PartitionStats {
-	protected int[] classes;
 	protected HashMap<Integer, Double> probaByClass;
 	
 	public PartitionStats(UInstances partition) {
@@ -12,43 +13,37 @@ public class PartitionStats {
 		computeStats(partition.getInstances(), this);
 	}
 	
-	public static void computeStats(List<UInstance> partition, PartitionStats stats) {
+	public void computeStats(List<UInstance> partition, PartitionStats stats) {
 		int numInstances = partition.size();
-		HashMap<Integer, Integer> countByClass = new HashMap<Integer, Integer>();
+		probaByClass = new HashMap<Integer, Double>();
 		
 		if(numInstances == 0) {
 			return;
 		}
-		int[] classes = new int [numInstances];
 		for(int i = 0; i < numInstances; i++) {
 			int _class = partition.get(i).getClassAttribute().getClassLabel();
-			if(countByClass.containsKey(_class)) {
-				countByClass.put(_class, countByClass.get(_class) + 1 / numInstances);
+			if(probaByClass.containsKey(_class)) {
+				probaByClass.put(_class, probaByClass.get(_class) + 1 / numInstances);
 			} else {
-				countByClass.put(_class, 1 / numInstances);
-				classes[i] = _class;
+				probaByClass.put(_class, 1.0 / numInstances);
 			}
 		}
-	}
-
-	public int[] getClasses() {
-		return classes;
-	}
-
-	public void setClasses(int[] classes) {
-		this.classes = classes;
 	}
 
 	public HashMap<Integer, Double> getProbaByClass() {
 		return probaByClass;
 	}
+	
+	public int getNumClasses() {
+		return probaByClass.keySet().size();
+	}
+	
+	public Integer[] getClasses() {
+		return probaByClass.keySet().toArray(new Integer[probaByClass.size()]);
+	}
 
 	public void setProbaByClass(HashMap<Integer, Double> pByClass) {
 		this.probaByClass = pByClass;
-	}
-
-	public int getNumClasses() {
-		return classes.length;
 	}
 	
 	public double getProba(int c) {
@@ -58,8 +53,7 @@ public class PartitionStats {
 	public double getEntropy() {
 		double entropy = .0;
 		double p;
-		
-		for(int c : classes) {
+		for(int c : probaByClass.keySet()) {
 			p = probaByClass.get(c);
 			entropy -= (p * Math.log(p));
 		}
