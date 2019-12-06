@@ -179,7 +179,8 @@ public class UDT extends RandomizableClassifier {
 //			System.out.println("Trying attr "  + a);
 
 			for (int i = 0; i < partition.getNumInstances() - 1; i++) {
-//				System.out.println("\t testing: i=" + i + ") " + partition.getInstance(i).getAttribute(a).getMean() + " vs " + partition.getInstance(i+1).getAttribute(a).getMean());
+				System.out.println("\t test " + i + ":) " + partition.getInstance(i).getAttribute(a).getMean() + " vs " + partition.getInstance(i+1).getAttribute(a).getMean());
+				System.out.println("\t   " + partition.getInstance(i).getClassAttribute().getClassLabel() + " vs " + partition.getInstance(i+1).getClassAttribute().getClassLabel());
 				if (partition.getInstance(i).getClassAttribute().getClassLabel() == partition.getInstance(i + 1)
 						.getClassAttribute().getClassLabel()) {
 					continue;
@@ -190,8 +191,9 @@ public class UDT extends RandomizableClassifier {
 				leftPart = new UInstances();
 				rightPart = new UInstances();
 				splitPartition(a, splitPoint, leftPart, rightPart, partition);
+				System.out.println("\t   rootSize=" + partition.getNumInstances() + " leftSize=" + leftPart.getNumInstances() + " rightSize=" + rightPart.getNumInstances());
 				gainRatio = computeGainRation(partition, leftPart, rightPart);
-				System.out.println("\t\tgainration = "  + gainRatio);
+				System.out.println("\t   splitpoint=" + splitPoint + " gain = "  + gainRatio + " rootGain = " + partition.getStats().getEntropy());
 				if (gainRatio > maxGainRatio) {
 					maxGainRatio = gainRatio;
 					bestSplitPoint = splitPoint;
