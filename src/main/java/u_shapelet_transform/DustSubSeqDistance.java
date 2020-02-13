@@ -41,7 +41,7 @@ public class DustSubSeqDistance extends BaseUSubSeqDistance {
 				// count ops
 				count++;
 				temp = Math.abs(cand.getShapeletContent()[j] - subseq[j]);
-				temp /= getDivisor(cand.getShapeletContentErr()[j]);
+				temp /= getDivisor(Math.max(cand.getShapeletContentErr()[j], subseqErr[j]));
 				sum += (temp * temp);
 			}
 			

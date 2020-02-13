@@ -402,8 +402,8 @@ public class UShapeletTransformTest {
 		long startTime = bean.getCurrentThreadUserTime(), endTime;
 
 		Instances errorTrain, errorTest;
-		errorTrain = utilities.ClassifierTools.loadData(filePath + "_NOISE_TRAIN");
-		errorTest = utilities.ClassifierTools.loadData(filePath + "_NOISE_TEST");
+		errorTrain = utilities.ClassifierTools.loadData(filePath + "_ERR_TRAIN");
+		errorTest = utilities.ClassifierTools.loadData(filePath + "_ERR_TEST");
 		normalizeErrors(errorTest, test);
 		normalizeErrors(errorTrain, train);
 
@@ -513,7 +513,7 @@ public class UShapeletTransformTest {
 		if(ExecMode.ST.equals(execMode)) {
 //			classicalShapeletTransform(filePath, resultPath, outfile, dataset);
 		} else if(ExecMode.DUST_NORMAL.equals(execMode) || ExecMode.DUST_UNIFORM.equals(execMode)){
-//			dustShapeletTransform(filePath, resultPath, outfile, dataset);
+			dustShapeletTransform(filePath, resultPath, outfile, dataset);
 		}else if (ExecMode.UST_UDT.equals(execMode)){
 //			uShapeletTransformUDT(filePath, resultPath, outfile, dataset);
 		} else {
@@ -610,9 +610,9 @@ public class UShapeletTransformTest {
 					while ((dataset = blockingQueue.poll()) != null) {
 						final String filePath = resampleLocation + File.separator + dataset + File.separator + dataset;
 						if(ExecMode.ST.equals(execMode)) {
-//							classicalShapeletTransform(filePath, resultPath, outfile, dataset);
+							classicalShapeletTransform(filePath, resultPath, outfile, dataset);
 						} else if(ExecMode.DUST_NORMAL.equals(execMode) || ExecMode.DUST_UNIFORM.equals(execMode)){
-//							dustShapeletTransform(filePath, resultPath, outfile, dataset);
+							dustShapeletTransform(filePath, resultPath, outfile, dataset);
 						}else {
 							uShapeletTransform(filePath, resultPath, outfile, dataset);
 						}
@@ -696,42 +696,60 @@ public class UShapeletTransformTest {
 //		test.shapeletTransform(MAX_NB_THREAD, datasetfolder, resultFolderName);
 //	} 
 
-	public static void main(String[] argv) {
-		UShapeletTransformTest test = new UShapeletTransformTest();
-		String datasetfolder_noise = "/home/mimbouop/Codes/ust/Source-code/uncertain-datasets/0_3";
-		String dataset = "Chinatown";
-		
-//		List<UOrderLineObj> list = new ArrayList<UOrderLineObj>();
-//		list.add(new UOrderLineObj(new UDistance(.2, .01), 0));
-//		list.add(new UOrderLineObj(new UDistance(.5, .01), 0));
-//		list.add(new UOrderLineObj(new UDistance(2, 1), 0));
-//		list.add(new UOrderLineObj(new UDistance(4, .01), 0));
+//	public static void main(String[] argv) {
+//		UShapeletTransformTest test = new UShapeletTransformTest();
+//		String datasetfolder = "/home/mimbouop/Codes/ust/Source-code/uncertain-datasets/0_3";
+//		String dataset = "Chinatown";
 //		
-//		Utils.sort(list, 0, list.size() - 1);
+////		List<UOrderLineObj> list = new ArrayList<UOrderLineObj>();
+////		list.add(new UOrderLineObj(new UDistance(.2, .01), 0));
+////		list.add(new UOrderLineObj(new UDistance(.5, .01), 0));
+////		list.add(new UOrderLineObj(new UDistance(2, 1), 0));
+////		list.add(new UOrderLineObj(new UDistance(4, .01), 0));
+////		
+////		Utils.sort(list, 0, list.size() - 1);
+////		
+////		for(UOrderLineObj l: list) {
+////			System.out.println(l);
+////		}
+//
+//		System.out.println("Dataset folder :" + datasetfolder);
+//		test.setClassifier("DT");
+//		test.setLenghtIncrement(1);
+//		test.setGaussian(true);
 //		
-//		for(UOrderLineObj l: list) {
-//			System.out.println(l);
+//		for(ExecMode em : ExecMode.values()) {
+//			test.setExecMode(em);
+//			try {
+//				test.shapeletTransform(dataset, datasetfolder, "result_new");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			System.out.println("\n");
 //		}
-
-		System.out.println("Dataset folder :" + datasetfolder_noise);
-		test.setClassifier("DT");
-		test.setLenghtIncrement(1);
-		test.setGaussian(true);
+//	}
+	
+	public static void main(String[] argv) {
+		// classify plasticc five days
+		String datasetfolder = "/home/mimbouop/Codes/plasstic-5days/output";
+		String dataset = "plassticc_5d_u";
+		UShapeletTransformTest ust = new UShapeletTransformTest();
 		
-		for(ExecMode em : ExecMode.values()) {
-			test.setExecMode(em);
-			try {
-				test.shapeletTransform(dataset, datasetfolder_noise, "result_new");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			System.out.println("\n");
+		ust.setClassifier("DT");
+		ust.setLenghtIncrement(50);
+		ust.setGaussian(false);
+		ust.setExecMode(ExecMode.UST_FLAT);
+		try {
+			ust.shapeletTransform(dataset, datasetfolder, "plasticc5d_results");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
 	
 //	java -cp UST.jar u_shapelet_transform.UShapeletTransformTest /home/etud/mbouopda/stage-limos/uncertain-dataset-0_2 results0_2/ust_gauss 1 DT UST_GAUSS gaussian
-//  ../jdk-11/bin/java -cp UST.jar u_shapelet_transrm.UShapeletTransformTest /home/etud/mbouopda/stage-limos/uncertain-datasets/0_2 results0_2/ust_flat_p 1 DT UST_FLAT g
+//  ../jdk-11/bin/java -cp UST.jar u_shapelet_transform.UShapeletTransformTest /home/etud/mbouopda/stage-limos/uncertain-datasets/0_2 results0_2/ust_flat_p 1 DT UST_FLAT g
 
 }

@@ -1,6 +1,9 @@
 package u_shapelet_transform;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.special.Erf;
+import org.apache.commons.math3.stat.inference.KolmogorovSmirnovTest;
+import org.apache.commons.math3.stat.inference.TestUtils;
 
 public class UDistance implements Comparable<UDistance> {
 	double distance;
@@ -65,24 +68,35 @@ public class UDistance implements Comparable<UDistance> {
 		}
 	}
 	
-	public int probabilisticCompare(UDistance o) {
-		double var = Math.pow(this.getErr(), 2) + Math.pow(o.getErr(), 2);
-		double mean = this.distance - o.getDistance();
-		double p = cdf(0, mean, Math.sqrt(var)); // probability of [this - o] being less or equal to 0
-//		System.out.println("\t \t proba = " + p);
-		if (Math.abs(p - 0.5) <= 0.1) {
-			return 0;
-		}
+	public int stochasticOrder(UDistance o) {
+		int c1=0, c2=0;
+		double cdf1, cdf2;
+		double min = Math.min(this.distance - this.err, o.distance - o.err);
+		double max = Math.max(this.distance + this.err, o.distance + o.err);
+		double step = (max - min + 1) / 100;
 		
-		if(p > 0.5)
+		for(double i = min; i<max; i+=step) {
+			cdf1 = this.cdf(i, this.distance, this.err);
+			cdf2 = this.cdf(i, o.distance, o.err);
+			if (cdf1 != cdf2) {
+				if(cdf1 > cdf2)
+					c1++;
+				if (cdf1 < cdf2)
+					c2++;
+			}
+			
+		}
+		if (c1 == c2)
+			return 0;
+		if (c1 > c2)
 			return -1;
 		return 1;
 	}
 
 	@Override
 	public int compareTo(UDistance o) {
-		return probabilisticCompare(o);
-//		return simpleCompare(o);
+		return simpleCompare(o);
+//		return stochasticOrder(o);
 	}
 
 	@Override
